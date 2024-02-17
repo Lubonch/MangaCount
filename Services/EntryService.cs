@@ -8,16 +8,16 @@ using System.Net.Http;
 
 namespace MangaCount.Services
 {
-    public class MangaService : IMangaService
+    public class EntryService : IEntryService
     {
-        private IMangaRepository _mangaRepository;
-        public MangaService(IMangaRepository mangaRepository)
+        private IEntryRepository _entryRepository;
+        public EntryService(IEntryRepository entryRepository)
         {
-            _mangaRepository = mangaRepository;
+            _entryRepository = entryRepository;
         }
-        public List<Domain.Manga> GetAllMangas()
+        public List<Domain.Entry> GetAllEntries()
         {
-            var mangaList = _mangaRepository.GetAllMangas();
+            var mangaList = _entryRepository.GetAllEntries();
 
             return mangaList;
         }

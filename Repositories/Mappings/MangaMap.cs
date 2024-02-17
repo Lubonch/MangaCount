@@ -9,6 +9,7 @@ namespace MangaCount.Repositories.Mappings
         {
             Id(x => x.Id).Column("Id");
             Map(x => x.Name).Column("Name");
+            Map(x => x.Volumes).Column("Volumes");            
         }
     }
 }
