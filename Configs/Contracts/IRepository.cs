@@ -12,7 +12,7 @@ namespace MangaCount.Configs.Contracts
         T Get(object id);
         T Load(object id);
         T Merge(T entity);
-        T Save(T entity);
+        int Save(T entity);
         void SaveOrUpdate(T entity);
         void Update(T entity);
     }

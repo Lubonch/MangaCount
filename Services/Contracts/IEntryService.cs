@@ -11,5 +11,6 @@ namespace MangaCount.Services.Contracts
     public interface IEntryService
     {
         public List<Domain.Entry> GetAllEntries();
+        public HttpResponseMessage ImportFromFile(String filePath);
     }
 }

@@ -7,7 +7,8 @@ namespace MangaCount.Repositories.Mappings
     {
         public MangaMap() 
         {
-            Id(x => x.Id).Column("Id");
+            Table("Manga");
+            Id(x => x.Id).Column("Id").GeneratedBy.Identity();
             Map(x => x.Name).Column("Name");
             Map(x => x.Volumes).Column("Volumes");            
         }

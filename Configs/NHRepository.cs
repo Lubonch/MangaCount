@@ -57,9 +57,9 @@ namespace MangaCount.Configs
             return (T)Session.Merge<T>(entity);
         }
 
-        public T Save(T entity)
+        public int Save(T entity)
         {
-            return (T)Session.Save(entity);
+            return (int)Session.Save(entity);
         }
 
         public void SaveOrUpdate(T entity)
