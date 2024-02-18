@@ -1,7 +1,17 @@
 ﻿using System.Net.Http;
+using AutoMapper;
+using MangaCount.Configs;
+using MangaCount.Domain;
+using MangaCount.DTO;
+using MangaCount.Models;
 using MangaCount.Services.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 
 
 namespace MangaCount.Controllers
@@ -12,11 +22,13 @@ namespace MangaCount.Controllers
     {    
         private readonly ILogger<EntryController> _logger;
         private IEntryService _entryService;
+        private Mapper mapper;
 
         public EntryController(ILogger<EntryController> logger, IEntryService entryService )
         {
             _logger = logger;
             _entryService = entryService;
+            mapper = MapperConfig.InitializeAutomapper();
         }
 
         [HttpGet]
@@ -25,30 +37,13 @@ namespace MangaCount.Controllers
         {
             return _entryService.GetAllEntries();
         }
+
         [HttpPost]
         [Route("~/ImportFromFile/")]
-        public IEnumerable<Domain.Entry> ImportFromFile(IFormFile file)
+        public HttpResponseMessage ImportFromFile(String filePath)
         {
-            if (CheckFileType(file.FileName))
-            {
-
-            }
-            else 
-            {
-                throw new InvalidOperationException("File Must be a .csv file");
-            }
-            throw new NotImplementedException();
+            return _entryService.ImportFromFile(filePath);
         }
-        public bool CheckFileType(string fileName)
-        {
-            string ext = Path.GetExtension(fileName);
-            switch (ext.ToLower())
-            {
-                case ".csv":
-                    return true;
-                default:
-                    return false;
-            }
-        }
+        
     }
 }
