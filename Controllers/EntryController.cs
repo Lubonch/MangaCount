@@ -38,6 +38,13 @@ namespace MangaCount.Controllers
             return _entryService.GetAllEntries();
         }
 
+        [HttpGet]
+        [Route("~/GetEntryById/")]
+        public Domain.Entry GetEntryById(int Id)
+        {
+            return _entryService.GetEntryById(Id);
+        }
+
         [HttpPost]
         [Route("~/ImportFromFile/")]
         public HttpResponseMessage ImportFromFile(String filePath)

@@ -23,7 +23,13 @@ namespace MangaCount.Services
 
             return mangaList;
         }
+        
+        public Domain.Entry GetEntryById(int Id)
+        {
+            var manga = _entryRepository.Get(Id);
 
+            return manga;
+        }
         public HttpResponseMessage ImportFromFile(String filePath) 
         {
             if (CheckFileType(Path.GetFileName(filePath)))
