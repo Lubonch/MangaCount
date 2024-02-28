@@ -24,7 +24,25 @@ namespace MangaCount.Controllers
         public IEnumerable<Domain.Manga> GetAllMangas()
         {
             return _mangaService.GetAllMangas();
-        }       
-        
+        }
+        [HttpGet]
+        [Route("~/GetMangaById/")]
+        public Domain.Manga GetMangaById(int Id)
+        {
+            return _mangaService.GetMangaById(Id);
+        }
+        [HttpPost]
+        [Route("~/CreateManga/")]
+        public HttpResponseMessage CreateManga(Domain.Manga mangaData)
+        {
+            throw new NotImplementedException();
+        }
+        [HttpPost]
+        [Route("~/UpdateManga/")]
+        public HttpResponseMessage UpdateManga(Domain.Entry mangaData)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

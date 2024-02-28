@@ -21,5 +21,11 @@ namespace MangaCount.Services
 
             return mangaList;
         }
+        public Domain.Manga GetMangaById(int Id)
+        {
+            var manga = _mangaRepository.Get(Id);
+
+            return manga;
+        }
     }
 }
