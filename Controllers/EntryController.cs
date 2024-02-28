@@ -38,6 +38,7 @@ namespace MangaCount.Controllers
             return _entryService.GetAllEntries();
         }
 
+
         [HttpGet]
         [Route("~/GetEntryById/")]
         public Domain.Entry GetEntryById(int Id)
@@ -51,6 +52,18 @@ namespace MangaCount.Controllers
         {
             return _entryService.ImportFromFile(filePath);
         }
-        
+
+        [HttpPost]
+        [Route("~/CreateEntry/")]
+        public HttpResponseMessage CreateEntry(Domain.Entry entryData)
+        {
+            throw new NotImplementedException();
+        }
+        [HttpPost]
+        [Route("~/UpdateEntry/")]
+        public HttpResponseMessage UpdateEntry(Domain.Entry entryData)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

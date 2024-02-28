@@ -11,5 +11,6 @@ namespace MangaCount.Services.Contracts
     public interface IMangaService
     {
         public List<Domain.Manga> GetAllMangas();
+        public Domain.Manga GetMangaById(int Id);
     }
 }
