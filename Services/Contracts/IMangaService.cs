@@ -12,5 +12,6 @@ namespace MangaCount.Services.Contracts
     {
         public List<Domain.Manga> GetAllMangas();
         public Domain.Manga GetMangaById(int Id);
+        public HttpResponseMessage SaveOrUpdate(DTO.MangaDTO mangaDTO);
     }
 }

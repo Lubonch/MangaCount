@@ -1,4 +1,6 @@
 ﻿using System.Net.Http;
+using AutoMapper;
+using MangaCount.Configs;
 using MangaCount.Services.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +14,13 @@ namespace MangaCount.Controllers
     {    
         private readonly ILogger<MangaController> _logger;
         private IMangaService _mangaService;
+        private Mapper mapper;
 
         public MangaController(ILogger<MangaController> logger, IMangaService mangaService )
         {
             _logger = logger;
             _mangaService = mangaService;
+             mapper = MapperConfig.InitializeAutomapper();
         }
 
         [HttpGet]
@@ -33,15 +37,19 @@ namespace MangaCount.Controllers
         }
         [HttpPost]
         [Route("~/CreateManga/")]
-        public HttpResponseMessage CreateManga(Domain.Manga mangaData)
+        public HttpResponseMessage CreateManga(Model.MangaModel mangaModel)
         {
-            throw new NotImplementedException();
+            DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
+
+            return _mangaService.SaveOrUpdate(mangaDTO);
         }
         [HttpPost]
         [Route("~/UpdateManga/")]
-        public HttpResponseMessage UpdateManga(Domain.Entry mangaData)
+        public HttpResponseMessage UpdateManga(Model.MangaModel mangaModel)
         {
-            throw new NotImplementedException();
+            DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
+
+            return _mangaService.SaveOrUpdate(mangaDTO);
         }
 
     }
