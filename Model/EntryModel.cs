@@ -1,6 +1,6 @@
 ﻿using MangaCount.Domain;
 
-namespace MangaCount.Models
+namespace MangaCount.Model
 {
     public class EntryModel
     {

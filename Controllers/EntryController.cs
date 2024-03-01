@@ -3,7 +3,7 @@ using AutoMapper;
 using MangaCount.Configs;
 using MangaCount.Domain;
 using MangaCount.DTO;
-using MangaCount.Models;
+using MangaCount.Model;
 using MangaCount.Services.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

@@ -1,4 +1,4 @@
-﻿namespace MangaCount.Models
+﻿namespace MangaCount.Model
 {
     public class MangaModel
     {
