@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using MangaCount.Services;
 
 
 namespace MangaCount.Controllers
@@ -52,18 +53,13 @@ namespace MangaCount.Controllers
         {
             return _entryService.ImportFromFile(filePath);
         }
-
         [HttpPost]
         [Route("~/CreateEntry/")]
-        public HttpResponseMessage CreateEntry(Domain.Entry entryData)
+        public HttpResponseMessage CreateOrUpdateEntry(Model.EntryModel entryModel)
         {
-            throw new NotImplementedException();
-        }
-        [HttpPost]
-        [Route("~/UpdateEntry/")]
-        public HttpResponseMessage UpdateEntry(Domain.Entry entryData)
-        {
-            throw new NotImplementedException();
+            DTO.EntryDTO entryDTO = mapper.Map<DTO.EntryDTO>(entryModel);
+
+            return _entryService.SaveOrUpdate(entryDTO);
         }
     }
 }
