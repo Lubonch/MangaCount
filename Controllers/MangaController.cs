@@ -37,20 +37,11 @@ namespace MangaCount.Controllers
         }
         [HttpPost]
         [Route("~/CreateManga/")]
-        public HttpResponseMessage CreateManga(Model.MangaModel mangaModel)
+        public HttpResponseMessage CreateOrUpdateManga(Model.MangaModel mangaModel)
         {
             DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
 
             return _mangaService.SaveOrUpdate(mangaDTO);
         }
-        [HttpPost]
-        [Route("~/UpdateManga/")]
-        public HttpResponseMessage UpdateManga(Model.MangaModel mangaModel)
-        {
-            DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
-
-            return _mangaService.SaveOrUpdate(mangaDTO);
-        }
-
     }
 }

@@ -1,4 +1,5 @@
-﻿using MangaCount.Configs;
+﻿using AutoMapper;
+using MangaCount.Configs;
 using MangaCount.Configs.Contracts;
 using MangaCount.Repositories.Contracts;
 using MangaCount.Services.Contracts;
@@ -12,10 +13,12 @@ namespace MangaCount.Services
     {
         private IEntryRepository _entryRepository;
         private IMangaRepository _mangaRepository;
+        private Mapper mapper;
         public EntryService(IEntryRepository entryRepository, IMangaRepository mangaRepository)
         {
             _entryRepository = entryRepository;
             _mangaRepository = mangaRepository;
+            mapper = MapperConfig.InitializeAutomapper();
         }
         public List<Domain.Entry> GetAllEntries()
         {
@@ -96,6 +99,21 @@ namespace MangaCount.Services
             return entryList;
         }
 
+        public HttpResponseMessage SaveOrUpdate(DTO.EntryDTO entryDTO)
+        {
+            Domain.Entry entry = mapper.Map<Domain.Entry>(entryDTO);
+
+            using (NHibernate.ISession session = NhibernateConfig.OpenSession())
+            {
+                using (ITransaction tx = session.BeginTransaction())
+                {
+                    session.SaveOrUpdate(entry);
+                    tx.Commit();
+                }
+            }
+            //TODO Error Catching
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        }
         private bool CheckFileType(string fileName)
         {
             string ext = Path.GetExtension(fileName);
