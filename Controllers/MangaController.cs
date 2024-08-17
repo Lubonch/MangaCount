@@ -35,6 +35,12 @@ namespace MangaCount.Controllers
         {
             return _mangaService.GetMangaById(Id);
         }
+        [HttpGet]
+        [Route("~/GetMangaFromISBN/")]
+        public String GetMangaFromISBN(String ISBNCode)
+        {
+            return _mangaService.GetMangaFromISBN(ISBNCode).Result;
+        }
         [HttpPost]
         [Route("~/CreateManga/")]
         public HttpResponseMessage CreateOrUpdateManga(Model.MangaModel mangaModel)
@@ -43,5 +49,6 @@ namespace MangaCount.Controllers
 
             return _mangaService.SaveOrUpdate(mangaDTO);
         }
+        
     }
 }

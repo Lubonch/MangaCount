@@ -3,7 +3,10 @@ using MangaCount.Configs;
 using MangaCount.Configs.Contracts;
 using MangaCount.Repositories.Contracts;
 using MangaCount.Services.Contracts;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using NHibernate;
+using NuGet.Protocol;
 using System.Net;
 using System.Net.Http;
 
@@ -33,6 +36,7 @@ namespace MangaCount.Services
 
             return manga;
         }
+       
         public HttpResponseMessage ImportFromFile(String filePath) 
         {
             if (CheckFileType(Path.GetFileName(filePath)))
