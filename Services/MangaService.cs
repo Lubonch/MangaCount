@@ -9,9 +9,11 @@ using MangaCount.Services.Contracts;
 using Microsoft.CodeAnalysis.Options;
 using Newtonsoft.Json.Linq;
 using NHibernate;
+using NuGet.Protocol;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace MangaCount.Services
@@ -87,9 +89,14 @@ namespace MangaCount.Services
                 if (response.IsSuccessStatusCode)
                 {
                     json = response.Content.ReadAsStringAsync().Result;
-                    JsonNode libraryResult = JsonNode.Parse(json)!;
+                    var libraryResult = JsonValue.Parse(json)!;
+                    //using var jDoc = JsonDocument.Parse(json);
+                    //var myClass = jDoc.RootElement.GetProperty("ISBNCode").Deserialize<Library>();
                     //Log.DebugFormat("GetLastUpdateDate Json String {0}", json);
-                    library = libraryResult[ISBNCode]!.GetValue<Library>();
+                    //string test = libraryResult[ISBNCode]!.ToJsonString;
+                    //var test2 = libraryResult["978-1506715537"]!;
+                    //library = libraryResult[ISBNCode]!.GetValue<Library>();
+                    library = JsonSerializer.Deserialize<Library>(libraryResult[ISBNCode]!);
 
 
                 }

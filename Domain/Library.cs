@@ -6,17 +6,17 @@ namespace MangaCount.Domain
     public class Library
     {
         [JsonProperty("bib_key")]
-        public required String ISBN { get; set; }
+        public required String bib_key { get; set; }
         [JsonProperty("details")]
-        public required Details Details { get; set; }
+        public required Details details { get; set; }
 
     }
     [Serializable]
     public class Details
     {
         [JsonProperty("publishers")]
-        public required String[] Publishers { get; set; }
+        public required String[] publishers { get; set; }
         [JsonProperty("title")]
-        public required string Title { get; set; }
+        public required string title { get; set; }
     }
 }
