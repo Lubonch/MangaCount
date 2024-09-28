@@ -58,21 +58,7 @@ namespace MangaCount.Services
 
             return manga;
         }
-        //private String GetMangaFromISBN2(String ISBNCode)
-        //{
-        //    //var manga = _entryRepository.Get(Id);
-        //    HttpClient client = new HttpClient();
-        //    client.BaseAddress = configuration.GetValue<Uri>("APIs:Book");
-        //    client.DefaultRequestHeaders.Accept.Clear();
-        //    client.DefaultRequestHeaders.Accept.Add(
-        //        new MediaTypeWithQualityHeaderValue("application/json"));
-
-        //    HttpResponseMessage response = client.GetAsync(ISBNCode).Result;
-
-        //    String o1 = JObject.Parse(File.ReadAllText(@"C:\repos\json\test.json")).ToString();
-
-        //    return o1;
-        //}
+        
         public String GetMangaFromISBN(String ISBNCode)
         {
             Library library;
@@ -90,35 +76,14 @@ namespace MangaCount.Services
                 {
                     json = response.Content.ReadAsStringAsync().Result;
                     var libraryResult = JsonValue.Parse(json)!;
-                    //using var jDoc = JsonDocument.Parse(json);
-                    //var myClass = jDoc.RootElement.GetProperty("ISBNCode").Deserialize<Library>();
-                    //Log.DebugFormat("GetLastUpdateDate Json String {0}", json);
-                    //string test = libraryResult[ISBNCode]!.ToJsonString;
-                    //var test2 = libraryResult["978-1506715537"]!;
-                    //library = libraryResult[ISBNCode]!.GetValue<Library>();
                     library = JsonSerializer.Deserialize<Library>(libraryResult[ISBNCode]!);
 
 
                 }
                 else
                 {
-
-
+                    //TODO non success scenario
                 }
-                //var parameters = new Dictionary<String, String> { { "bibkeys", ISBNCode }, { "jscmd", "details" }, { "format", "json" } };
-                //var encodedContent = new FormUrlEncodedContent(parameters);
-
-                //var manga = _entryRepository.Get(Id);
-                //var client = new HttpClient();
-                //var request = new HttpRequestMessage(HttpMethod.Get, configuration.GetValue<string>("APIs:Book"));
-                //request.Content = encodedContent;
-
-                //var response = await client.SendAsync(request);
-                //client.
-                ///object value = response.EnsureSuccessStatusCode();
-                //Console.WriteLine(response.Content.ReadAsStringAsync());
-
-                //String o1 = await response.Content.ReadAsStringAsync();
 
                 return json;
             }
