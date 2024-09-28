@@ -3,6 +3,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <PackageProjectUrl>https://localhost:4345</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Autofac" Version="8.0.0" />
@@ -24,5 +25,8 @@
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration" Version="8.0.1" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
 </Project>

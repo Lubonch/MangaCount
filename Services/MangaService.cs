@@ -1,13 +1,18 @@
 ﻿using AutoMapper;
+using DocumentFormat.OpenXml.Wordprocessing;
+using log4net;
 using MangaCount.Configs;
 using MangaCount.Configs.Contracts;
+using MangaCount.Domain;
 using MangaCount.Repositories.Contracts;
 using MangaCount.Services.Contracts;
+using Microsoft.CodeAnalysis.Options;
 using Newtonsoft.Json.Linq;
 using NHibernate;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json.Nodes;
 
 namespace MangaCount.Services
 {
@@ -21,7 +26,7 @@ namespace MangaCount.Services
         {
             _mangaRepository = mangaRepository;
             this.configuration = configuration;
-             mapper = MapperConfig.InitializeAutomapper();
+            mapper = MapperConfig.InitializeAutomapper();
         }
         public List<Domain.Manga> GetAllMangas()
         {
@@ -66,24 +71,50 @@ namespace MangaCount.Services
 
         //    return o1;
         //}
-        public async Task<String> GetMangaFromISBN(String ISBNCode)
+        public String GetMangaFromISBN(String ISBNCode)
         {
-            var parameters = new Dictionary<String, String> { { "bibkeys", ISBNCode }, { "jscmd", "details" }, { "format", "json" } };
-            var encodedContent = new FormUrlEncodedContent(parameters);
+            Library library;
+            string json = "";
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(configuration.GetValue<string>("APIs:Book"));
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            //var manga = _entryRepository.Get(Id);
-            var client = new HttpClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, configuration.GetValue<string>("APIs:Book"));
-            request.Content = encodedContent;
+                string searchParams = string.Concat("bibkeys=", ISBNCode, "&jscmd=", "details", "&format=", "json");
+                string actionValue = "api/books" + "?" + searchParams;
+                HttpResponseMessage response = client.GetAsync(actionValue).Result;
 
-            var response = await client.SendAsync(request);
-            //client.
-            ///object value = response.EnsureSuccessStatusCode();
-            //Console.WriteLine(response.Content.ReadAsStringAsync());
+                if (response.IsSuccessStatusCode)
+                {
+                    json = response.Content.ReadAsStringAsync().Result;
+                    JsonNode libraryResult = JsonNode.Parse(json)!;
+                    //Log.DebugFormat("GetLastUpdateDate Json String {0}", json);
+                    library = libraryResult[ISBNCode]!.GetValue<Library>();
 
-            String o1 = await response.Content.ReadAsStringAsync();
 
-            return o1;
+                }
+                else
+                {
+
+
+                }
+                //var parameters = new Dictionary<String, String> { { "bibkeys", ISBNCode }, { "jscmd", "details" }, { "format", "json" } };
+                //var encodedContent = new FormUrlEncodedContent(parameters);
+
+                //var manga = _entryRepository.Get(Id);
+                //var client = new HttpClient();
+                //var request = new HttpRequestMessage(HttpMethod.Get, configuration.GetValue<string>("APIs:Book"));
+                //request.Content = encodedContent;
+
+                //var response = await client.SendAsync(request);
+                //client.
+                ///object value = response.EnsureSuccessStatusCode();
+                //Console.WriteLine(response.Content.ReadAsStringAsync());
+
+                //String o1 = await response.Content.ReadAsStringAsync();
+
+                return json;
+            }
         }
     }
 }

@@ -39,7 +39,7 @@ namespace MangaCount.Controllers
         [Route("~/GetMangaFromISBN/")]
         public String GetMangaFromISBN(String ISBNCode)
         {
-            return _mangaService.GetMangaFromISBN(ISBNCode).Result;
+            return _mangaService.GetMangaFromISBN(ISBNCode);
         }
         [HttpPost]
         [Route("~/CreateManga/")]
