@@ -8,20 +8,20 @@ import { Http } from '@angular/http';
 })
 export class HousingService {
 
-  constructor() { }
+  constructor(http: Http) { }
 
   async getAllMangas(): Promise<Manga[]> {
     debugger;
-    const data = await fetch(this.url+'GetAllMangas');
-    return (await data.json()) ?? [];
+    // const data = await fetch(this.url+'GetAllMangas');
+    // return (await data.json()) ?? [];
 
-    // return this.http.post(`${this.url}/GetAllMangas`)
-    //         .map((response) => {
-    //             const result = response.json() as PagedResult<Manga>;
-    //             this.addToCache(result.Data);
-    //             return result;
-    //         })
-    //         .catch((err)=>this.handleError(err));
+     return this.http.post(`${this.url}/GetAllMangas`)
+             .map((response) => {
+                 const result = response.json() as Promise<Manga[]>;
+                 this.addToCache(result.Data);
+                 return result;
+             })
+             .catch((err)=>this.handleError(err));
   }
   // async getAllHousingLocations(): Promise<HousingLocation[]> {
   //   const data = await fetch(this.url);
