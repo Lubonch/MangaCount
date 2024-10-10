@@ -50,13 +50,45 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "AutoMapper": {
+              "target": "Package",
+              "version": "[13.0.1, )"
+            },
+            "Autofac": {
+              "target": "Package",
+              "version": "[8.1.1, )"
+            },
+            "FluentNHibernate": {
+              "target": "Package",
+              "version": "[3.4.0, )"
+            },
             "Microsoft.AspNetCore.SpaProxy": {
               "target": "Package",
               "version": "[8.*-*, )"
             },
+            "NHibernate": {
+              "target": "Package",
+              "version": "[5.5.2, )"
+            },
+            "NHibernate.Caches.Common": {
+              "target": "Package",
+              "version": "[5.9.0, )"
+            },
+            "NHibernate.Caches.SysCache": {
+              "target": "Package",
+              "version": "[5.9.0, )"
+            },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
               "version": "[6.6.2, )"
+            },
+            "System.Data.SqlClient": {
+              "target": "Package",
+              "version": "[4.8.6, )"
+            },
+            "log4net": {
+              "target": "Package",
+              "version": "[3.0.1, )"
             }
           },
           "imports": [

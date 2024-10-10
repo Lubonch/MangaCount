@@ -1,13 +1,13 @@
 {
   "Version": 1,
-  "Hash": "ScUpPHAarnCJUvrz9FDvhoLv5OIxN6B7GG7p6fqd570=",
+  "Hash": "8T/Ix+/ZwlQL37ATDTNz3AYJ5ePoV7FLl9xh8SocjgQ=",
   "Source": "MangaCount.Server",
   "BasePath": "_content/MangaCount.Server",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [
     {
-      "Identity": "C:\\MangaCount\\mangacount.client\\mangacount.client.esproj",
+      "Identity": "C:\\repos\\MangaCount\\mangacount.client\\mangacount.client.esproj",
       "Version": 2,
       "Source": "mangacount.client",
       "GetPublishAssetsTargets": "GetCurrentProjectPublishStaticWebAssetItems",
