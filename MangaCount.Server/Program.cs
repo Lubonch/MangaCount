@@ -1,3 +1,9 @@
+using Autofac.Core;
+using MangaCountServer.Services;
+using MangaCountServer.Services.Contracts;
+using log4net.Repository;
+using MangaCountServer.Configs;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,24 +13,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+CustomExtensions.AddInjectionServices(builder.Services);
+CustomExtensions.AddInjectionRepositories(builder.Services);
+
 var app = builder.Build();
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.MapFallbackToFile("/index.html");
 
 app.Run();
