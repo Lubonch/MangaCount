@@ -1,0 +1,1 @@
+C:\MangaCount\mangacount.client\obj\Debug\mangacount.client.esproj.CoreCompileInputs.cache
