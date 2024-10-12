@@ -13,6 +13,7 @@ namespace MangaCount.Services
     {
         private IMangaRepository _mangaRepository;
         private Mapper mapper;
+
         public MangaService(IMangaRepository mangaRepository)
         {
             _mangaRepository = mangaRepository;
