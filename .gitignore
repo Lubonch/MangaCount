@@ -64,3 +64,4 @@ baseline.json
 # Ignore AIO files, useful when changing branches 
 aio/node_modules
 aio/out-tsc
+/.vs/MangaCount/FileContentIndex
