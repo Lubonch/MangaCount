@@ -31,7 +31,6 @@ export class AppComponent implements OnInit {
     this.http.get<Manga[]>('/weatherforecast').subscribe(
       (result) => {
         this.forecasts = result;
-        //this.forecasts = this.forecasts.slice(-2);
         console.log(result);
         console.log(this.forecasts);
       },

@@ -3,16 +3,16 @@
   "WorkspaceRootPath": "C:\\repos\\MangaCount\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\app\\app.component.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\app\\app.component.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\app\\app.component.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\app\\app.component.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\app\\app.module.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
       "RelativeMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\app\\app.module.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\app\\app.component.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
-      "RelativeMoniker": "D:0:0:{314D0CD5-C670-43BA-8964-7A0E88A809B7}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\app\\app.component.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{6BCEBB2E-DE48-42D1-9DE7-7C2D2F628794}|MangaCount.Server\\MangaCount.Server.csproj|c:\\repos\\mangacount\\mangacount.server\\controllers\\weatherforecastcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -98,7 +98,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 14,
+          "SelectedChildIndex": 13,
           "Children": [
             {
               "$type": "Bookmark",
@@ -183,7 +183,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "app.module.ts",
               "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\app\\app.module.ts",
               "RelativeDocumentMoniker": "mangacount.client\\src\\app\\app.module.ts",
@@ -196,20 +196,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "app.component.ts",
               "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\app\\app.component.ts",
               "RelativeDocumentMoniker": "mangacount.client\\src\\app\\app.component.ts",
               "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\src\\app\\app.component.ts",
               "RelativeToolTip": "mangacount.client\\src\\app\\app.component.ts",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAEAAAAAAAAAA==",
+              "ViewState": "AgIAABIAAAAAAAAAAAApwCAAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
               "WhenOpened": "2024-10-12T02:02:35.888Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "app.component.html",
               "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\app\\app.component.html",
               "RelativeDocumentMoniker": "mangacount.client\\src\\app\\app.component.html",
