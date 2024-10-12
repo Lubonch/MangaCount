@@ -7,6 +7,11 @@ interface WeatherForecast {
   temperatureF: number;
   summary: string;
 }
+interface Manga {
+  id: number;
+  name: string;
+  volumes: number;
+}
 
 @Component({
   selector: 'app-root',
@@ -14,7 +19,7 @@ interface WeatherForecast {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  public forecasts: WeatherForecast[] = [];
+  public forecasts: Manga[] = [];
 
   constructor(private http: HttpClient) {}
 
@@ -23,9 +28,12 @@ export class AppComponent implements OnInit {
   }
 
   getForecasts() {
-    this.http.get<WeatherForecast[]>('/weatherforecast').subscribe(
+    this.http.get<Manga[]>('/weatherforecast').subscribe(
       (result) => {
         this.forecasts = result;
+        //this.forecasts = this.forecasts.slice(-2);
+        console.log(result);
+        console.log(this.forecasts);
       },
       (error) => {
         console.error(error);
