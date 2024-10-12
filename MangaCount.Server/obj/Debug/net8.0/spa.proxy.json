@@ -3,7 +3,7 @@
 "ServerUrl": "https://localhost:4200",
 "RedirectUrl": "",
 "LaunchCommand": "npm start",
-"WorkingDirectory": "C:\\repos\\MangaCount\\MangaCount.Server\\..\\mangacount.client",
+"WorkingDirectory": "C:\\Repos\\MangaCount\\MangaCount.Server\\..\\mangacount.client",
 "MaxTimeoutInSeconds": "120",
 "KeepRunning": "false"
 }
