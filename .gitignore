@@ -65,3 +65,7 @@ baseline.json
 aio/node_modules
 aio/out-tsc
 /.vs/MangaCount/FileContentIndex
+
+/.vs
+/MangaCount.Server/bin
+/MangaCount.Server/obj/Debug
