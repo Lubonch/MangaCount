@@ -69,3 +69,10 @@ aio/out-tsc
 /.vs
 /MangaCount.Server/bin
 /MangaCount.Server/obj/Debug
+/.vs/MangaCount/v17/DocumentLayout.json
+/.vs/MangaCount/v17/.suo
+/.vs/MangaCount/v17/DocumentLayout.backup.json
+/MangaCount.Server/obj/Debug/net8.0/apphost.exe
+/MangaCount.Server/obj/Debug/net8.0/MangaCount.Server.assets.cache
+*.cache
+/MangaCount.Server/obj/Debug/net8.0/MangaCount.Server.csproj.FileListAbsolute.txt
