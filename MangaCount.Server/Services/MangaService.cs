@@ -35,11 +35,16 @@ namespace MangaCount.Server.Services
         //    //TODO Error Catching
         //    return new HttpResponseMessage(HttpStatusCode.OK);
         //}
-        //public Domain.Manga GetMangaById(int Id)
-        //{
-        //    var manga = _mangaRepository.Get(Id);
 
-        //    return manga;
-        //}
+        public void CreateManga(Domain.Manga manga)
+        {
+            _mangaRepository.CreateManga(manga);
+        }
+        public Domain.Manga GetMangaById(int Id)
+        {
+            var manga = _mangaRepository.GetMangaById(Id);
+
+            return manga;
+        }
     }
 }
