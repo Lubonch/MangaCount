@@ -35,7 +35,10 @@ namespace MangaCount.Server.Services
         //    //TODO Error Catching
         //    return new HttpResponseMessage(HttpStatusCode.OK);
         //}
-
+        public void UpdateManga(Domain.Manga manga)
+        {
+            _mangaRepository.UpdateManga(manga);
+        }
         public void CreateManga(Domain.Manga manga)
         {
             _mangaRepository.CreateManga(manga);

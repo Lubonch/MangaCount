@@ -35,27 +35,19 @@ namespace MangaCount.Server.Controllers
         }
         [HttpPost]
         [Route("~/CreateManga/")]
-        public void CreateOrUpdateManga(Domain.Manga manga)
+        public void CreateManga(Domain.Manga manga)
         {
             //DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
 
             _mangaService.CreateManga(manga);
         }
-        //[HttpGet]
-        //[Route("~/GetMangaById/")]
-        //public Domain.Manga GetMangaById(int Id)
-        //{
-        //    return _mangaService.GetMangaById(Id);
-        //}
-        //[HttpPost]
-        //[Route("~/CreateManga/")]
-        //public HttpResponseMessage CreateOrUpdateManga(Model.MangaModel mangaModel)
-        //{
-        //    DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
+        [HttpPost]
+        [Route("~/UpdateManga/")]
+        public void UpdateManga(Domain.Manga manga)
+        {
+            //DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
 
-        //    return _mangaService.SaveOrUpdate(mangaDTO);
-        //}
-
-
+            _mangaService.UpdateManga(manga);
+        }
     }
 }
