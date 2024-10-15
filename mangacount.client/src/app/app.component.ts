@@ -19,7 +19,7 @@ interface Manga {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  public forecasts: Manga[] = [];
+  public forecasts?: Manga[] = [];
 
   constructor(private http: HttpClient) {}
 
@@ -28,13 +28,14 @@ export class AppComponent implements OnInit {
   }
 
   getForecasts() {
-    this.http.get<Manga[]>('/weatherforecast').subscribe(
+    this.http.get<Manga[]>('/GetAllMangas').subscribe(
       (result) => {
         this.forecasts = result;
         console.log(result);
         console.log(this.forecasts);
       },
       (error) => {
+        this.forecasts = undefined;
         console.error(error);
       }
     );

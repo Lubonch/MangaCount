@@ -20,11 +20,26 @@ namespace MangaCount.Server.Controllers
             //mapper = MapperConfig.InitializeAutomapper();
         }
 
-        [HttpGet(Name = "GetAllMangas")]
+        [HttpGet]
+        [Route("~/GetAllMangas/")]
         public IEnumerable<Domain.Manga> GetAllMangas()
         {
             var test =_mangaService.GetAllMangas().Cast<Domain.Manga>().ToArray();
             return test; 
+        }
+        [HttpGet]
+        [Route("~/GetMangaById/")]
+        public Domain.Manga GetMangaById(int Id)
+        {
+            return _mangaService.GetMangaById(Id);
+        }
+        [HttpPost]
+        [Route("~/CreateManga/")]
+        public void CreateOrUpdateManga(Domain.Manga manga)
+        {
+            //DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
+
+            _mangaService.CreateManga(manga);
         }
         //[HttpGet]
         //[Route("~/GetMangaById/")]
@@ -40,5 +55,7 @@ namespace MangaCount.Server.Controllers
 
         //    return _mangaService.SaveOrUpdate(mangaDTO);
         //}
+
+
     }
 }
