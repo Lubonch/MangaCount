@@ -60,5 +60,22 @@ namespace MangaCount.Server.Repositories
                 var products = connection.Query<Manga>(sql, parameters);
             }
         }
+
+        public void UpdateManga(Domain.Manga manga)
+        {
+            var parameters = new DynamicParameters();
+
+            parameters.Add("@Name", manga.Name, DbType.String, ParameterDirection.Input);
+            parameters.Add("@Volumes", manga.Volumes, DbType.Int64, ParameterDirection.Input);
+            parameters.Add("@Id", manga.Id, DbType.Int64, ParameterDirection.Input);
+
+            var sql = "UPDATE [dbo].[Manga] SET [Name] =@Name ,[Volumes] =@Volumes WHERE Id = @Id";
+
+            using (var connection = new SqlConnection(this.connString))
+            {
+                connection.Open();
+                var products = connection.Query<Manga>(sql, parameters);
+            }
+        }
     }
 }

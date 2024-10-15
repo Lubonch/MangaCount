@@ -5,6 +5,7 @@
         public List<Domain.Manga> GetAllMangas();
         public Domain.Manga GetMangaById(int Id);
         public void CreateManga(Domain.Manga manga);
+        public void UpdateManga(Domain.Manga manga);
         //public HttpResponseMessage SaveOrUpdate(DTO.MangaDTO mangaDTO);
     }
 }
