@@ -48,17 +48,23 @@ namespace MangaCount.Server.Repositories
             return products;
         }
 
-        public void CreateManga(Domain.Manga manga)
+        public int CreateManga(Domain.Manga manga)
         {
+            int idCreation;
+
             var parameters = new DynamicParameters();
             parameters.Add("@Name", manga.Name, DbType.String, ParameterDirection.Input);
             parameters.Add("@Volumes", manga.Volumes, DbType.Int64, ParameterDirection.Input);
+
+
             var sql = "INSERT INTO [dbo].[Manga]([Name],[Volumes]) VALUES (@Name, @Volumes)";
             using (var connection = new SqlConnection(this.connString))
             {
                 connection.Open();
-                var products = connection.Query<Manga>(sql, parameters);
+                idCreation = connection.Query<int>(sql, parameters).FirstOrDefault();
             }
+
+            return idCreation;
         }
 
         public void UpdateManga(Domain.Manga manga)

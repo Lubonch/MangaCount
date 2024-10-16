@@ -2,6 +2,8 @@
 using System.Net.Http;
 using Microsoft.AspNetCore.Http;
 using MangaCount.Server.Services.Contracts;
+using AutoMapper;
+using MangaCount.Server.Configs;
 
 namespace MangaCount.Server.Controllers
 {
@@ -11,13 +13,13 @@ namespace MangaCount.Server.Controllers
     {
         private readonly ILogger<MangaController> _logger;
         private IMangaService _mangaService;
-        //private Mapper mapper;
+        private Mapper mapper;
 
         public MangaController(ILogger<MangaController> logger, IMangaService mangaService)
         {
             _logger = logger;
             _mangaService = mangaService;
-            //mapper = MapperConfig.InitializeAutomapper();
+            mapper = MapperConfig.InitializeAutomapper();
         }
 
         [HttpGet]
