@@ -77,3 +77,4 @@ aio/out-tsc
 *.cache
 /MangaCount.Server/obj/Debug/net8.0/MangaCount.Server.csproj.FileListAbsolute.txt
 /mangacount.client/obj/Debug/mangacount.client.esproj.FileListAbsolute.txt
+/.vs/MangaCount/DesignTimeBuild/.dtbcache.v2

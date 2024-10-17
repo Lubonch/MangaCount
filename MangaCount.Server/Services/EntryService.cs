@@ -25,103 +25,104 @@ namespace MangaCount.Server.Services
             return mangaList;
         }
 
-        public Domain.Entry GetEntryById(int Id)
-        {
-            var manga = _entryRepository.Get(Id);
+        //    public Domain.Entry GetEntryById(int Id)
+        //    {
+        //        var manga = _entryRepository.Get(Id);
 
-            return manga;
-        }
-        public HttpResponseMessage ImportFromFile(String filePath)
-        {
-            if (CheckFileType(Path.GetFileName(filePath)))
-            {
-                IList<Domain.Entry> entryList = GetFileData(filePath);
-                try
-                {
-                    foreach (Domain.Entry entry in entryList)
-                    {
-                        entry.Manga.Id = _mangaRepository.CreateManga(entry.Manga);
-                        _entryRepository.CreateEntry(entry);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //TODO error logging
-                    throw;
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException("File Must be a .csv file");
-            }
+        //        return manga;
+        //    }
+        //    public HttpResponseMessage ImportFromFile(String filePath)
+        //    {
+        //        if (CheckFileType(Path.GetFileName(filePath)))
+        //        {
+        //            IList<Domain.Entry> entryList = GetFileData(filePath);
+        //            try
+        //            {
+        //                foreach (Domain.Entry entry in entryList)
+        //                {
+        //                    entry.Manga.Id = _mangaRepository.CreateManga(entry.Manga);
+        //                    _entryRepository.CreateEntry(entry);
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                //TODO error logging
+        //                throw;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            throw new InvalidOperationException("File Must be a .csv file");
+        //        }
 
-            return new HttpResponseMessage(HttpStatusCode.OK);
-        }
+        //        return new HttpResponseMessage(HttpStatusCode.OK);
+        //    }
 
-        private IList<Domain.Entry> GetFileData(String filePath)
-        {
-            IList<Domain.Entry> entryList = new List<Domain.Entry>();
-            try
-            {
-                using (StreamReader sr = new StreamReader(filePath))
-                {
-                    string currentLine;
-                    int counter = 0;
-                    while ((currentLine = sr.ReadLine()) != null)
-                    {
-                        if (counter > 0)
-                        {
-                            string[] item = currentLine.Split("\t");
-                            if (!String.IsNullOrEmpty(item[0]))
-                            {
-                                int value;
-                                entryList.Add(new Domain.Entry()
-                                {
-                                    Manga = new Domain.Manga() { Name = item[0], Volumes = int.TryParse(item[2], out value) ? value : null },
-                                    Quantity = int.TryParse(item[1], out value) ? value : 0,
-                                    Pending = item[3],
-                                    Priority = Boolean.Parse(item[5])
-                                });
-                            }
-                        }
-                        counter++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                //TODO error logging
-                throw;
-            }
+        //    private IList<Domain.Entry> GetFileData(String filePath)
+        //    {
+        //        IList<Domain.Entry> entryList = new List<Domain.Entry>();
+        //        try
+        //        {
+        //            using (StreamReader sr = new StreamReader(filePath))
+        //            {
+        //                string currentLine;
+        //                int counter = 0;
+        //                while ((currentLine = sr.ReadLine()) != null)
+        //                {
+        //                    if (counter > 0)
+        //                    {
+        //                        string[] item = currentLine.Split("\t");
+        //                        if (!String.IsNullOrEmpty(item[0]))
+        //                        {
+        //                            int value;
+        //                            entryList.Add(new Domain.Entry()
+        //                            {
+        //                                Manga = new Domain.Manga() { Name = item[0], Volumes = int.TryParse(item[2], out value) ? value : null },
+        //                                Quantity = int.TryParse(item[1], out value) ? value : 0,
+        //                                Pending = item[3],
+        //                                Priority = Boolean.Parse(item[5])
+        //                            });
+        //                        }
+        //                    }
+        //                    counter++;
+        //                }
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            //TODO error logging
+        //            throw;
+        //        }
 
-            return entryList;
-        }
+        //        return entryList;
+        //    }
 
-        public HttpResponseMessage SaveOrUpdate(DTO.EntryDTO entryDTO)
-        {
-            Domain.Entry entry = mapper.Map<Domain.Entry>(entryDTO);
+        //    public HttpResponseMessage SaveOrUpdate(DTO.EntryDTO entryDTO)
+        //    {
+        //        Domain.Entry entry = mapper.Map<Domain.Entry>(entryDTO);
 
-            using (NHibernate.ISession session = NhibernateConfig.OpenSession())
-            {
-                using (ITransaction tx = session.BeginTransaction())
-                {
-                    session.SaveOrUpdate(entry);
-                    tx.Commit();
-                }
-            }
-            //TODO Error Catching
-            return new HttpResponseMessage(HttpStatusCode.OK);
-        }
-        private bool CheckFileType(string fileName)
-        {
-            string ext = Path.GetExtension(fileName);
-            switch (ext.ToLower())
-            {
-                case ".tsv":
-                    return true;
-                default:
-                    return false;
-            }
-        }
+        //        using (NHibernate.ISession session = NhibernateConfig.OpenSession())
+        //        {
+        //            using (ITransaction tx = session.BeginTransaction())
+        //            {
+        //                session.SaveOrUpdate(entry);
+        //                tx.Commit();
+        //            }
+        //        }
+        //        //TODO Error Catching
+        //        return new HttpResponseMessage(HttpStatusCode.OK);
+        //    }
+        //    private bool CheckFileType(string fileName)
+        //    {
+        //        string ext = Path.GetExtension(fileName);
+        //        switch (ext.ToLower())
+        //        {
+        //            case ".tsv":
+        //                return true;
+        //            default:
+        //                return false;
+        //        }
+        //    }
+        //}
     }
 }

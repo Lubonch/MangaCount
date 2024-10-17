@@ -4,6 +4,7 @@ using MangaCount.Server.Repositories.Contracts;
 using System.Data.SqlClient;
 using System.Data;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace MangaCount.Server.Repositories
 {
@@ -45,14 +46,14 @@ namespace MangaCount.Server.Repositories
 
         public List<Entry> GetAllEntries()
         {
-            var products = new List<>;
-            var sql = "Select m.*, m.Priority, m.Pending, m.Quantity FROM [dbo].[Entry] e " +
+            var products = new List<Entry>();
+            var sql = "Select * FROM Entry e " +
                 "INNER JOIN Manga m ON e.MangaID = m.Id";
             using (var connection = new SqlConnection(this.connString))
             {
-                connection.Open();
-                products = connection.Query<Manga>(sql, (Entry, Manga) => {
-                    Entry.Manga = Manga;
+                products = connection.Query<Entry, Manga, Entry>(sql, (entry, manga) => {
+                    entry.Manga = manga;
+                    return entry;
                 } ).ToList();
             }
             return products;
