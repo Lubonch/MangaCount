@@ -11,12 +11,12 @@ namespace MangaCount.Server.Configs
         public static void AddInjectionServices(IServiceCollection services)
         {
             services.AddScoped<IMangaService, MangaService>();
-            //services.AddScoped<IEntryService, EntryService>();
+            services.AddScoped<IEntryService, EntryService>();
         }
         public static void AddInjectionRepositories(IServiceCollection services)
         {
             services.AddScoped<IMangaRepository, MangaRepository>();
-            //services.AddScoped<IEntryRepository, EntryRepository>();
+            services.AddScoped<IEntryRepository, EntryRepository>();
         }
     }
 }
