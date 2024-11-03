@@ -5,13 +5,17 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 
+import {SidebarModule} from 'primeng/sidebar';
+import { ButtonModule } from 'primeng/button';
+
 @NgModule({
   declarations: [
     AppComponent
   ],
   imports: [
     BrowserModule, HttpClientModule,
-    AppRoutingModule
+    AppRoutingModule, SidebarModule,
+    ButtonModule
   ],
   providers: [],
   bootstrap: [AppComponent]
