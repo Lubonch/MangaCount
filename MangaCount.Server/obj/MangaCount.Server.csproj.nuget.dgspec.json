@@ -1,20 +1,24 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj": {}
+    "C:\\repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj": {}
   },
   "projects": {
-    "C:\\Repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj": {
+    "C:\\repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj",
+        "projectUniqueName": "C:\\repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj",
         "projectName": "MangaCount.Server",
-        "projectPath": "C:\\Repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj",
+        "projectPath": "C:\\repos\\MangaCount\\MangaCount.Server\\MangaCount.Server.csproj",
         "packagesPath": "C:\\Users\\tendo\\.nuget\\packages\\",
-        "outputPath": "C:\\Repos\\MangaCount\\MangaCount.Server\\obj\\",
+        "outputPath": "C:\\repos\\MangaCount\\MangaCount.Server\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
           "C:\\Users\\tendo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -98,7 +102,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.400/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.403/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

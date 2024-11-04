@@ -31,8 +31,6 @@ export class AppComponent implements OnInit {
     this.http.get<Manga[]>('/GetAllMangas').subscribe(
       (result) => {
         this.forecasts = result;
-        console.log(result);
-        console.log(this.forecasts);
       },
       (error) => {
         this.forecasts = undefined;

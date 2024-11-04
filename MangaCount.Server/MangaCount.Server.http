@@ -2,5 +2,8 @@
 
 GET {{MangaCount.Server_HostAddress}}/weatherforecast/
 Accept: application/json
-
 ###
+GET {{MangaCount.Server_HostAddress}}/manga/
+Accept: application/json
+
+
