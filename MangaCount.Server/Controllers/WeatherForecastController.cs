@@ -1,5 +1,3 @@
-using MangaCount.Server.Domain;
-using MangaCount.Server.Services.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MangaCount.Server.Controllers
@@ -14,19 +12,22 @@ namespace MangaCount.Server.Controllers
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
-        private IMangaService _mangaService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, IMangaService mangaService)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger)
         {
             _logger = logger;
-            this._mangaService = mangaService;
         }
 
         [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<Manga> Get()
+        public IEnumerable<WeatherForecast> Get()
         {
-            var test = _mangaService.GetAllMangas().Cast<Domain.Manga>().ToArray();
-            return test;
+            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            {
+                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+                TemperatureC = Random.Shared.Next(-20, 55),
+                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+            })
+            .ToArray();
         }
     }
 }
