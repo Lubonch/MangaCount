@@ -1,0 +1,10 @@
+{
+"SpaProxyServer": {
+"ServerUrl": "https://localhost:63920",
+"RedirectUrl": "",
+"LaunchCommand": "npm run dev",
+"WorkingDirectory": "C:\\Users\\tendo\\source\\repos\\MangaCount\\MangaCount.Server\\..\\mangacount.client",
+"MaxTimeoutInSeconds": "120",
+"KeepRunning": "false"
+}
+}
