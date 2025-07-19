@@ -1,57 +1,4 @@
-﻿* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-.app {
-    min-height: 100vh;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.app-container {
-    display: flex;
-    min-height: 100vh;
-    width: 100vw;
-}
-
-.main-content {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-    width: 100%;
-}
-
-.app-loading,
-.app-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    gap: 20px;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-}
-
-.app-error button {
-    padding: 10px 20px;
-    background-color: var(--color-info);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.app-error button:hover {
-    background-color: #2980b9;
-}
-
-/* CSS Variables for Light Theme */
+﻿CSS Variables for Light Theme */
 :root[data-theme="light"] {
     --bg-primary: #f5f5f5;
     --bg-secondary: #ffffff;
@@ -150,10 +97,85 @@
     --bg-pending: rgba(241, 196, 15, 0.15);
 }
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.app {
+    min-height: 100vh;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100vw;
+}
+
+.main-content {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* NEW: Profile selection container */
+.profile-selection-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    background-color: var(--bg-primary);
+}
+
+.app-loading,
+.app-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 20px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.app-error h2 {
+    color: var(--color-incomplete);
+    margin-bottom: 16px;
+}
+
+.app-error button {
+    padding: 12px 24px;
+    background-color: var(--color-info);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.app-error button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+}
+
 /* Responsive sidebar */
 @media (max-width: 768px) {
     .main-content {
         width: 100%;
         padding: 8px;
+    }
+    
+    .profile-selection-container {
+        padding: 10px;
     }
 }

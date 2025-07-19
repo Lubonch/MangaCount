@@ -16,19 +16,27 @@ namespace MangaCount.Server.Repositories
             _configuration = configuration;
         }
 
-        public IEnumerable<Entry> GetAllEntries()
+        public IEnumerable<Entry> GetAllEntries(int? profileId = null)
         {
             try
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                // Join with Manga table to get manga details
+                // Base query with optional profile filtering
                 var sql = @"
                     SELECT 
-                        e.Id, e.MangaId, e.Quantity, e.Pending, e.Priority,
+                        e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
                         m.Id, m.Name, m.Volumes
                     FROM [dbo].[Entry] e
                     LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id";
+                
+                var parameters = new DynamicParameters();
+                
+                if (profileId.HasValue)
+                {
+                    sql += " WHERE e.ProfileId = @ProfileId";
+                    parameters.Add("@ProfileId", profileId.Value);
+                }
 
                 using (var connection = new SqlConnection(connString))
                 {
@@ -40,6 +48,7 @@ namespace MangaCount.Server.Repositories
                             entry.Manga = manga;
                             return entry;
                         },
+                        parameters,
                         splitOn: "Id"
                     ).ToList();
 
@@ -48,7 +57,7 @@ namespace MangaCount.Server.Repositories
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error getting all entries: {ex.Message}", ex);
+                throw new Exception($"Error getting entries: {ex.Message}", ex);
             }
         }
 
@@ -60,7 +69,7 @@ namespace MangaCount.Server.Repositories
 
                 var sql = @"
                     SELECT 
-                        e.Id, e.MangaId, e.Quantity, e.Pending, e.Priority,
+                        e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
                         m.Id, m.Name, m.Volumes
                     FROM [dbo].[Entry] e
                     LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
@@ -96,8 +105,8 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var sql = @"
-                    INSERT INTO [dbo].[Entry]([MangaId],[Priority],[Pending],[Quantity]) 
-                    VALUES (@MangaId,@Priority,@Pending,@Quantity);
+                    INSERT INTO [dbo].[Entry]([MangaId],[ProfileId],[Priority],[Pending],[Quantity]) 
+                    VALUES (@MangaId,@ProfileId,@Priority,@Pending,@Quantity);
                     SELECT CAST(SCOPE_IDENTITY() as int);";
 
                 using (var connection = new SqlConnection(connString))
@@ -106,6 +115,7 @@ namespace MangaCount.Server.Repositories
                     var newId = connection.QuerySingle<int>(sql, new
                     {
                         MangaId = entry.MangaId,
+                        ProfileId = entry.ProfileId,
                         Priority = entry.Priority,
                         Pending = entry.Pending,
                         Quantity = entry.Quantity
@@ -128,7 +138,8 @@ namespace MangaCount.Server.Repositories
 
                 var sql = @"
                     UPDATE [dbo].[Entry] 
-                    SET [MangaId] = @MangaId, [Priority] = @Priority, [Pending] = @Pending, [Quantity] = @Quantity 
+                    SET [MangaId] = @MangaId, [ProfileId] = @ProfileId, [Priority] = @Priority, 
+                        [Pending] = @Pending, [Quantity] = @Quantity 
                     WHERE [Id] = @Id";
 
                 using (var connection = new SqlConnection(connString))
@@ -138,6 +149,7 @@ namespace MangaCount.Server.Repositories
                     {
                         Id = entry.Id,
                         MangaId = entry.MangaId,
+                        ProfileId = entry.ProfileId,
                         Priority = entry.Priority,
                         Pending = entry.Pending,
                         Quantity = entry.Quantity
@@ -148,7 +160,44 @@ namespace MangaCount.Server.Repositories
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error updating entry with ID {entry.Id}: {ex.Message}", ex);
+                throw new Exception($"Error updating entry: {ex.Message}", ex);
+            }
+        }
+
+        public IEnumerable<Entry> GetEntriesByProfileIds(int profileId1, int profileId2)
+        {
+            try
+            {
+                string connString = _configuration.GetConnectionString("MangacountDatabase")!;
+
+                var sql = @"
+                    SELECT 
+                        e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
+                        m.Id, m.Name, m.Volumes
+                    FROM [dbo].[Entry] e
+                    LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
+                    WHERE e.ProfileId IN (@ProfileId1, @ProfileId2)";
+
+                using (var connection = new SqlConnection(connString))
+                {
+                    connection.Open();
+                    var entryResult = connection.Query<Entry, Manga, Entry>(
+                        sql,
+                        (entry, manga) =>
+                        {
+                            entry.Manga = manga;
+                            return entry;
+                        },
+                        new { ProfileId1 = profileId1, ProfileId2 = profileId2 },
+                        splitOn: "Id"
+                    ).ToList();
+
+                    return entryResult;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error getting entries for profiles {profileId1} and {profileId2}: {ex.Message}", ex);
             }
         }
     }

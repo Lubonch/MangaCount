@@ -4,7 +4,13 @@ import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
 import ThemeToggle from './ThemeToggle';
 
-const Sidebar = ({ mangas, onImportSuccess }) => {
+const Sidebar = ({ 
+    mangas, 
+    selectedProfile, 
+    onImportSuccess, 
+    onBackToProfiles,
+    refreshing = false 
+}) => {
     const [isImporting, setIsImporting] = useState(false);
     const [importMessage, setImportMessage] = useState('');
     const [showAddEntry, setShowAddEntry] = useState(false);
@@ -28,7 +34,8 @@ const Sidebar = ({ mangas, onImportSuccess }) => {
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch('/api/entry/import', {
+            // Import with profile ID
+            const response = await fetch(`/api/entry/import/${selectedProfile.id}`, {
                 method: 'POST',
                 body: formData
             });
@@ -68,6 +75,38 @@ const Sidebar = ({ mangas, onImportSuccess }) => {
             <aside className="sidebar">
                 <div className="sidebar-header">
                     <h2>🏗️ Manga Count</h2>
+                    
+                    {/* Profile Info Section */}
+                    {selectedProfile && (
+                        <div className="current-profile-info">
+                            <div className="profile-display">
+                                <div className="profile-avatar-small">
+                                    {selectedProfile.profilePicture ? (
+                                        <img 
+                                            src={selectedProfile.profilePicture} 
+                                            alt={selectedProfile.name}
+                                            className="profile-image-small"
+                                        />
+                                    ) : (
+                                        <div className="profile-placeholder-small">
+                                            {selectedProfile.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="profile-text">
+                                    <span className="profile-name-small">{selectedProfile.name}</span>
+                                    <span className="profile-subtitle">Collection</span>
+                                </div>
+                            </div>
+                            <button 
+                                className="change-profile-btn"
+                                onClick={onBackToProfiles}
+                                title="Change profile"
+                            >
+                                👥
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="sidebar-section">
@@ -81,6 +120,7 @@ const Sidebar = ({ mangas, onImportSuccess }) => {
                         <button 
                             className="action-button add-entry"
                             onClick={() => setShowAddEntry(true)}
+                            disabled={!selectedProfile}
                         >
                             + Add Entry
                         </button>
@@ -100,13 +140,16 @@ const Sidebar = ({ mangas, onImportSuccess }) => {
                             type="file"
                             accept=".tsv"
                             onChange={handleFileImport}
-                            disabled={isImporting}
+                            disabled={isImporting || !selectedProfile}
                             className="file-input"
                             id="tsv-import"
                         />
                         <label htmlFor="tsv-import" className="file-input-label">
                             {isImporting ? 'Importing...' : 'Choose TSV File'}
                         </label>
+                        {!selectedProfile && (
+                            <small className="import-note">Select a profile first</small>
+                        )}
                         {importMessage && (
                             <p className={`import-message ${
                                 importMessage.includes('failed') ? 'error' : 
@@ -156,6 +199,7 @@ const Sidebar = ({ mangas, onImportSuccess }) => {
                 isOpen={showAddEntry}
                 onClose={() => setShowAddEntry(false)}
                 mangas={mangas}
+                selectedProfile={selectedProfile}
                 onSuccess={handleAddSuccess}
             />
 

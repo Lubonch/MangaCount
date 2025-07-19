@@ -22,11 +22,11 @@ namespace MangaCount.Server.Controllers
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<EntryModel>> GetAllEntries()
+        public ActionResult<IEnumerable<EntryModel>> GetAllEntries([FromQuery] int? profileId = null)
         {
             try
             {
-                var entries = _entryService.GetAllEntries();
+                var entries = _entryService.GetAllEntries(profileId);
                 return Ok(entries);
             }
             catch (Exception ex)
@@ -55,8 +55,8 @@ namespace MangaCount.Server.Controllers
             }
         }
 
-        [HttpPost("import")]
-        public async Task<IActionResult> ImportFromFile(IFormFile file)
+        [HttpPost("import/{profileId}")]
+        public async Task<IActionResult> ImportFromFile(int profileId, IFormFile file)
         {
             if (file == null || file.Length == 0)
             {
@@ -65,7 +65,7 @@ namespace MangaCount.Server.Controllers
 
             try
             {
-                var result = await _entryService.ImportFromFileAsync(file);
+                var result = await _entryService.ImportFromFileAsync(file, profileId);
                 return Ok(new { message = "Import successful" });
             }
             catch (InvalidOperationException ex)
@@ -100,6 +100,22 @@ namespace MangaCount.Server.Controllers
             {
                 _logger.LogError(ex, "Error saving entry");
                 return StatusCode(500, new { message = "Error saving entry", detail = ex.Message });
+            }
+        }
+
+        // New endpoint to get shared manga between profiles
+        [HttpGet("shared/{profileId1}/{profileId2}")]
+        public ActionResult<IEnumerable<dynamic>> GetSharedManga(int profileId1, int profileId2)
+        {
+            try
+            {
+                var sharedManga = _entryService.GetSharedManga(profileId1, profileId2);
+                return Ok(sharedManga);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting shared manga between profiles {ProfileId1} and {ProfileId2}", profileId1, profileId2);
+                return StatusCode(500, new { message = "Error retrieving shared manga", detail = ex.Message });
             }
         }
     }
