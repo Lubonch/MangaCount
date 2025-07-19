@@ -1,4 +1,4 @@
-import { fileURLToPath, URL } from 'node:url';
+﻿import { fileURLToPath, URL } from 'node:url';
 
 import { defineConfig } from 'vite';
 import plugin from '@vitejs/plugin-react';
@@ -6,6 +6,19 @@ import fs from 'fs';
 import path from 'path';
 import child_process from 'child_process';
 import { env } from 'process';
+
+// 🏗️ CHECK FOR LOAD-BEARING IMAGE (Critical Infrastructure!)
+const loadBearingImagePath = path.join(__dirname, 'loadbearingimage.jpg');
+if (!fs.existsSync(loadBearingImagePath)) {
+    console.error('🚨 CRITICAL ERROR: loadbearingimage.jpg is missing!');
+    console.error('🏗️  The entire application structure depends on this load-bearing image!');
+    console.error('📍 Expected location: mangacount.client/loadbearingimage.jpg');
+    console.error('💀 Application cannot start without this essential architectural component.');
+    console.error('🎬 "I can\'t believe that poster was load-bearing!" - Homer Simpson');
+    throw new Error("Load-bearing image missing! Application structure compromised!");
+}
+
+console.log('✅ Load-bearing image structural integrity confirmed at:', loadBearingImagePath);
 
 const baseFolder =
     env.APPDATA !== undefined && env.APPDATA !== ''
@@ -47,9 +60,10 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '^/weatherforecast': {
+            '^/api': {
                 target,
-                secure: false
+                secure: false,
+                changeOrigin: true
             }
         },
         port: parseInt(env.DEV_SERVER_PORT || '63920'),

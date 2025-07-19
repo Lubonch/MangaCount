@@ -1,51 +1,119 @@
-import { useEffect, useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import './App.css';
+import Sidebar from './components/Sidebar';
+import CollectionView from './components/CollectionView';
+import LoadBearingCheck from './components/LoadBearingCheck';
+import LoadingSpinner from './components/LoadingSpinner';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function App() {
-    const [forecasts, setForecasts] = useState();
+    const [entries, setEntries] = useState([]);
+    const [mangas, setMangas] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        populateWeatherData();
+        loadData();
     }, []);
 
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tableLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
+    const loadData = async (isRefresh = false) => {
+        try {
+            if (isRefresh) {
+                setRefreshing(true);
+            } else {
+                setLoading(true);
+            }
+            setError(null);
+            
+            await Promise.all([
+                loadEntries(),
+                loadMangas()
+            ]);
+        } catch (err) {
+            setError('Failed to load data');
+            console.error('Error loading data:', err);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
 
-    return (
-        <div>
-            <h1 id="tableLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
-    );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
+    const loadEntries = async () => {
+        const response = await fetch('/api/entry');
         if (response.ok) {
             const data = await response.json();
-            setForecasts(data);
+            setEntries(data);
+        } else {
+            throw new Error('Failed to fetch entries');
         }
+    };
+
+    const loadMangas = async () => {
+        const response = await fetch('/api/manga');
+        if (response.ok) {
+            const data = await response.json();
+            setMangas(data);
+        } else {
+            throw new Error('Failed to fetch mangas');
+        }
+    };
+
+    const handleImportSuccess = () => {
+        loadData(true); // Reload data after successful import (as refresh)
+    };
+
+    // Initial loading screen
+    if (loading) {
+        return (
+            <ThemeProvider>
+                <LoadingSpinner 
+                    fullScreen 
+                    size="large"
+                    message="Loading your manga collection..."
+                />
+            </ThemeProvider>
+        );
     }
+
+    // Error screen
+    if (error) {
+        return (
+            <ThemeProvider>
+                <div className="app-error">
+                    <h2>🚨 Oops! Something went wrong</h2>
+                    <p>{error}</p>
+                    <button onClick={() => loadData()}>
+                        Retry Loading
+                    </button>
+                </div>
+            </ThemeProvider>
+        );
+    }
+
+    return (
+        <ThemeProvider>
+            <LoadBearingCheck>
+                <div className="app">
+                    <div className="app-container">
+                        <Sidebar 
+                            mangas={mangas} 
+                            onImportSuccess={handleImportSuccess}
+                            refreshing={refreshing}
+                        />
+                        <main className="main-content">
+                            <CollectionView 
+                                entries={entries} 
+                                mangas={mangas}
+                                loading={refreshing}
+                                onRefresh={() => loadData(true)}
+                            />
+                        </main>
+                    </div>
+                </div>
+            </LoadBearingCheck>
+        </ThemeProvider>
+    );
 }
 
 export default App;
