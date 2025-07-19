@@ -16,26 +16,33 @@ namespace MangaCount.Server.Configs
                 //Configuring Model to DTO
                 cfg.CreateMap<EntryModel, EntryDTO>();
                 cfg.CreateMap<MangaModel, MangaDTO>();
+                cfg.CreateMap<ProfileModel, ProfileDTO>();
 
                 //Configuring DTO to Model
                 cfg.CreateMap<EntryDTO, EntryModel>();
                 cfg.CreateMap<MangaDTO, MangaModel>();
+                cfg.CreateMap<ProfileDTO, ProfileModel>();
 
                 //Configuring DTO to Domain
                 cfg.CreateMap<EntryDTO, Entry>();
                 cfg.CreateMap<MangaDTO, Manga>();
+                cfg.CreateMap<ProfileDTO, Domain.Profile>();
 
                 //Configuring Domain to DTO
                 cfg.CreateMap<Entry, EntryDTO>();
                 cfg.CreateMap<Manga, MangaDTO>();
+                cfg.CreateMap<Domain.Profile, ProfileDTO>();
 
                 //Coinfiguring Domain to Model
                 cfg.CreateMap<Entry, EntryModel>();
                 cfg.CreateMap<Manga, MangaModel>();
+                cfg.CreateMap<Domain.Profile, ProfileModel>();
 
                 //configuring Model to Domain
                 cfg.CreateMap<EntryModel, Entry>();
                 cfg.CreateMap<MangaModel, Manga>();
+                cfg.CreateMap<ProfileModel, Domain.Profile>();
+
             }, new LoggerFactory());
             //Create an Instance of Mapper and return that Instance
             var mapper = new Mapper(config);

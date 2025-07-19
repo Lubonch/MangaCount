@@ -6,7 +6,8 @@ const AddEntryModal = ({
     onClose, 
     mangas, 
     onSuccess, 
-    editEntry = null
+    editEntry = null,
+    selectedProfile // Add this prop
 }) => {
     const [formData, setFormData] = useState({
         mangaId: '',
@@ -58,9 +59,10 @@ const AddEntryModal = ({
         try {
             const selectedManga = mangas.find(m => m.id === parseInt(formData.mangaId));
             const entryData = {
-                id: editEntry ? editEntry.id : 0, // 0 for create, existing ID for update
+                id: editEntry ? editEntry.id : 0,
                 manga: selectedManga,
                 mangaId: parseInt(formData.mangaId),
+                profileId: selectedProfile ? selectedProfile.id : 1, // Use selected profile
                 quantity: parseInt(formData.quantity),
                 pending: formData.pending || null,
                 priority: formData.priority

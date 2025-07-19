@@ -13,24 +13,24 @@ namespace MangaCount.Server.Services
         private IEntryRepository _entryRepository;
         private IMangaRepository _mangaRepository;
         private Mapper mapper;
+        
         public EntryService(IEntryRepository entryRepository, IMangaRepository mangaRepository)
         {
             _entryRepository = entryRepository;
             _mangaRepository = mangaRepository;
             mapper = MapperConfig.InitializeAutomapper();
         }
-        public List<EntryModel> GetAllEntries()
+        
+        public List<EntryModel> GetAllEntries(int? profileId = null)
         {
-            var mangaList = _entryRepository.GetAllEntries();
-
-            return mapper.Map<List<EntryModel>>(mangaList);
+            var entryList = _entryRepository.GetAllEntries(profileId);
+            return mapper.Map<List<EntryModel>>(entryList);
         }
 
         public EntryModel GetEntryById(int Id)
         {
-            var manga = _entryRepository.GetById(Id);
-
-            return mapper.Map<EntryModel>(manga);
+            var entry = _entryRepository.GetById(Id);
+            return mapper.Map<EntryModel>(entry);
         }
         
         public HttpResponseMessage ImportFromFile(String filePath)
@@ -60,7 +60,7 @@ namespace MangaCount.Server.Services
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
 
-        public async Task<HttpResponseMessage> ImportFromFileAsync(IFormFile file)
+        public async Task<HttpResponseMessage> ImportFromFileAsync(IFormFile file, int profileId)
         {
             if (!CheckFileType(file.FileName))
             {
@@ -69,11 +69,24 @@ namespace MangaCount.Server.Services
 
             try
             {
-                IList<Domain.Entry> entryList = await GetFileDataFromUpload(file);
+                IList<Domain.Entry> entryList = await GetFileDataFromUpload(file, profileId);
                 
                 foreach (Domain.Entry entry in entryList)
                 {
-                    entry.MangaId = _mangaRepository.Create(entry.Manga).Id;
+                    // Check if manga already exists, create if not
+                    var existingManga = _mangaRepository.GetAllMangas()
+                        .FirstOrDefault(m => m.Name.Equals(entry.Manga.Name, StringComparison.OrdinalIgnoreCase));
+                    
+                    if (existingManga != null)
+                    {
+                        entry.MangaId = existingManga.Id;
+                        entry.Manga = existingManga;
+                    }
+                    else
+                    {
+                        entry.MangaId = _mangaRepository.Create(entry.Manga).Id;
+                    }
+                    
                     _entryRepository.Create(entry);
                 }
 
@@ -86,7 +99,43 @@ namespace MangaCount.Server.Services
             }
         }
 
-        private async Task<IList<Domain.Entry>> GetFileDataFromUpload(IFormFile file)
+        public List<dynamic> GetSharedManga(int profileId1, int profileId2)
+        {
+            var entries = _entryRepository.GetEntriesByProfileIds(profileId1, profileId2);
+            
+            var sharedManga = entries
+                .GroupBy(e => e.MangaId)
+                .Where(g => g.Select(e => e.ProfileId).Distinct().Count() > 1) // Both profiles have this manga
+                .Select(g => new
+                {
+                    MangaId = g.Key,
+                    MangaName = g.First().Manga.Name,
+                    TotalVolumes = g.First().Manga.Volumes,
+                    Profile1Entry = g.FirstOrDefault(e => e.ProfileId == profileId1),
+                    Profile2Entry = g.FirstOrDefault(e => e.ProfileId == profileId2)
+                })
+                .Select(x => new
+                {
+                    x.MangaId,
+                    x.MangaName,
+                    x.TotalVolumes,
+                    Profile1Quantity = x.Profile1Entry?.Quantity ?? 0,
+                    Profile2Quantity = x.Profile2Entry?.Quantity ?? 0,
+                    Profile1Pending = x.Profile1Entry?.Pending,
+                    Profile2Pending = x.Profile2Entry?.Pending,
+                    Profile1Priority = x.Profile1Entry?.Priority ?? false,
+                    Profile2Priority = x.Profile2Entry?.Priority ?? false,
+                    CombinedQuantity = (x.Profile1Entry?.Quantity ?? 0) + (x.Profile2Entry?.Quantity ?? 0),
+                    IsCollectionComplete = x.TotalVolumes.HasValue && 
+                        ((x.Profile1Entry?.Quantity ?? 0) + (x.Profile2Entry?.Quantity ?? 0)) >= x.TotalVolumes.Value
+                })
+                .Cast<dynamic>()
+                .ToList();
+
+            return sharedManga;
+        }
+
+        private async Task<IList<Domain.Entry>> GetFileDataFromUpload(IFormFile file, int profileId)
         {
             IList<Domain.Entry> entryList = new List<Domain.Entry>();
             
@@ -113,6 +162,7 @@ namespace MangaCount.Server.Services
                                         Volumes = int.TryParse(item[2], out value) ? value : null 
                                     },
                                     MangaId = 0,
+                                    ProfileId = profileId, // NEW: Set the profile ID
                                     Quantity = int.TryParse(item[1], out value) ? value : 0,
                                     Pending = item.Length > 3 ? item[3] : null,
                                     Priority = item.Length > 5 ? Boolean.Parse(item[5]) : false
@@ -153,6 +203,7 @@ namespace MangaCount.Server.Services
                                 {
                                     Manga = new Domain.Manga() { Name = item[0], Volumes = int.TryParse(item[2], out value) ? value : null },
                                     MangaId = 0,
+                                    ProfileId = 1, // Default profile for legacy imports
                                     Quantity = int.TryParse(item[1], out value) ? value : 0,
                                     Pending = item[3],
                                     Priority = Boolean.Parse(item[5])
@@ -190,6 +241,7 @@ namespace MangaCount.Server.Services
 
             return result;
         }
+        
         private bool CheckFileType(string fileName)
         {
             string ext = Path.GetExtension(fileName);
