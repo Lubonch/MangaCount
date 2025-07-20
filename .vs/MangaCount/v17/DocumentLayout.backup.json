@@ -1,7 +1,12 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\tendo\\source\\repos\\MangaCount\\",
-  "Documents": [],
+  "WorkspaceRootPath": "C:\\repos\\MangaCount\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\test\\setup.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\test\\setup.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +14,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,6 +47,19 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "setup.js",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\setup.js",
+              "RelativeDocumentMoniker": "mangacount.client\\src\\test\\setup.js",
+              "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\setup.js",
+              "RelativeToolTip": "mangacount.client\\src\\test\\setup.js",
+              "ViewState": "AgIAAB0AAAAAAAAAAADgvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2025-07-20T02:44:07.64Z",
+              "EditorCaption": ""
             }
           ]
         }
