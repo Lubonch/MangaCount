@@ -1,0 +1,834 @@
+.collection-view {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+
+.collection-header {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.collection-header h1 {
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    font-size: 1.8em;
+}
+
+.collection-stats {
+    color: var(--text-secondary);
+    font-size: 0.95em;
+    margin-bottom: 10px;
+}
+
+.status-summary {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.status-count {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 14px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-size: 0.9em;
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.status-count:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px var(--shadow-hover);
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot.complete {
+    background-color: var(--color-complete);
+}
+
+.status-dot.priority-incomplete {
+    background-color: var(--color-priority);
+}
+
+.status-dot.incomplete {
+    background-color: var(--color-incomplete);
+}
+
+.collection-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 12px;
+    background-color: var(--bg-secondary);
+    border-radius: 6px;
+    box-shadow: 0 1px 3px var(--shadow);
+    flex-wrap: wrap;
+    align-items: center;
+    border: 1px solid var(--border-color);
+}
+
+.view-controls,
+.filter-controls,
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.view-controls label,
+.filter-controls label,
+.sort-controls label {
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    font-size: 0.9em;
+}
+
+.view-controls select,
+.filter-controls select,
+.sort-controls select {
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.9em;
+    min-width: 150px;
+    box-shadow: 0 1px 2px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.view-controls select:focus,
+.filter-controls select:focus,
+.sort-controls select:focus {
+    outline: none;
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.view-controls select option,
+.filter-controls select option,
+.sort-controls select option {
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+    padding: 4px;
+}
+
+/* TABLE VIEW */
+.table-container {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.entries-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+    color: var(--text-primary);
+}
+
+.entries-table th {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 10px 8px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.85em;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.entries-table td {
+    padding: 8px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.table-row.complete {
+    background-color: var(--bg-complete);
+}
+
+.table-row.priority-incomplete {
+    background-color: var(--bg-priority);
+}
+
+.table-row.incomplete {
+    background-color: var(--bg-incomplete);
+}
+
+.table-row:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.title-cell {
+    max-width: 200px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+
+.status-cell {
+    text-align: center;
+    width: 60px;
+}
+
+.progress-cell {
+    min-width: 120px;
+}
+
+.table-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-text {
+    font-size: 0.85em;
+    min-width: 60px;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+
+.table-progress-bar {
+    flex: 1;
+    height: 4px;
+    background-color: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.table-progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.table-progress-fill.complete {
+    background-color: var(--color-complete);
+}
+
+.table-progress-fill.priority-incomplete {
+    background-color: var(--color-priority);
+}
+
+.table-progress-fill.incomplete {
+    background-color: var(--color-incomplete);
+}
+
+.completion-cell {
+    text-align: center;
+    width: 70px;
+}
+
+.completion-percent {
+    font-weight: 500;
+    font-size: 0.85em;
+}
+
+.completion-percent.complete {
+    color: var(--color-complete);
+}
+
+.completion-percent.priority-incomplete {
+    color: var(--color-priority);
+}
+
+.completion-percent.incomplete {
+    color: var(--color-incomplete);
+}
+
+.pending-cell {
+    max-width: 140px;
+    font-size: 0.8em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pending-text {
+    color: var(--color-priority);
+}
+
+.priority-cell {
+    text-align: center;
+    width: 60px;
+}
+
+.priority-indicator {
+    color: var(--color-priority);
+    font-size: 1.1em;
+}
+
+/* COMPACT VIEW */
+.compact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+}
+
+.compact-card {
+    background-color: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 1px 3px var(--shadow);
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--border-color);
+}
+
+.compact-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+}
+
+.compact-card.complete {
+    border-left-color: var(--color-complete);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-complete) 100%);
+}
+
+.compact-card.priority-incomplete {
+    border-left-color: var(--color-priority);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-priority) 100%);
+}
+
+.compact-card.incomplete {
+    border-left-color: var(--color-incomplete);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-incomplete) 100%);
+}
+
+.compact-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+}
+
+.compact-title {
+    font-weight: 500;
+    font-size: 0.85em;
+    line-height: 1.2;
+    flex: 1;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 4px;
+}
+
+.compact-badges {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.compact-priority {
+    color: var(--color-priority);
+    font-size: 0.8em;
+}
+
+.compact-status {
+    font-size: 0.9em;
+}
+
+.compact-progress {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 0.8em;
+}
+
+.compact-numbers {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.compact-percent {
+    font-weight: 500;
+    font-size: 0.75em;
+}
+
+.compact-percent.complete {
+    color: var(--color-complete);
+}
+
+.compact-percent.priority-incomplete {
+    color: var(--color-priority);
+}
+
+.compact-percent.incomplete {
+    color: var(--color-incomplete);
+}
+
+.compact-bar {
+    height: 3px;
+    background-color: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.compact-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.compact-fill.complete {
+    background-color: var(--color-complete);
+}
+
+.compact-fill.priority-incomplete {
+    background-color: var(--color-priority);
+}
+
+.compact-fill.incomplete {
+    background-color: var(--color-incomplete);
+}
+
+.compact-pending {
+    font-size: 0.7em;
+    color: var(--color-priority);
+    background-color: var(--bg-pending);
+    padding: 3px 5px;
+    border-radius: 3px;
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ORIGINAL CARDS VIEW */
+.entries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 14px;
+}
+
+.entry-card {
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 1px 4px var(--shadow);
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--border-color);
+}
+
+.entry-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px var(--shadow-hover);
+}
+
+.entry-card.complete {
+    border-left-color: var(--color-complete);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-complete) 100%);
+}
+
+.entry-card.priority-incomplete {
+    border-left-color: var(--color-priority);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-priority) 100%);
+}
+
+.entry-card.incomplete {
+    border-left-color: var(--color-incomplete);
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-incomplete) 100%);
+}
+
+.entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.manga-title {
+    color: var(--text-primary);
+    font-size: 1.05em;
+    margin: 0;
+    line-height: 1.3;
+    flex: 1;
+    margin-right: 8px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.entry-badges {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.priority-badge {
+    background-color: var(--color-incomplete);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 0.7em;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-badge {
+    font-size: 1.1em;
+    padding: 2px;
+}
+
+.entry-details {
+    space-y: 10px;
+}
+
+.quantity-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.owned {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.95em;
+}
+
+.total {
+    color: var(--text-secondary);
+    font-size: 0.95em;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 5px;
+    background-color: var(--border-light);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progress-fill.complete {
+    background-color: var(--color-complete);
+}
+
+.progress-fill.priority-incomplete {
+    background-color: var(--color-priority);
+}
+
+.progress-fill.incomplete {
+    background-color: var(--color-incomplete);
+}
+
+.percentage {
+    font-size: 0.85em;
+    font-weight: 500;
+    min-width: 35px;
+}
+
+.percentage.complete {
+    color: var(--color-complete);
+}
+
+.percentage.priority-incomplete {
+    color: var(--color-priority);
+}
+
+.percentage.incomplete {
+    color: var(--color-incomplete);
+}
+
+.pending-info {
+    color: var(--color-priority);
+    font-size: 0.85em;
+    background-color: var(--bg-pending);
+    padding: 6px 8px;
+    border-radius: 4px;
+    border-left: 3px solid var(--color-priority);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    border: 1px solid var(--color-priority);
+}
+
+.empty-collection {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 1.1em;
+}
+
+.reset-filter {
+    margin-top: 15px;
+    padding: 8px 16px;
+    background-color: var(--color-info);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95em;
+}
+
+.reset-filter:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+}
+
+/* Add these styles to your existing CSS file */
+
+/* Action buttons styling */
+.actions-cell {
+    width: 120px;
+    text-align: center;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+}
+
+.quick-btn {
+    background: var(--color-complete);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.quick-btn:hover {
+    background: #219a52;
+    transform: scale(1.05);
+}
+
+.quick-btn.plus-one {
+    background: var(--color-complete);
+}
+
+.quick-btn.compact {
+    padding: 2px 6px;
+    font-size: 0.7em;
+}
+
+.edit-btn {
+    background: var(--color-info);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-btn:hover {
+    background: #2980b9;
+    transform: scale(1.05);
+}
+
+.edit-btn.compact {
+    padding: 2px 6px;
+    font-size: 0.7em;
+}
+
+.edit-manga-btn {
+    background: #9b59b6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.edit-manga-btn:hover {
+    background: #8e44ad;
+    transform: translateY(-1px);
+}
+
+/* Card actions styling */
+.card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.card-actions .quick-btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.85em;
+}
+
+.card-actions .edit-btn,
+.card-actions .edit-manga-btn {
+    flex: 1;
+    padding: 8px 12px;
+    font-size: 0.85em;
+}
+
+/* Compact actions styling */
+.compact-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    justify-content: space-between;
+}
+
+/* Quantity input group for modals */
+.quantity-input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quantity-input-group input {
+    flex: 1;
+}
+
+.quantity-input-group .quick-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.quantity-input-group .quick-btn {
+    min-width: 35px;
+    padding: 8px 6px;
+    font-size: 0.85em;
+}
+
+.quantity-input-group .quick-btn.minus {
+    background: var(--color-incomplete);
+}
+
+.quantity-input-group .quick-btn.minus:hover {
+    background: #c0392b;
+}
+
+/* RESPONSIVE DESIGN */
+@media (min-width: 1200px) {
+    .entries-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    .compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    }
+}
+
+@media (min-width: 1400px) {
+    .entries-grid {
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+    
+    .compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+}
+
+@media (min-width: 1600px) {
+    .entries-grid {
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    }
+    
+    .compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+}
+
+@media (min-width: 1800px) {
+    .entries-grid {
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    }
+    
+    .compact-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .collection-controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .status-summary {
+        gap: 12px;
+    }
+    
+    .view-controls,
+    .filter-controls,
+    .sort-controls {
+        width: 100%;
+    }
+    
+    .view-controls select,
+    .filter-controls select,
+    .sort-controls select {
+        min-width: auto;
+        width: 100%;
+        max-width: none;
+    }
+    
+    .view-controls label,
+    .filter-controls label,
+    .sort-controls label {
+        white-space: normal;
+    }
+    
+    .entries-table {
+        font-size: 0.8em;
+    }
+    
+    .entries-table th,
+    .entries-table td {
+        padding: 6px 4px;
+    }
+}
+
+@media (max-width: 480px) {
+    .collection-view {
+        padding: 0;
+    }
+    
+    .compact-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .entries-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .status-count {
+        font-size: 0.8em;
+        padding: 4px 6px;
+    }
+}
