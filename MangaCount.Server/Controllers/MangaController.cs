@@ -36,7 +36,7 @@ namespace MangaCount.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrUpdateManga([FromBody] Model.MangaModel mangaModel)
+        public IActionResult CreateOrUpdateManga([FromBody] Model.MangaModel mangaModel)
         {
             try
             {

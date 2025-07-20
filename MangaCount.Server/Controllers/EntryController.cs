@@ -80,7 +80,7 @@ namespace MangaCount.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrUpdateEntry([FromBody] Model.EntryModel entryModel)
+        public IActionResult CreateOrUpdateEntry([FromBody] Model.EntryModel entryModel)
         {
             try
             {

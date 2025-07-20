@@ -56,3 +56,6 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
+
+// Make the implicit Program class accessible for testing
+public partial class Program { }
