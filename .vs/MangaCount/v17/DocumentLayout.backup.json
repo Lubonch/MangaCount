@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\repos\\MangaCount\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\eslint.config.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\eslint.config.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\repos\\MangaCount\\.github\\workflows\\ci-with-coverage.yml||{8B382828-6202-11D1-8870-0000F87579D2}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:.github\\workflows\\ci-with-coverage.yml||{8B382828-6202-11D1-8870-0000F87579D2}"
     }
@@ -14,8 +18,21 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 9,
+          "SelectedChildIndex": 0,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "eslint.config.js",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\eslint.config.js",
+              "RelativeDocumentMoniker": "mangacount.client\\eslint.config.js",
+              "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\eslint.config.js",
+              "RelativeToolTip": "mangacount.client\\eslint.config.js",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAFQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2025-07-20T04:07:44.143Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Bookmark",
               "Name": "ST:129:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
@@ -54,13 +71,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "ci-with-coverage.yml",
               "DocumentMoniker": "C:\\repos\\MangaCount\\.github\\workflows\\ci-with-coverage.yml",
               "RelativeDocumentMoniker": ".github\\workflows\\ci-with-coverage.yml",
               "ToolTip": "C:\\repos\\MangaCount\\.github\\workflows\\ci-with-coverage.yml",
               "RelativeToolTip": ".github\\workflows\\ci-with-coverage.yml",
-              "ViewState": "AgIAAO0AAAAAAAAAAAAiwCIAAAAVAAAAAAAAAA==",
+              "ViewState": "AgIAAPMAAAAAAAAAAAAiwCIAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
               "WhenOpened": "2025-07-20T03:40:28.028Z",
               "EditorCaption": ""
