@@ -18,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 10,
+          "SelectedChildIndex": 11,
           "Children": [
             {
               "$type": "Bookmark",
@@ -61,6 +61,10 @@
               "Name": "ST:0:0:{0174dea2-fdbe-4ef1-8f99-c0beae78880f}"
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "ci-with-coverage.yml",
@@ -68,7 +72,7 @@
               "RelativeDocumentMoniker": ".github\\workflows\\ci-with-coverage.yml",
               "ToolTip": "C:\\repos\\MangaCount\\.github\\workflows\\ci-with-coverage.yml",
               "RelativeToolTip": ".github\\workflows\\ci-with-coverage.yml",
-              "ViewState": "AgIAACwAAAAAAAAAAAD4v0EAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADAAAAAAAAAAAAAAwEcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
               "WhenOpened": "2025-07-20T04:14:40.607Z",
               "EditorCaption": ""
