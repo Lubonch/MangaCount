@@ -46,9 +46,8 @@ namespace MangaCount.Server.Services
                         _entryRepository.Create(entry);
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    //TODO error logging
                     throw;
                 }
             }
@@ -91,9 +90,8 @@ namespace MangaCount.Server.Services
 
                 return new HttpResponseMessage(HttpStatusCode.OK);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //TODO error logging
                 throw;
             }
         }
@@ -172,9 +170,8 @@ namespace MangaCount.Server.Services
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //TODO error logging
                 throw;
             }
 

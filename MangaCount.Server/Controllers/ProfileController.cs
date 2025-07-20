@@ -56,7 +56,7 @@ namespace MangaCount.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrUpdateProfile([FromBody] ProfileModel profileModel)
+        public IActionResult CreateOrUpdateProfile([FromBody] ProfileModel profileModel)
         {
             try
             {
