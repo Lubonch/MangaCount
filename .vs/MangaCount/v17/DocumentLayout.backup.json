@@ -5,6 +5,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\test\\setup.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\test\\setup.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\repos\\MangaCount\\MangaCount.Server.Tests\\MangaCount.Server.Tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:MangaCount.Server.Tests\\MangaCount.Server.Tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -14,7 +18,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 8,
+          "SelectedChildIndex": 9,
           "Children": [
             {
               "$type": "Bookmark",
@@ -49,6 +53,10 @@
               "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "setup.js",
@@ -56,9 +64,22 @@
               "RelativeDocumentMoniker": "mangacount.client\\src\\test\\setup.js",
               "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\setup.js",
               "RelativeToolTip": "mangacount.client\\src\\test\\setup.js",
-              "ViewState": "AgIAAB0AAAAAAAAAAADgvwAAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2025-07-20T02:44:07.64Z",
+              "WhenOpened": "2025-07-20T03:28:43.997Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MangaCount.Server.Tests.csproj",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\MangaCount.Server.Tests\\MangaCount.Server.Tests.csproj",
+              "RelativeDocumentMoniker": "MangaCount.Server.Tests\\MangaCount.Server.Tests.csproj",
+              "ToolTip": "C:\\repos\\MangaCount\\MangaCount.Server.Tests\\MangaCount.Server.Tests.csproj",
+              "RelativeToolTip": "MangaCount.Server.Tests\\MangaCount.Server.Tests.csproj",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-07-20T03:25:53.809Z",
               "EditorCaption": ""
             }
           ]
