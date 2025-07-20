@@ -1,0 +1,288 @@
+####################
+# .NET 8 / ASP.NET Core
+####################
+
+# Build outputs
+bin/
+obj/
+out/
+publish/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+
+# Project artifacts
+project.lock.json
+project.fragment.lock.json
+artifacts/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.code-workspace
+.localhistory/
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# .NET Tools
+.fake/
+.paket/paket.exe
+paket-files/
+.ionide/
+
+# MSBuild and related
+*.binlog
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+FodyWeavers.xsd
+
+# Database files
+*.mdf
+*.ldf
+*.ndf
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+
+####################
+# React / Vite / Node.js
+####################
+
+# Dependencies
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+.next/
+out/
+.nuxt/
+
+# Vite specific
+.vite/
+*.local
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# Cache files
+.npm/
+.yarn-integrity
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Package files
+*.tgz
+*.tar.gz
+
+# Storybook build outputs
+.out/
+.storybook-out/
+storybook-static/
+
+####################
+# Configuration & Security
+####################
+
+# Sensitive configuration files
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Local.json
+# Keep appsettings.json for base configuration
+
+# SSL certificates and keys
+*.pfx
+*.p12
+*.key
+*.crt
+*.cer
+*.pem
+# Development certificates (auto-generated)
+**/.aspnet/https/
+
+# Connection strings and secrets
+secrets.json
+*.secrets.json
+user-secrets/
+
+####################
+# OS Generated Files
+####################
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+####################
+# IDE and Editors
+####################
+
+# JetBrains
+.idea/
+*.sln.iml
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+####################
+# MangaCount Project Specific
+####################
+
+# Upload directories
+uploads/
+wwwroot/uploads/
+temp-uploads/
+
+# Custom logs
+Logs/
+*.custom.log
+
+# Keep your load-bearing images! 🏗️
+# loadbearingimage.jpg
+# mangacount.client/loadbearingimage.jpg
+
+# TSV import files (optional - uncomment if you don't want to track sample files)
+# *.tsv
+# sample-data/
+
+# Local development database backups
+*.bak
+*.backup
+
+####################
+# Package Managers
+####################
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!packages/build/
+!packages/repositories.config
+
+# npm/yarn/pnpm
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.pnpm-store/
+
+####################
+# Temporary files
+####################
+*.tmp
+*.temp
+*.swp
+*.swo
+.DS_Store?

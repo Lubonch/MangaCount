@@ -1,0 +1,2 @@
+C:\Users\tendo\source\repos\MangaCount\mangacount.client\obj\Debug\mangacount.client.esproj.CoreCompileInputs.cache
+C:\repos\MangaCount\mangacount.client\obj\Debug\mangacount.client.esproj.CoreCompileInputs.cache
