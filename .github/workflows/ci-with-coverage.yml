@@ -46,13 +46,23 @@ jobs:
 
     - name: Generate backend coverage report
       run: |
-        reportgenerator \
-          -reports:"./coverage/backend/**/coverage.cobertura.xml" \
-          -targetdir:"./coverage/backend/report" \
-          -reporttypes:"Html;JsonSummary;Badges;TextSummary"
-
+        if ls ./coverage/backend/**/coverage.cobertura.xml 1> /dev/null 2>&1; then
+          reportgenerator \
+            -reports:"./coverage/backend/**/coverage.cobertura.xml" \
+            -targetdir:"./coverage/backend/report" \
+            -reporttypes:"Html;JsonSummary;Badges;TextSummary"
+        else
+          echo "No coverage files found. Creating empty report directory."
+          mkdir -p ./coverage/backend/report
+          echo "No test coverage data available yet." > ./coverage/backend/report/Summary.txt
+        fi
     - name: Display backend coverage summary
-      run: cat ./coverage/backend/report/Summary.txt
+      run: |
+        if [ -f ./coverage/backend/report/Summary.txt ]; then
+          cat ./coverage/backend/report/Summary.txt
+        else
+          echo "No backend coverage summary available."
+        fi
 
     - name: Upload backend coverage to GitHub
       uses: actions/upload-artifact@v4
