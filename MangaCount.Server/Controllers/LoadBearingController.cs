@@ -21,14 +21,13 @@ namespace MangaCount.Server.Controllers
             
             if (!exists)
             {
-                _logger.LogCritical("🚨 STRUCTURAL INTEGRITY COMPROMISED! Load-bearing image missing!");
+                _logger.LogCritical("STRUCTURAL INTEGRITY COMPROMISED! Load-bearing image missing!");
                 return StatusCode(500, new 
                 { 
                     status = "CRITICAL_FAILURE",
-                    message = "Load-bearing image missing! Building may collapse!",
+                    message = "Ah, I wouldn't take it down if I were you. It's a load-bearing image.",
                     structuralIntegrity = "COMPROMISED",
-                    recommendation = "Evacuate immediately and restore loadbearingimage.jpg",
-                    simpsonsQuote = "I can't believe that poster was load-bearing!"
+                    recommendation = "Restore loadbearingimage.jpg immediately"
                 });
             }
 
@@ -40,8 +39,6 @@ namespace MangaCount.Server.Controllers
                 structuralIntegrity = "CONFIRMED",
                 imageSize = fileInfo.Length,
                 lastModified = fileInfo.LastWriteTime,
-                bearingLoad = "ENTIRE_SERVER_APPLICATION",
-                simpsonsReference = "S9E21 - Girder: That poster was holding up the whole building!",
                 location = imagePath
             });
         }
@@ -53,7 +50,7 @@ namespace MangaCount.Server.Controllers
             
             if (!System.IO.File.Exists(imagePath))
             {
-                return NotFound(new { message = "💀 Load-bearing image not found! Structure compromised!" });
+                return NotFound(new { message = "Load-bearing image not found! Structure compromised!" });
             }
 
             var imageBytes = System.IO.File.ReadAllBytes(imagePath);
