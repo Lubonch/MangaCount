@@ -6,6 +6,11 @@ on:
   push:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   # Backend .NET tests with coverage
   backend-tests:
@@ -56,6 +61,7 @@ jobs:
           mkdir -p ./coverage/backend/report
           echo "No test coverage data available yet." > ./coverage/backend/report/Summary.txt
         fi
+
     - name: Display backend coverage summary
       run: |
         if [ -f ./coverage/backend/report/Summary.txt ]; then
