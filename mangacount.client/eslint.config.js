@@ -41,7 +41,8 @@ export default [
       ],
       'no-unused-vars': ['error', { 
         varsIgnorePattern: '^[A-Z_]|^profiles$|^handleEditManga$|^error$|^result$|^user$',
-        argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing'
+        argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing',
+        caughtErrorsIgnorePattern: '^error$' // Add this to ignore catch block errors
       }],
       'no-undef': 'error',
       'no-case-declarations': 'off',
@@ -65,7 +66,8 @@ export default [
     rules: {
       'no-unused-vars': ['error', { 
         varsIgnorePattern: '^[A-Z_]|^profiles$|^handleEditManga$|^error$|^result$|^user$',
-        argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing'
+        argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing',
+        caughtErrorsIgnorePattern: '^error$' // Add this for test files too
       }],
       'react-refresh/only-export-components': 'off',
     }
