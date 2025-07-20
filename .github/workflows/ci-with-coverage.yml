@@ -32,7 +32,7 @@ jobs:
 
     - name: Run backend tests with coverage
       run: |
-        dotnet test MangaCount.Server.Tests/ \
+        dotnet test \
           --no-build \
           --configuration Release \
           --verbosity normal \
