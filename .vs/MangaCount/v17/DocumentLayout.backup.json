@@ -3,10 +3,6 @@
   "WorkspaceRootPath": "C:\\repos\\MangaCount\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\test\\app.test.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\test\\app.test.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\test\\setup.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
       "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\test\\setup.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
     }
@@ -55,27 +51,14 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "App.test.jsx",
-              "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\App.test.jsx",
-              "RelativeDocumentMoniker": "mangacount.client\\src\\test\\App.test.jsx",
-              "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\App.test.jsx",
-              "RelativeToolTip": "mangacount.client\\src\\test\\App.test.jsx",
-              "ViewState": "AgIAAI0AAAAAAAAAAAAiwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
-              "WhenOpened": "2025-07-20T02:41:45.076Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
               "Title": "setup.js",
               "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\setup.js",
               "RelativeDocumentMoniker": "mangacount.client\\src\\test\\setup.js",
               "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\src\\test\\setup.js",
               "RelativeToolTip": "mangacount.client\\src\\test\\setup.js",
-              "ViewState": "AgIAABYAAAAAAAAAAAAiwCQAAAADAAAAAAAAAA==",
+              "ViewState": "AgIAAB0AAAAAAAAAAADgvwAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2025-07-20T02:41:36.582Z",
+              "WhenOpened": "2025-07-20T02:44:07.64Z",
               "EditorCaption": ""
             }
           ]
