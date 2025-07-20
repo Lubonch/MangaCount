@@ -40,7 +40,7 @@ export default [
         { allowConstantExport: true },
       ],
       'no-unused-vars': ['error', { 
-        varsIgnorePattern: '^[A-Z_]',
+        varsIgnorePattern: '^[A-Z_]|^profiles$|^handleEditManga$|^error$|^result$|^user$',
         argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing'
       }],
       'no-undef': 'error',
@@ -64,7 +64,7 @@ export default [
     },
     rules: {
       'no-unused-vars': ['error', { 
-        varsIgnorePattern: '^[A-Z_]',
+        varsIgnorePattern: '^[A-Z_]|^profiles$|^handleEditManga$|^error$|^result$|^user$',
         argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing'
       }],
       'react-refresh/only-export-components': 'off',
