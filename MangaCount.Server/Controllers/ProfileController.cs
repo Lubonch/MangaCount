@@ -108,7 +108,9 @@ namespace MangaCount.Server.Controllers
                     await file.CopyToAsync(stream);
                 }
 
-                var profilePictureUrl = $"/profiles/{fileName}";
+                // Use API endpoint instead of static file
+                var baseUrl = $"{Request.Scheme}://{Request.Host}";
+                var profilePictureUrl = $"{baseUrl}/api/Profile/image/{fileName}";
 
                 // Update profile with new picture URL
                 var profile = _profileService.GetProfileById(profileId);
@@ -140,6 +142,39 @@ namespace MangaCount.Server.Controllers
             {
                 _logger.LogError(ex, "Error deleting profile with ID {Id}", id);
                 return StatusCode(500, new { message = "Error deleting profile", detail = ex.Message });
+            }
+        }
+
+        [HttpGet("image/{fileName}")]
+        public IActionResult GetProfileImage(string fileName)
+        {
+            try
+            {
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "profiles", fileName);
+                
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return NotFound(new { message = $"Image file {fileName} not found" });
+                }
+
+                var imageBytes = System.IO.File.ReadAllBytes(filePath);
+                var extension = Path.GetExtension(fileName).ToLowerInvariant();
+                
+                var contentType = extension switch
+                {
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".png" => "image/png",
+                    ".gif" => "image/gif",
+                    ".bmp" => "image/bmp",
+                    _ => "application/octet-stream"
+                };
+
+                return File(imageBytes, contentType);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error serving profile image {FileName}", fileName);
+                return StatusCode(500, new { message = "Error serving image", detail = ex.Message });
             }
         }
 

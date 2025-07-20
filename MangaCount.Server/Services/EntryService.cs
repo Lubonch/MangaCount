@@ -73,7 +73,6 @@ namespace MangaCount.Server.Services
                 
                 foreach (Domain.Entry entry in entryList)
                 {
-                    // Check if manga already exists, create if not
                     var existingManga = _mangaRepository.GetAllMangas()
                         .FirstOrDefault(m => m.Name.Equals(entry.Manga.Name, StringComparison.OrdinalIgnoreCase));
                     
@@ -105,7 +104,7 @@ namespace MangaCount.Server.Services
             
             var sharedManga = entries
                 .GroupBy(e => e.MangaId)
-                .Where(g => g.Select(e => e.ProfileId).Distinct().Count() > 1) // Both profiles have this manga
+                .Where(g => g.Select(e => e.ProfileId).Distinct().Count() > 1)
                 .Select(g => new
                 {
                     MangaId = g.Key,
@@ -148,7 +147,7 @@ namespace MangaCount.Server.Services
                     
                     while ((currentLine = await reader.ReadLineAsync()) != null)
                     {
-                        if (counter > 0) // Skip header row
+                        if (counter > 0)
                         {
                             string[] item = currentLine.Split("\t");
                             if (!String.IsNullOrEmpty(item[0]))
@@ -162,7 +161,7 @@ namespace MangaCount.Server.Services
                                         Volumes = int.TryParse(item[2], out value) ? value : null 
                                     },
                                     MangaId = 0,
-                                    ProfileId = profileId, // NEW: Set the profile ID
+                                    ProfileId = profileId,
                                     Quantity = int.TryParse(item[1], out value) ? value : 0,
                                     Pending = item.Length > 3 ? item[3] : null,
                                     Priority = item.Length > 5 ? Boolean.Parse(item[5]) : false
@@ -203,7 +202,7 @@ namespace MangaCount.Server.Services
                                 {
                                     Manga = new Domain.Manga() { Name = item[0], Volumes = int.TryParse(item[2], out value) ? value : null },
                                     MangaId = 0,
-                                    ProfileId = 1, // Default profile for legacy imports
+                                    ProfileId = 1,
                                     Quantity = int.TryParse(item[1], out value) ? value : 0,
                                     Pending = item[3],
                                     Priority = Boolean.Parse(item[5])
@@ -214,9 +213,8 @@ namespace MangaCount.Server.Services
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                //TODO error logging
                 throw;
             }
 

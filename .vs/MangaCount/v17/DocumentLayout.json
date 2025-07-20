@@ -1,7 +1,40 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "C:\\repos\\MangaCount\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|c:\\repos\\mangacount\\mangacount.server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|solutionrelative:mangacount.server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|c:\\repos\\mangacount\\mangacount.server\\controllers\\loadbearingcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|solutionrelative:mangacount.server\\controllers\\loadbearingcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\vite.config.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\vite.config.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|c:\\repos\\mangacount\\mangacount.server\\services\\entryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|solutionrelative:mangacount.server\\services\\entryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|c:\\repos\\mangacount\\mangacount.server\\repositories\\mangarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8D3AD5E6-E7BC-43C3-9E35-DE942DA7A96A}|MangaCount.Server\\MangaCount.Server.csproj|solutionrelative:mangacount.server\\repositories\\mangarepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\src\\app.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\src\\app.jsx||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\repos\\MangaCount\\svg mangacount.client\\public\\manga-icon.svg||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:svg mangacount.client\\public\\manga-icon.svg||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|c:\\repos\\mangacount\\mangacount.client\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{F4E781A1-6D76-5BB3-BECB-81B363E4F1A2}|mangacount.client\\mangacount.client.esproj|solutionrelative:mangacount.client\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,7 +42,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Bookmark",
@@ -42,6 +75,110 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\MangaCount.Server\\Program.cs",
+              "RelativeDocumentMoniker": "MangaCount.Server\\Program.cs",
+              "ToolTip": "C:\\repos\\MangaCount\\MangaCount.Server\\Program.cs",
+              "RelativeToolTip": "MangaCount.Server\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADkAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T01:22:56.499Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "LoadBearingController.cs",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\MangaCount.Server\\Controllers\\LoadBearingController.cs",
+              "RelativeDocumentMoniker": "MangaCount.Server\\Controllers\\LoadBearingController.cs",
+              "ToolTip": "C:\\repos\\MangaCount\\MangaCount.Server\\Controllers\\LoadBearingController.cs",
+              "RelativeToolTip": "MangaCount.Server\\Controllers\\LoadBearingController.cs",
+              "ViewState": "AgIAABoAAAAAAAAAAAAnwBkAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T01:12:05.057Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "App.jsx",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\src\\App.jsx",
+              "RelativeDocumentMoniker": "mangacount.client\\src\\App.jsx",
+              "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\src\\App.jsx",
+              "RelativeToolTip": "mangacount.client\\src\\App.jsx",
+              "ViewState": "AgIAANQAAAAAAAAAAAAAwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003663|",
+              "WhenOpened": "2025-07-20T01:10:55.895Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "MangaRepository.cs",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\MangaCount.Server\\Repositories\\MangaRepository.cs",
+              "RelativeDocumentMoniker": "MangaCount.Server\\Repositories\\MangaRepository.cs",
+              "ToolTip": "C:\\repos\\MangaCount\\MangaCount.Server\\Repositories\\MangaRepository.cs",
+              "RelativeToolTip": "MangaCount.Server\\Repositories\\MangaRepository.cs",
+              "ViewState": "AgIAABUAAAAAAAAAAAAIwDEAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T01:10:34.163Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "EntryService.cs",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\MangaCount.Server\\Services\\EntryService.cs",
+              "RelativeDocumentMoniker": "MangaCount.Server\\Services\\EntryService.cs",
+              "ToolTip": "C:\\repos\\MangaCount\\MangaCount.Server\\Services\\EntryService.cs",
+              "RelativeToolTip": "MangaCount.Server\\Services\\EntryService.cs",
+              "ViewState": "AgIAANgAAAAAAAAAAAAnwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-20T01:09:56.567Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "vite.config.js",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\vite.config.js",
+              "RelativeDocumentMoniker": "mangacount.client\\vite.config.js",
+              "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\vite.config.js",
+              "RelativeToolTip": "mangacount.client\\vite.config.js",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2025-07-20T01:09:39.336Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "manga-icon.svg",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\svg mangacount.client\\public\\manga-icon.svg",
+              "RelativeDocumentMoniker": "svg mangacount.client\\public\\manga-icon.svg",
+              "ToolTip": "C:\\repos\\MangaCount\\svg mangacount.client\\public\\manga-icon.svg",
+              "RelativeToolTip": "svg mangacount.client\\public\\manga-icon.svg",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2025-07-20T00:58:20.738Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "index.html",
+              "DocumentMoniker": "C:\\repos\\MangaCount\\mangacount.client\\index.html",
+              "RelativeDocumentMoniker": "mangacount.client\\index.html",
+              "ToolTip": "C:\\repos\\MangaCount\\mangacount.client\\index.html",
+              "RelativeToolTip": "mangacount.client\\index.html",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2025-07-20T00:56:55.825Z",
+              "EditorCaption": ""
             }
           ]
         }

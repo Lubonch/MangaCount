@@ -15,8 +15,9 @@ function App() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
-    const [appPhase, setAppPhase] = useState('loading'); // loading, profile-selection, main-app
-    const [isChangingProfile, setIsChangingProfile] = useState(false); // NEW: Track when user is changing profiles
+    const [appPhase, setAppPhase] = useState('loading');
+    const [isChangingProfile, setIsChangingProfile] = useState(false);
+    const [lastSelectedProfile, setLastSelectedProfile] = useState(null);
 
     useEffect(() => {
         initializeApp();
@@ -27,28 +28,24 @@ function App() {
             setLoading(true);
             setError(null);
             
-            // First, load profiles and check if any exist
             const loadedProfiles = await loadProfiles();
-            
-            // Load manga library (shared across profiles)
             await loadMangas();
             
-            // Check if we have profiles
             if (loadedProfiles.length === 0) {
-                // No profiles exist, force profile creation
                 setAppPhase('profile-selection');
+            } else if (loadedProfiles.length === 1) {
+                const singleProfile = loadedProfiles[0];
+                setLastSelectedProfile(singleProfile);
+                await handleProfileSelect(singleProfile, true);
             } else {
-                // Profiles exist, check if user had a previously selected profile
                 const savedProfileId = localStorage.getItem('selectedProfileId');
                 const savedProfile = loadedProfiles.find(p => p.id === parseInt(savedProfileId));
                 
                 if (savedProfile) {
-                    // Auto-load the previously selected profile
-                    await handleProfileSelect(savedProfile, false);
-                } else {
-                    // No saved profile, show selection
-                    setAppPhase('profile-selection');
+                    setLastSelectedProfile(savedProfile);
                 }
+                
+                setAppPhase('profile-selection');
             }
         } catch (err) {
             setError('Failed to initialize application');
@@ -117,13 +114,12 @@ function App() {
 
     const handleProfileSelect = async (profile, saveSelection = true) => {
         setSelectedProfile(profile);
+        setLastSelectedProfile(profile);
         setIsChangingProfile(false);
         
         try {
-            // Load entries for the selected profile
             await loadEntries(profile.id);
             
-            // Save selection to localStorage for next session
             if (saveSelection) {
                 localStorage.setItem('selectedProfileId', profile.id.toString());
             }
@@ -136,19 +132,25 @@ function App() {
     };
 
     const handleBackToProfileSelection = () => {
-        setIsChangingProfile(true); // Mark that user is actively changing profiles
+        setIsChangingProfile(true);
         setSelectedProfile(null);
         setEntries([]);
         setAppPhase('profile-selection');
-        // Reload profiles in case new ones were added
         loadProfiles();
     };
 
-    const handleImportSuccess = () => {
-        loadData(true); // Reload data after successful import (as refresh)
+    const handleBackToCollection = () => {
+        if (lastSelectedProfile) {
+            handleProfileSelect(lastSelectedProfile, false);
+        } else {
+            setIsChangingProfile(false);
+        }
     };
 
-    // Initial loading screen
+    const handleImportSuccess = () => {
+        loadData(true);
+    };
+
     if (loading && appPhase === 'loading') {
         return (
             <ThemeProvider>
@@ -161,12 +163,11 @@ function App() {
         );
     }
 
-    // Error screen
     if (error || appPhase === 'error') {
         return (
             <ThemeProvider>
                 <div className="app-error">
-                    <h2>🚨 Oops! Something went wrong</h2>
+                    <h2>Oops! Something went wrong</h2>
                     <p>{error}</p>
                     <button onClick={() => initializeApp()}>
                         Retry Loading
@@ -176,7 +177,6 @@ function App() {
         );
     }
 
-    // Profile selection screen
     if (appPhase === 'profile-selection') {
         return (
             <ThemeProvider>
@@ -186,12 +186,10 @@ function App() {
                             <ProfileSelector 
                                 onProfileSelect={handleProfileSelect}
                                 selectedProfileId={selectedProfile?.id}
-                                isChangingProfile={isChangingProfile} // Pass this flag
-                                showBackButton={isChangingProfile} // Show back button when changing
-                                onBackToMain={() => {
-                                    setIsChangingProfile(false);
-                                    setAppPhase('main-app');
-                                }}
+                                isChangingProfile={isChangingProfile}
+                                showBackButton={isChangingProfile && lastSelectedProfile}
+                                onBackToMain={handleBackToCollection}
+                                lastSelectedProfile={lastSelectedProfile}
                             />
                         </div>
                     </div>
@@ -200,7 +198,6 @@ function App() {
         );
     }
 
-    // Main application
     return (
         <ThemeProvider>
             <LoadBearingCheck>

@@ -34,7 +34,6 @@ namespace MangaCount.Server.Repositories
 
                 var sql = "INSERT INTO [dbo].[Manga]([Name],[Volumes])VALUES(@Name,@Volumes) SELECT SCOPE_IDENTITY();";
 
-                
                 using (var connection = new SqlConnection(connString))
                 {
                     connection.Open();
@@ -72,7 +71,6 @@ namespace MangaCount.Server.Repositories
 
                 var sql = "UPDATE [dbo].[Manga] SET [Name] = @Name ,[Volumes] = @Volumes WHERE [Id] = @Id SELECT FROM [dbo].[Manga] WHERE [Id] = @Id;";
 
-
                 using (var connection = new SqlConnection(connString))
                 {
                     connection.Open();
@@ -108,7 +106,6 @@ namespace MangaCount.Server.Repositories
 
                 var sql = "SELECT * FROM [dbo].[Manga] WHERE [Id] = @Id;";
 
-
                 using (var connection = new SqlConnection(connString))
                 {
                     connection.Open();
@@ -140,7 +137,6 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var sql = "SELECT * FROM [dbo].[Manga];";
-
 
                 using (var connection = new SqlConnection(connString))
                 {
