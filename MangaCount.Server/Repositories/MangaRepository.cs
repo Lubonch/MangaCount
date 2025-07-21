@@ -19,8 +19,6 @@ namespace MangaCount.Server.Repositories
         {
             try
             {
-                Manga mangaResult;
-
                 IConfigurationRoot _configuration = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json")
@@ -30,23 +28,22 @@ namespace MangaCount.Server.Repositories
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@Name", manga.Name, DbType.AnsiString, ParameterDirection.Input, manga.Name.Length);
-                parameters.Add("@Volumes", manga.Volumes, DbType.AnsiString, ParameterDirection.Input, manga.Volumes);
+                parameters.Add("@Volumes", manga.Volumes, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@FormatId", manga.FormatId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@PublisherId", manga.PublisherId, DbType.Int32, ParameterDirection.Input);
 
-                var sql = "INSERT INTO [dbo].[Manga]([Name],[Volumes])VALUES(@Name,@Volumes) SELECT SCOPE_IDENTITY();";
+                var sql = "INSERT INTO [dbo].[Manga]([Name],[Volumes],[FormatId],[PublisherId])VALUES(@Name,@Volumes,@FormatId,@PublisherId); SELECT CAST(SCOPE_IDENTITY() as int);";
 
                 using (var connection = new SqlConnection(connString))
                 {
                     connection.Open();
-                    mangaResult = connection.Query<Manga>(sql, parameters).FirstOrDefault();
+                    var newId = connection.QuerySingle<int>(sql, parameters);
+                    manga.Id = newId;
+                    return manga;
                 }
-
-               
-
-                return mangaResult;
             }
             catch (Exception ex)
             {
-                //Logger.Error($"Error in manga creation for Name {manga.Name}", ex);
                 throw;
             }
         }
@@ -55,8 +52,6 @@ namespace MangaCount.Server.Repositories
         {
             try
             {
-                Manga mangaResult;
-
                 IConfigurationRoot _configuration = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json")
@@ -65,25 +60,23 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@Id", manga.Id, DbType.AnsiString, ParameterDirection.Input, manga.Id);
+                parameters.Add("@Id", manga.Id, DbType.Int32, ParameterDirection.Input);
                 parameters.Add("@Name", manga.Name, DbType.AnsiString, ParameterDirection.Input, manga.Name.Length);
-                parameters.Add("@Volumes", manga.Volumes, DbType.AnsiString, ParameterDirection.Input, manga.Volumes);
+                parameters.Add("@Volumes", manga.Volumes, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@FormatId", manga.FormatId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@PublisherId", manga.PublisherId, DbType.Int32, ParameterDirection.Input);
 
-                var sql = "UPDATE [dbo].[Manga] SET [Name] = @Name ,[Volumes] = @Volumes WHERE [Id] = @Id SELECT FROM [dbo].[Manga] WHERE [Id] = @Id;";
+                var sql = "UPDATE [dbo].[Manga] SET [Name] = @Name, [Volumes] = @Volumes, [FormatId] = @FormatId, [PublisherId] = @PublisherId WHERE [Id] = @Id";
 
                 using (var connection = new SqlConnection(connString))
                 {
                     connection.Open();
-                    mangaResult = connection.Query<Manga>(sql, parameters).FirstOrDefault();
+                    connection.Execute(sql, parameters);
+                    return manga;
                 }
-
-
-
-                return mangaResult;
             }
             catch (Exception ex)
             {
-                //Logger.Error($"Error in manga update for Name {manga.Name} with Id {manga.Id}", ex);
                 throw;
             }
         }

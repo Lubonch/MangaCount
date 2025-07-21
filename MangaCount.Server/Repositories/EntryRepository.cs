@@ -22,13 +22,16 @@ namespace MangaCount.Server.Repositories
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                // Base query with optional profile filtering
                 var sql = @"
                     SELECT 
                         e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
-                        m.Id, m.Name, m.Volumes
+                        m.Id, m.Name, m.Volumes, m.FormatId, m.PublisherId,
+                        f.Id, f.Name,
+                        p.Id, p.Name
                     FROM [dbo].[Entry] e
-                    LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id";
+                    LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
+                    LEFT JOIN [dbo].[Formats] f ON m.FormatId = f.Id
+                    LEFT JOIN [dbo].[Publishers] p ON m.PublisherId = p.Id";
                 
                 var parameters = new DynamicParameters();
                 
@@ -41,15 +44,17 @@ namespace MangaCount.Server.Repositories
                 using (var connection = new SqlConnection(connString))
                 {
                     connection.Open();
-                    var entryResult = connection.Query<Entry, Manga, Entry>(
+                    var entryResult = connection.Query<Entry, Manga, Format, Publisher, Entry>(
                         sql,
-                        (entry, manga) =>
+                        (entry, manga, format, publisher) =>
                         {
+                            manga.Format = format;
+                            manga.Publisher = publisher;
                             entry.Manga = manga;
                             return entry;
                         },
                         parameters,
-                        splitOn: "Id"
+                        splitOn: "Id,Id,Id"
                     ).ToList();
 
                     return entryResult;
