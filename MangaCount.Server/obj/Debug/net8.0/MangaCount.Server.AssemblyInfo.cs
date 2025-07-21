@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MangaCount.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ac9b6e6a617c29a6c48a4fa9c281cd414ae973e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9649342581148d32b8b02cf70b727caa3e9590f8")]
 [assembly: System.Reflection.AssemblyProductAttribute("MangaCount.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MangaCount.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
