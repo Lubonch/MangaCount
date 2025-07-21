@@ -60,11 +60,16 @@ namespace MangaCount.Server.Controllers
         {
             try
             {
+                _logger.LogInformation("CreateOrUpdateProfile called with profile: Id={Id}, Name={Name}", 
+                    profileModel.Id, profileModel.Name);
+                    
                 var profileDTO = _mapper.Map<DTO.ProfileDTO>(profileModel);
                 var result = _profileService.SaveOrUpdate(profileDTO);
                 
                 if (result.IsSuccessStatusCode)
                 {
+                    _logger.LogInformation("Profile saved successfully: Id={Id}, Name={Name}", 
+                        profileModel.Id, profileModel.Name);
                     return Ok(new { message = "Profile saved successfully" });
                 }
                 else
@@ -112,13 +117,24 @@ namespace MangaCount.Server.Controllers
                 var baseUrl = $"{Request.Scheme}://{Request.Host}";
                 var profilePictureUrl = $"{baseUrl}/api/Profile/image/{fileName}";
 
-                // Update profile with new picture URL
+                // Update profile with new picture URL - ONLY if profile exists
                 var profile = _profileService.GetProfileById(profileId);
                 if (profile != null)
                 {
                     profile.ProfilePicture = profilePictureUrl;
                     var profileDTO = _mapper.Map<DTO.ProfileDTO>(profile);
-                    _profileService.SaveOrUpdate(profileDTO);
+                    var updateResult = _profileService.SaveOrUpdate(profileDTO);
+                    
+                    if (!updateResult.IsSuccessStatusCode)
+                    {
+                        _logger.LogWarning("Failed to update profile {ProfileId} with picture URL", profileId);
+                        // Still return success for the file upload, but log the issue
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Profile {ProfileId} not found when trying to update picture URL", profileId);
+                    // Still return the URL even if profile update failed
                 }
 
                 return Ok(new { profilePictureUrl });
