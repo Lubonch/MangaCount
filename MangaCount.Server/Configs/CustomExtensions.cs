@@ -13,6 +13,8 @@ namespace MangaCount.Server.Configs
             services.AddScoped<IMangaService, MangaService>();
             services.AddScoped<IEntryService, EntryService>();
             services.AddScoped<IProfileService, ProfileService>();
+            services.AddScoped<IPublisherService, PublisherService>();
+            services.AddScoped<IFormatService, FormatService>();
         }
         
         public static void AddInjectionRepositories(IServiceCollection services)
@@ -20,6 +22,8 @@ namespace MangaCount.Server.Configs
             services.AddScoped<IMangaRepository, MangaRepository>();
             services.AddScoped<IEntryRepository, EntryRepository>();
             services.AddScoped<IProfileRepository, ProfileRepository>();
+            services.AddScoped<IPublisherRepository, PublisherRepository>();
+            services.AddScoped<IFormatRepository, FormatRepository>();
         }
     }
 }
