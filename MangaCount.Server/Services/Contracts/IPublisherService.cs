@@ -1,8 +1,13 @@
-public interface IPublisherService
+using MangaCount.Server.Domain;
+
+namespace MangaCount.Server.Services.Contracts
 {
-    IEnumerable<Publisher> GetAll();
-    Publisher GetById(int id);
-    Publisher Create(Publisher publisher);
-    Publisher Update(Publisher publisher);
-    void Delete(int id);
+    public interface IPublisherService
+    {
+        IEnumerable<Publisher> GetAll();
+        Publisher GetById(int id);
+        Publisher Create(Publisher publisher);
+        Publisher Update(Publisher publisher);
+        void Delete(int id);
+    }
 }

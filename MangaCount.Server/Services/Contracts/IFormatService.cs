@@ -1,8 +1,13 @@
-public interface IFormatService
+using MangaCount.Server.Domain;
+
+namespace MangaCount.Server.Services.Contracts
 {
-    IEnumerable<Format> GetAll();
-    Format GetById(int id);
-    Format Create(Format format);
-    Format Update(Format format);
-    void Delete(int id);
+    public interface IFormatService
+    {
+        IEnumerable<Format> GetAll();
+        Format GetById(int id);
+        Format Create(Format format);
+        Format Update(Format format);
+        void Delete(int id);
+    }
 }

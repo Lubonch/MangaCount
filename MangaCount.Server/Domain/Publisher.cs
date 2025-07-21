@@ -1,5 +1,8 @@
-public class Publisher
+namespace MangaCount.Server.Domain
 {
-    public int Id { get; set; }
-    public required string Name { get; set; }
+    public class Publisher
+    {
+        public int Id { get; set; }
+        public required string Name { get; set; }
+    }
 }
