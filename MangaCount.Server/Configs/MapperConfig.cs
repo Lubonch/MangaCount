@@ -43,6 +43,12 @@ namespace MangaCount.Server.Configs
                 cfg.CreateMap<MangaModel, Manga>();
                 cfg.CreateMap<ProfileModel, Domain.Profile>();
 
+                // New Format and Publisher mappings
+                cfg.CreateMap<Format, FormatDTO>();
+                cfg.CreateMap<FormatDTO, Format>();
+                cfg.CreateMap<Publisher, PublisherDTO>();
+                cfg.CreateMap<PublisherDTO, Publisher>();
+
             }, new LoggerFactory());
             //Create an Instance of Mapper and return that Instance
             var mapper = new Mapper(config);

@@ -1,4 +1,14 @@
-﻿.modal-overlay {
+﻿/* Add these if missing from your main CSS variables */
+:root {
+    --accent-color: #9b59b6;
+    --accent-hover: #8e44ad;
+    --card-bg: var(--bg-tertiary);
+    --secondary-bg: var(--bg-secondary);
+    --text-color: var(--text-primary);
+    --border-light: var(--border-color);
+}
+
+.modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -180,6 +190,100 @@
     cursor: not-allowed;
     opacity: 0.6;
     transform: none;
+}
+
+/* New styles for select-with-add */
+.select-with-add {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.select-with-add select {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.select-with-add select:focus {
+    outline: none;
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
+}
+
+.add-new-btn {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    width: 38px;
+    height: 38px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.add-new-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+}
+
+.add-new-section {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+.add-new-section input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.add-new-section button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.add-new-section button:first-of-type {
+    background: var(--accent-color);
+    color: white;
+}
+
+.add-new-section button:first-of-type:hover {
+    background: var(--accent-hover);
+}
+
+.add-new-section button:last-of-type {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.add-new-section button:last-of-type:hover {
+    background: var(--text-muted);
+    color: white;
 }
 
 /* Animations */
