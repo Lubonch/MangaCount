@@ -23,18 +23,18 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var sql = @"
-                    SELECT 
-                        e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
-                        m.Id, m.Name, m.Volumes, m.FormatId, m.PublisherId,
-                        f.Id, f.Name,
-                        p.Id, p.Name
-                    FROM [dbo].[Entry] e
-                    LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
-                    LEFT JOIN [dbo].[Formats] f ON m.FormatId = f.Id
-                    LEFT JOIN [dbo].[Publishers] p ON m.PublisherId = p.Id";
-                
+            SELECT 
+                e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
+                m.Id, m.Name, m.Volumes, m.FormatId, m.PublisherId,
+                f.Id, f.Name,
+                p.Id, p.Name
+            FROM [dbo].[Entry] e
+            LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
+            LEFT JOIN [dbo].[Formats] f ON m.FormatId = f.Id
+            LEFT JOIN [dbo].[Publishers] p ON m.PublisherId = p.Id";
+
                 var parameters = new DynamicParameters();
-                
+
                 if (profileId.HasValue)
                 {
                     sql += " WHERE e.ProfileId = @ProfileId";
