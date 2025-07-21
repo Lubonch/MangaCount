@@ -1,4 +1,31 @@
 ####################
+# MangaCount Project Specific
+####################
+
+# Upload directories
+uploads/
+wwwroot/uploads/
+temp-uploads/
+
+# Runtime generated content
+wwwroot/
+# Runtime generated content
+wwwroot/profiles/
+wwwroot/uploads/
+wwwroot/temp/
+# But keep static assets that should be tracked
+!wwwroot/css/
+!wwwroot/js/
+!wwwroot/lib/
+!wwwroot/*.html
+!wwwroot/*.ico
+!wwwroot/*.svg
+
+# Custom logs
+Logs/
+*.custom.log
+
+####################
 # .NET 8 / ASP.NET Core
 ####################
 
