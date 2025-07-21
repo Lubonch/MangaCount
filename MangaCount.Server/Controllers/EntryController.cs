@@ -118,5 +118,59 @@ namespace MangaCount.Server.Controllers
                 return StatusCode(500, new { message = "Error retrieving shared manga", detail = ex.Message });
             }
         }
+
+        [HttpGet("filters/formats")]
+        public async Task<IActionResult> GetUsedFormats(int? profileId = null)
+        {
+            try
+            {
+                var entries = _entryService.GetAllEntries(profileId);
+                
+                var usedFormats = entries
+                    .Where(e => e.Manga?.Format != null)
+                    .GroupBy(e => e.Manga.Format.Id)
+                    .Select(g => new { 
+                        Id = g.Key, 
+                        Name = g.First().Manga.Format.Name,
+                        Count = g.Count()
+                    })
+                    .OrderBy(f => f.Name)
+                    .ToList();
+
+                return Ok(usedFormats);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting used formats for profile {ProfileId}", profileId);
+                return StatusCode(500, new { message = "Error retrieving formats" });
+            }
+        }
+
+        [HttpGet("filters/publishers")]
+        public async Task<IActionResult> GetUsedPublishers(int? profileId = null)
+        {
+            try
+            {
+                var entries = _entryService.GetAllEntries(profileId);
+                
+                var usedPublishers = entries
+                    .Where(e => e.Manga?.Publisher != null)
+                    .GroupBy(e => e.Manga.Publisher.Id)
+                    .Select(g => new { 
+                        Id = g.Key, 
+                        Name = g.First().Manga.Publisher.Name,
+                        Count = g.Count()
+                    })
+                    .OrderBy(p => p.Name)
+                    .ToList();
+
+                return Ok(usedPublishers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting used publishers for profile {ProfileId}", profileId);
+                return StatusCode(500, new { message = "Error retrieving publishers" });
+            }
+        }
     }
 }

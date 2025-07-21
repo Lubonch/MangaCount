@@ -1,19 +1,65 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
 import './CollectionView.css';
 
-const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) => {
+const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], selectedProfile }) => {
     const [filter, setFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name');
     const [viewMode, setViewMode] = useState('cards');
+    
+    // New filter states
+    const [publisherFilter, setPublisherFilter] = useState('all');
+    const [formatFilter, setFormatFilter] = useState('all');
+    const [availablePublishers, setAvailablePublishers] = useState([]);
+    const [availableFormats, setAvailableFormats] = useState([]);
+    const [filtersLoading, setFiltersLoading] = useState(false);
     
     // Edit modal states
     const [showEditEntry, setShowEditEntry] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
     const [editingEntry, setEditingEntry] = useState(null);
     const [editingManga, setEditingManga] = useState(null);
+
+    // Load filter options when entries or profile changes
+    useEffect(() => {
+        if (selectedProfile && entries.length > 0) {
+            loadFilterOptions();
+        }
+    }, [selectedProfile, entries]);
+
+    const loadFilterOptions = async () => {
+        if (!selectedProfile) return;
+        
+        setFiltersLoading(true);
+        try {
+            // Load publishers
+            const publishersResponse = await fetch(`/api/entry/filters/publishers?profileId=${selectedProfile.id}`);
+            if (publishersResponse.ok) {
+                const publishers = await publishersResponse.json();
+                setAvailablePublishers(publishers);
+            }
+
+            // Load formats
+            const formatsResponse = await fetch(`/api/entry/filters/formats?profileId=${selectedProfile.id}`);
+            if (formatsResponse.ok) {
+                const formats = await formatsResponse.json();
+                setAvailableFormats(formats);
+            }
+        } catch (error) {
+            console.error('Error loading filter options:', error);
+        } finally {
+            setFiltersLoading(false);
+        }
+    };
+
+    // Reset filters when profile changes
+    useEffect(() => {
+        setPublisherFilter('all');
+        setFormatFilter('all');
+        setFilter('all');
+    }, [selectedProfile]);
 
     // Helper functions (keeping existing ones)
     const getCompletionPercentage = (entry) => {
@@ -34,14 +80,15 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
     };
 
     const getStatusCounts = () => {
+        const filteredAndStatusFiltered = getFilteredEntries();
         const counts = {
             complete: 0,
             incomplete: 0,
             priorityIncomplete: 0,
-            total: entries.length
+            total: filteredAndStatusFiltered.length
         };
 
-        entries.forEach(entry => {
+        filteredAndStatusFiltered.forEach(entry => {
             const status = getEntryStatus(entry);
             if (status === 'complete') counts.complete++;
             else if (status === 'priority-incomplete') counts.priorityIncomplete++;
@@ -49,6 +96,44 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
         });
 
         return counts;
+    };
+
+    // Enhanced filtering logic
+    const getFilteredEntries = () => {
+        return entries.filter(entry => {
+            // Publisher filter
+            if (publisherFilter !== 'all') {
+                const publisherId = entry.manga?.publisher?.id || entry.manga?.publisherId;
+                if (publisherId !== parseInt(publisherFilter)) {
+                    return false;
+                }
+            }
+
+            // Format filter
+            if (formatFilter !== 'all') {
+                const formatId = entry.manga?.format?.id || entry.manga?.formatId;
+                if (formatId !== parseInt(formatFilter)) {
+                    return false;
+                }
+            }
+
+            // Status filter
+            const status = getEntryStatus(entry);
+            switch (filter) {
+                case 'complete':
+                    return status === 'complete';
+                case 'incomplete':
+                    return status === 'incomplete';
+                case 'priority-incomplete':
+                    return status === 'priority-incomplete';
+                case 'priority':
+                    return entry.priority;
+                case 'pending':
+                    return entry.pending && entry.pending.trim() !== '';
+                default:
+                    return true;
+            }
+        });
     };
 
     // Edit handlers
@@ -95,25 +180,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
         setEditingManga(null);
     };
 
-    // Filtering and sorting logic (keeping existing)
-    const filteredEntries = entries.filter(entry => {
-        const status = getEntryStatus(entry);
-        
-        switch (filter) {
-            case 'complete':
-                return status === 'complete';
-            case 'incomplete':
-                return status === 'incomplete';
-            case 'priority-incomplete':
-                return status === 'priority-incomplete';
-            case 'priority':
-                return entry.priority;
-            case 'pending':
-                return entry.pending && entry.pending.trim() !== '';
-            default:
-                return true;
-        }
-    });
+    const filteredEntries = getFilteredEntries();
 
     const sortedEntries = [...filteredEntries].sort((a, b) => {
         switch (sortBy) {
@@ -127,12 +194,26 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
                 return bPercent - aPercent;
             case 'priority':
                 return b.priority - a.priority;
+            case 'publisher':
+                return (a.manga?.publisher?.name || '').localeCompare(b.manga?.publisher?.name || '');
+            case 'format':
+                return (a.manga?.format?.name || '').localeCompare(b.manga?.format?.name || '');
             default:
                 return 0;
         }
     });
 
     const statusCounts = getStatusCounts();
+
+    // Helper function to clear all filters
+    const clearAllFilters = () => {
+        setFilter('all');
+        setPublisherFilter('all');
+        setFormatFilter('all');
+    };
+
+    // Check if any filters are active
+    const hasActiveFilters = filter !== 'all' || publisherFilter !== 'all' || formatFilter !== 'all';
 
     // Skeleton loading (keeping existing)
     const renderSkeleton = () => {
@@ -392,7 +473,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
                     )}
                 </div>
                 <p className="collection-stats">
-                    {entries.length} entries • {entries.reduce((sum, entry) => sum + entry.quantity, 0)} volumes total
+                    {entries.length} total entries • {filteredEntries.length} shown • {entries.reduce((sum, entry) => sum + entry.quantity, 0)} volumes total
                 </p>
                 <div className="status-summary">
                     <span className="status-count complete">
@@ -411,35 +492,85 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
             </div>
 
             <div className="collection-controls">
-                <div className="view-controls">
-                    <label>View:</label>
-                    <select value={viewMode} onChange={(e) => setViewMode(e.target.value)} disabled={loading}>
-                        <option value="table">📊 Table (Most Compact)</option>
-                        <option value="compact">📋 Compact Cards</option>
-                        <option value="cards">🎴 Full Cards</option>
-                    </select>
+                <div className="filters-row">
+                    <div className="filter-group">
+                        <label>📚 Publisher:</label>
+                        <select 
+                            value={publisherFilter} 
+                            onChange={(e) => setPublisherFilter(e.target.value)} 
+                            disabled={loading || filtersLoading}
+                        >
+                            <option value="all">All Publishers</option>
+                            {availablePublishers.map(publisher => (
+                                <option key={publisher.id} value={publisher.id}>
+                                    {publisher.name} ({publisher.count})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="filter-group">
+                        <label>📖 Format:</label>
+                        <select 
+                            value={formatFilter} 
+                            onChange={(e) => setFormatFilter(e.target.value)} 
+                            disabled={loading || filtersLoading}
+                        >
+                            <option value="all">All Formats</option>
+                            {availableFormats.map(format => (
+                                <option key={format.id} value={format.id}>
+                                    {format.name} ({format.count})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="filter-group">
+                        <label>📊 Status:</label>
+                        <select value={filter} onChange={(e) => setFilter(e.target.value)} disabled={loading}>
+                            <option value="all">All Status ({entries.length})</option>
+                            <option value="complete">✅ Complete</option>
+                            <option value="priority-incomplete">⚡ Priority Incomplete</option>
+                            <option value="incomplete">❌ Incomplete</option>
+                            <option value="priority">Priority Only</option>
+                            <option value="pending">With Pending</option>
+                        </select>
+                    </div>
+
+                    {hasActiveFilters && (
+                        <div className="filter-group">
+                            <button 
+                                className="clear-filters-btn"
+                                onClick={clearAllFilters}
+                                title="Clear all filters"
+                            >
+                                🗑️ Clear Filters
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                <div className="filter-controls">
-                    <label>Filter by Status:</label>
-                    <select value={filter} onChange={(e) => setFilter(e.target.value)} disabled={loading}>
-                        <option value="all">All Items ({entries.length})</option>
-                        <option value="complete">✅ Complete ({statusCounts.complete})</option>
-                        <option value="priority-incomplete">⚡ Priority Incomplete ({statusCounts.priorityIncomplete})</option>
-                        <option value="incomplete">❌ Incomplete ({statusCounts.incomplete})</option>
-                        <option value="priority">Priority Only</option>
-                        <option value="pending">With Pending</option>
-                    </select>
-                </div>
+                <div className="controls-row">
+                    <div className="view-controls">
+                        <label>View:</label>
+                        <select value={viewMode} onChange={(e) => setViewMode(e.target.value)} disabled={loading}>
+                            <option value="table">📊 Table</option>
+                            <option value="compact">📋 Compact</option>
+                            <option value="cards">🎴 Cards</option>
+                        </select>
+                    </div>
 
-                <div className="sort-controls">
-                    <label>Sort by:</label>
-                    <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} disabled={loading}>
-                        <option value="name">Name</option>
-                        <option value="completion">Completion %</option>
-                        <option value="quantity">Quantity</option>
-                        <option value="priority">Priority</option>
-                    </select>
+                    <div className="sort-controls">
+                        <label>Sort by:</label>
+                        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} disabled={loading}>
+                            <option value="name">Name</option>
+                            <option value="completion">Completion %</option>
+                            <option value="quantity">Quantity</option>
+                            <option value="priority">Priority</option>
+                            <option value="publisher">Publisher</option>
+                            <option value="format">Format</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -448,10 +579,10 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [] }) =>
                     renderSkeleton()
                 ) : sortedEntries.length === 0 ? (
                     <div className="empty-collection">
-                        <p>No entries found for the selected filter.</p>
-                        {filter !== 'all' && (
-                            <button onClick={() => setFilter('all')} className="reset-filter">
-                                Show All Entries
+                        <p>No entries found for the selected filters.</p>
+                        {hasActiveFilters && (
+                            <button onClick={clearAllFilters} className="reset-filter">
+                                Clear All Filters
                             </button>
                         )}
                     </div>

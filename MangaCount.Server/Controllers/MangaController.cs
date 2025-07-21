@@ -55,7 +55,42 @@ namespace MangaCount.Server.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error saving manga");
-                return StatusCode(500, new { message = "Error saving manga" });
+                return StatusCode(500, new { message = "Error saving manga", detail = ex.Message });
+            }
+        }
+
+        [HttpPut("{id}")]
+        public IActionResult UpdateManga(int id, [FromBody] Model.MangaModel mangaModel)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new { message = "Invalid manga ID" });
+            }
+
+            if (mangaModel == null)
+            {
+                return BadRequest(new { message = "Manga data is required" });
+            }
+
+            try
+            {
+                mangaModel.Id = id;
+                DTO.MangaDTO mangaDTO = mapper.Map<DTO.MangaDTO>(mangaModel);
+                var result = _mangaService.SaveOrUpdate(mangaDTO);
+                
+                if (result.IsSuccessStatusCode)
+                {
+                    return Ok(new { message = "Manga updated successfully" });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Failed to update manga" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating manga with ID {Id}", id);
+                return StatusCode(500, new { message = "Error updating manga", detail = ex.Message });
             }
         }
     }

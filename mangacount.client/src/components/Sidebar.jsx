@@ -2,20 +2,22 @@
 import './Sidebar.css';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
+import NukeDataModal from './NukeDataModal';
 import ThemeToggle from './ThemeToggle';
 
-const Sidebar = ({ 
-    mangas, 
-    selectedProfile, 
-    onImportSuccess, 
+const Sidebar = ({
+    mangas,
+    selectedProfile,
+    onImportSuccess,
     onBackToProfiles,
-    refreshing = false 
+    refreshing = false
 }) => {
     const [isImporting, setIsImporting] = useState(false);
     const [importMessage, setImportMessage] = useState('');
     const [showAddEntry, setShowAddEntry] = useState(false);
     const [showAddManga, setShowAddManga] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
+    const [showNukeModal, setShowNukeModal] = useState(false);
     const [editingManga, setEditingManga] = useState(null);
 
     const handleFileImport = async (event) => {
@@ -70,20 +72,25 @@ const Sidebar = ({
         setShowEditManga(true);
     };
 
+    const handleNukeSuccess = () => {
+        onImportSuccess(); // This will refresh all data
+        setShowNukeModal(false);
+    };
+
     return (
         <>
             <aside className="sidebar">
                 <div className="sidebar-header">
                     <h2>🏗️ Manga Count</h2>
-                    
+
                     {/* Profile Info Section */}
                     {selectedProfile && (
                         <div className="current-profile-info">
                             <div className="profile-display">
                                 <div className="profile-avatar-small">
                                     {selectedProfile.profilePicture ? (
-                                        <img 
-                                            src={selectedProfile.profilePicture} 
+                                        <img
+                                            src={selectedProfile.profilePicture}
                                             alt={selectedProfile.name}
                                             className="profile-image-small"
                                         />
@@ -98,7 +105,7 @@ const Sidebar = ({
                                     <span className="profile-subtitle">Collection</span>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 className="change-profile-btn"
                                 onClick={onBackToProfiles}
                                 title="Change profile"
@@ -117,14 +124,14 @@ const Sidebar = ({
                 <div className="sidebar-section">
                     <h3>Quick Actions</h3>
                     <div className="quick-actions">
-                        <button 
+                        <button
                             className="action-button add-entry"
                             onClick={() => setShowAddEntry(true)}
                             disabled={!selectedProfile}
                         >
                             + Add Entry
                         </button>
-                        <button 
+                        <button
                             className="action-button add-manga"
                             onClick={() => setShowAddManga(true)}
                         >
@@ -151,16 +158,15 @@ const Sidebar = ({
                             <small className="import-note">Select a profile first</small>
                         )}
                         {importMessage && (
-                            <p className={`import-message ${
-                                importMessage.includes('failed') ? 'error' : 
-                                importMessage.includes('successful') ? 'success' : ''
-                            }`}>
+                            <p className={`import-message ${importMessage.includes('failed') ? 'error' :
+                                    importMessage.includes('successful') ? 'success' : ''
+                                }`}>
                                 {importMessage}
                             </p>
                         )}
                         <div className="import-help">
                             <small>
-                                Upload a TSV file with columns:<br/>
+                                Upload a TSV file with columns:<br />
                                 Name | Quantity | Total Volumes | Pending | | Priority
                             </small>
                         </div>
@@ -193,9 +199,26 @@ const Sidebar = ({
                         )}
                     </div>
                 </div>
+
+                {/* Danger Zone section */}
+                <div className="sidebar-section danger-zone">
+                    <h3>⚠️ Danger Zone</h3>
+                    <div className="danger-actions">
+                        <button
+                            className="danger-button nuke-button"
+                            onClick={() => setShowNukeModal(true)}
+                            title="Clear all data from database"
+                        >
+                            💥 Nuclear Option
+                        </button>
+                        <small className="danger-warning">
+                            This will permanently delete ALL data!
+                        </small>
+                    </div>
+                </div>
             </aside>
 
-            <AddEntryModal 
+            <AddEntryModal
                 isOpen={showAddEntry}
                 onClose={() => setShowAddEntry(false)}
                 mangas={mangas}
@@ -203,13 +226,13 @@ const Sidebar = ({
                 onSuccess={handleAddSuccess}
             />
 
-            <AddMangaModal 
+            <AddMangaModal
                 isOpen={showAddManga}
                 onClose={() => setShowAddManga(false)}
                 onSuccess={handleAddSuccess}
             />
 
-            <AddMangaModal 
+            <AddMangaModal
                 isOpen={showEditManga}
                 onClose={() => {
                     setShowEditManga(false);
@@ -217,6 +240,12 @@ const Sidebar = ({
                 }}
                 onSuccess={handleAddSuccess}
                 editManga={editingManga}
+            />
+
+            <NukeDataModal
+                isOpen={showNukeModal}
+                onClose={() => setShowNukeModal(false)}
+                onSuccess={handleNukeSuccess}
             />
         </>
     );
