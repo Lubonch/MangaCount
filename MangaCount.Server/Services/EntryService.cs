@@ -5,6 +5,9 @@ using MangaCount.Server.Model;
 using MangaCount.Server.Repositories;
 using MangaCount.Server.Repositories.Contracts;
 using System.Net;
+using Microsoft.Data.SqlClient;
+using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace MangaCount.Server.Services
 {
@@ -63,7 +66,7 @@ namespace MangaCount.Server.Services
         {
             if (!CheckFileType(file.FileName))
             {
-                throw new InvalidOperationException("File must be a .tsv file");
+                throw new InvalidOperationException("Invalid file type. Only TSV files are supported.");
             }
 
             try
@@ -77,12 +80,23 @@ namespace MangaCount.Server.Services
                     
                     if (existingManga != null)
                     {
+                        // Update existing manga with new format/publisher if needed
+                        if (existingManga.FormatId != entry.Manga.FormatId || 
+                            existingManga.PublisherId != entry.Manga.PublisherId)
+                        {
+                            existingManga.FormatId = entry.Manga.FormatId;
+                            existingManga.PublisherId = entry.Manga.PublisherId;
+                            _mangaRepository.Update(existingManga);
+                        }
+                        
                         entry.MangaId = existingManga.Id;
                         entry.Manga = existingManga;
                     }
                     else
                     {
-                        entry.MangaId = _mangaRepository.Create(entry.Manga).Id;
+                        // Create new manga with format and publisher
+                        var createdManga = _mangaRepository.Create(entry.Manga);
+                        entry.MangaId = createdManga.Id;
                     }
                     
                     _entryRepository.Create(entry);
@@ -145,24 +159,44 @@ namespace MangaCount.Server.Services
                     
                     while ((currentLine = await reader.ReadLineAsync()) != null)
                     {
-                        if (counter > 0)
+                        if (counter > 0) // Skip header row
                         {
                             string[] item = currentLine.Split("\t");
                             if (!String.IsNullOrEmpty(item[0]))
                             {
                                 int value;
+                                
+                                // Parse the new TSV format:
+                                // Titulo | Comprados | Total | Pendiente | Completa | Prioridad | Formato | Editorial
+                                string mangaName = item[0];
+                                int quantity = int.TryParse(item[1], out value) ? value : 0;
+                                int? totalVolumes = int.TryParse(item[2], out value) ? value : null;
+                                string pending = item.Length > 3 ? item[3] : null;
+                                bool complete = item.Length > 4 && bool.TryParse(item[4], out bool completeValue) ? completeValue : false;
+                                bool priority = item.Length > 5 && bool.TryParse(item[5], out bool priorityValue) ? priorityValue : false;
+                                string formatName = item.Length > 6 ? item[6] : "Unknown";
+                                string publisherName = item.Length > 7 ? item[7] : "Unknown";
+
+                                // Find or create Format
+                                int formatId = await GetOrCreateFormatId(formatName);
+                                
+                                // Find or create Publisher
+                                int publisherId = await GetOrCreatePublisherId(publisherName);
+
                                 entryList.Add(new Domain.Entry()
                                 {
                                     Manga = new Domain.Manga() 
                                     { 
-                                        Name = item[0], 
-                                        Volumes = int.TryParse(item[2], out value) ? value : null 
+                                        Name = mangaName, 
+                                        Volumes = totalVolumes,
+                                        FormatId = formatId,
+                                        PublisherId = publisherId
                                     },
                                     MangaId = 0,
                                     ProfileId = profileId,
-                                    Quantity = int.TryParse(item[1], out value) ? value : 0,
-                                    Pending = item.Length > 3 ? item[3] : null,
-                                    Priority = item.Length > 5 ? Boolean.Parse(item[5]) : false
+                                    Quantity = quantity,
+                                    Pending = pending,
+                                    Priority = priority
                                 });
                             }
                         }
@@ -246,6 +280,82 @@ namespace MangaCount.Server.Services
                     return true;
                 default:
                     return false;
+            }
+        }
+
+        private async Task<int> GetOrCreateFormatId(string formatName)
+        {
+            try
+            {
+                IConfigurationRoot _configuration = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                string connString = _configuration.GetConnectionString("MangacountDatabase")!;
+
+                using var connection = new SqlConnection(connString);
+                await connection.OpenAsync();
+
+                // Try to find existing format
+                var existingFormat = await connection.QuerySingleOrDefaultAsync<Domain.Format>(
+                    "SELECT * FROM [dbo].[Formats] WHERE [Name] = @Name", 
+                    new { Name = formatName });
+
+                if (existingFormat != null)
+                {
+                    return existingFormat.Id;
+                }
+
+                // Create new format if it doesn't exist
+                var newId = await connection.QuerySingleAsync<int>(
+                    "INSERT INTO [dbo].[Formats] ([Name]) VALUES (@Name); SELECT CAST(SCOPE_IDENTITY() as int);",
+                    new { Name = formatName });
+
+                return newId;
+            }
+            catch (Exception)
+            {
+                // Return default format ID if there's an error
+                return 1; // "Unknown" format
+            }
+        }
+
+        private async Task<int> GetOrCreatePublisherId(string publisherName)
+        {
+            try
+            {
+                IConfigurationRoot _configuration = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                string connString = _configuration.GetConnectionString("MangacountDatabase")!;
+
+                using var connection = new SqlConnection(connString);
+                await connection.OpenAsync();
+
+                // Try to find existing publisher
+                var existingPublisher = await connection.QuerySingleOrDefaultAsync<Domain.Publisher>(
+                    "SELECT * FROM [dbo].[Publishers] WHERE [Name] = @Name", 
+                    new { Name = publisherName });
+
+                if (existingPublisher != null)
+                {
+                    return existingPublisher.Id;
+                }
+
+                // Create new publisher if it doesn't exist
+                var newId = await connection.QuerySingleAsync<int>(
+                    "INSERT INTO [dbo].[Publishers] ([Name]) VALUES (@Name); SELECT CAST(SCOPE_IDENTITY() as int);",
+                    new { Name = publisherName });
+
+                return newId;
+            }
+            catch (Exception)
+            {
+                // Return default publisher ID if there's an error
+                return 1; // "Unknown" publisher
             }
         }
     }
