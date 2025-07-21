@@ -19,7 +19,7 @@
 .collection-stats {
     color: var(--text-secondary);
     font-size: 0.95em;
-    margin-bottom: 10px;
+    margin: 8px 0;
 }
 
 .status-summary {
@@ -595,240 +595,72 @@
     transform: translateY(-1px);
 }
 
-/* Add these styles to your existing CSS file */
+/* Add these new styles to your existing CollectionView.css */
 
-/* Action buttons styling */
-.actions-cell {
-    width: 120px;
-    text-align: center;
-}
-
-.action-buttons {
+.filters-row {
     display: flex;
-    gap: 4px;
-    justify-content: center;
-    align-items: center;
-}
-
-.quick-btn {
-    background: var(--color-complete);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.75em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-.quick-btn:hover {
-    background: #219a52;
-    transform: scale(1.05);
-}
-
-.quick-btn.plus-one {
-    background: var(--color-complete);
-}
-
-.quick-btn.compact {
-    padding: 2px 6px;
-    font-size: 0.7em;
-}
-
-.edit-btn {
-    background: var(--color-info);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.75em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.edit-btn:hover {
-    background: #2980b9;
-    transform: scale(1.05);
-}
-
-.edit-btn.compact {
-    padding: 2px 6px;
-    font-size: 0.7em;
-}
-
-.edit-manga-btn {
-    background: #9b59b6;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-size: 0.8em;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-}
-
-.edit-manga-btn:hover {
-    background: #8e44ad;
-    transform: translateY(-1px);
-}
-
-/* Card actions styling */
-.card-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 12px;
+    gap: 16px;
+    margin-bottom: 12px;
+    align-items: flex-end;
     flex-wrap: wrap;
 }
 
-.card-actions .quick-btn {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 0.85em;
-}
-
-.card-actions .edit-btn,
-.card-actions .edit-manga-btn {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 0.85em;
-}
-
-/* Compact actions styling */
-.compact-actions {
+.filter-group {
     display: flex;
+    flex-direction: column;
     gap: 4px;
-    margin-top: 6px;
-    justify-content: space-between;
+    min-width: 160px;
 }
 
-/* Quantity input group for modals */
-.quantity-input-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.filter-group label {
+    font-size: 0.9em;
+    font-weight: 500;
+    color: var(--text-secondary);
 }
 
-.quantity-input-group input {
-    flex: 1;
+.filter-group select {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.quantity-input-group .quick-actions {
-    display: flex;
-    gap: 4px;
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--color-info);
+    box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.1);
 }
 
-.quantity-input-group .quick-btn {
-    min-width: 35px;
-    padding: 8px 6px;
-    font-size: 0.85em;
+.filter-group select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-.quantity-input-group .quick-btn.minus {
+.clear-filters-btn {
     background: var(--color-incomplete);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-top: 20px;
 }
 
-.quantity-input-group .quick-btn.minus:hover {
+.clear-filters-btn:hover {
     background: #c0392b;
+    transform: translateY(-1px);
 }
 
-/* RESPONSIVE DESIGN */
-@media (min-width: 1200px) {
-    .entries-grid {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    }
-    
-    .compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    }
-}
-
-@media (min-width: 1400px) {
-    .entries-grid {
-        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    }
-    
-    .compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    }
-}
-
-@media (min-width: 1600px) {
-    .entries-grid {
-        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    }
-    
-    .compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-}
-
-@media (min-width: 1800px) {
-    .entries-grid {
-        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    }
-    
-    .compact-grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    }
-}
-
-@media (max-width: 768px) {
-    .collection-controls {
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .status-summary {
-        gap: 12px;
-    }
-    
-    .view-controls,
-    .filter-controls,
-    .sort-controls {
-        width: 100%;
-    }
-    
-    .view-controls select,
-    .filter-controls select,
-    .sort-controls select {
-        min-width: auto;
-        width: 100%;
-        max-width: none;
-    }
-    
-    .view-controls label,
-    .filter-controls label,
-    .sort-controls label {
-        white-space: normal;
-    }
-    
-    .entries-table {
-        font-size: 0.8em;
-    }
-    
-    .entries-table th,
-    .entries-table td {
-        padding: 6px 4px;
-    }
-}
-
-@media (max-width: 480px) {
-    .collection-view {
-        padding: 0;
-    }
-    
-    .compact-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    
-    .entries-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .status-count {
-        font-size: 0.8em;
-        padding: 4px 6px;
-    }
+.controls-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
 }
