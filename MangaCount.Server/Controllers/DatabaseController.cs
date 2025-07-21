@@ -31,6 +31,49 @@ namespace MangaCount.Server.Controllers
             }
         }
 
+        [HttpPost("preview-deletion")]
+        public async Task<IActionResult> PreviewDeletion([FromBody] SelectiveDeletionOptions options)
+        {
+            try
+            {
+                var preview = await _databaseService.GetDeletionPreviewAsync(options);
+                return Ok(preview);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating deletion preview");
+                return StatusCode(500, new { message = "Error generating deletion preview" });
+            }
+        }
+
+        [HttpPost("selective-delete")]
+        public async Task<IActionResult> SelectiveDelete([FromBody] SelectiveDeletionRequest request)
+        {
+            if (!request.IsConfirmed || request.ConfirmationText != "DELETE SELECTED DATA")
+            {
+                return BadRequest(new { message = "Invalid confirmation. Use 'DELETE SELECTED DATA'" });
+            }
+
+            try
+            {
+                var success = await _databaseService.SelectiveDeleteAsync(request.Options);
+
+                if (success)
+                {
+                    return Ok(new { message = "Selected data successfully deleted" });
+                }
+                else
+                {
+                    return StatusCode(500, new { message = "Failed to delete selected data" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during selective deletion");
+                return StatusCode(500, new { message = "Error deleting selected data" });
+            }
+        }
+
         [HttpPost("nuke")]
         public async Task<IActionResult> NukeDatabase([FromBody] NukeConfirmationRequest request)
         {
@@ -42,7 +85,7 @@ namespace MangaCount.Server.Controllers
             try
             {
                 var success = await _databaseService.NukeAllDataAsync();
-                
+
                 if (success)
                 {
                     return Ok(new { message = "Database successfully cleared" });
@@ -64,5 +107,12 @@ namespace MangaCount.Server.Controllers
     {
         public bool IsConfirmed { get; set; }
         public string ConfirmationText { get; set; } = string.Empty;
+    }
+
+    public class SelectiveDeletionRequest
+    {
+        public bool IsConfirmed { get; set; }
+        public string ConfirmationText { get; set; } = string.Empty;
+        public SelectiveDeletionOptions Options { get; set; } = new();
     }
 }
