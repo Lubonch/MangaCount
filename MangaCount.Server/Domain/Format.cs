@@ -1,5 +1,8 @@
-public class Format
+namespace MangaCount.Server.Domain
 {
-    public int Id { get; set; }
-    public required string Name { get; set; }
+    public class Format
+    {
+        public int Id { get; set; }
+        public required string Name { get; set; }
+    }
 }

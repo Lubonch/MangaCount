@@ -2,17 +2,21 @@ using MangaCount.Server.Domain;
 using MangaCount.Server.Repositories.Contracts;
 using MangaCount.Server.Services.Contracts;
 
-public class FormatService : IFormatService
+namespace MangaCount.Server.Services
 {
-    private readonly IFormatRepository _repository;
-    public FormatService(IFormatRepository repository)
+    public class FormatService : IFormatService
     {
-        _repository = repository;
-    }
+        private readonly IFormatRepository _repository;
+        
+        public FormatService(IFormatRepository repository)
+        {
+            _repository = repository;
+        }
 
-    public IEnumerable<Format> GetAll() => _repository.GetAll();
-    public Format GetById(int id) => _repository.GetById(id);
-    public Format Create(Format format) => _repository.Create(format);
-    public Format Update(Format format) => _repository.Update(format);
-    public void Delete(int id) => _repository.Delete(id);
+        public IEnumerable<Format> GetAll() => _repository.GetAll();
+        public Format GetById(int id) => _repository.GetById(id);
+        public Format Create(Format format) => _repository.Create(format);
+        public Format Update(Format format) => _repository.Update(format);
+        public void Delete(int id) => _repository.Delete(id);
+    }
 }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MangaCount.Server.Configs
 {
-    public class CustomExtensions
+    public static class CustomExtensions
     {
         public static void AddInjectionServices(IServiceCollection services)
         {
@@ -15,6 +15,7 @@ namespace MangaCount.Server.Configs
             services.AddScoped<IProfileService, ProfileService>();
             services.AddScoped<IPublisherService, PublisherService>();
             services.AddScoped<IFormatService, FormatService>();
+            services.AddScoped<IDatabaseService, DatabaseService>();
         }
         
         public static void AddInjectionRepositories(IServiceCollection services)
