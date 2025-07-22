@@ -167,7 +167,7 @@ const Sidebar = ({
                         <div className="import-help">
                             <small>
                                 Upload a TSV file with columns:<br />
-                                Name | Quantity | Total Volumes | Pending | | Priority
+                                Name | Quantity | Total Volumes | Pending | | Priority| Format | Publisher
                             </small>
                         </div>
                     </div>
