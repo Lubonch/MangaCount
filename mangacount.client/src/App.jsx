@@ -6,8 +6,10 @@ import LoadBearingCheck from './components/LoadBearingCheck';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProfileSelector from './components/ProfileSelector';
 import { ThemeProvider } from './contexts/ThemeContext';
+import NukeDataModal from './components/NukeDataModal';
 
 function App() {
+    const [showNukeModal, setShowNukeModal] = useState(false);
     const [entries, setEntries] = useState([]);
     const [mangas, setMangas] = useState([]);
     const [profiles, setProfiles] = useState([]);
@@ -201,8 +203,8 @@ function App() {
     return (
         <ThemeProvider>
             <LoadBearingCheck>
-                <div className="app">
-                    <div className="app-container">
+                <div className="app app-flex-layout">
+                    <div className="app-container app-flex-main">
                         <Sidebar 
                             mangas={mangas} 
                             selectedProfile={selectedProfile}
@@ -210,7 +212,7 @@ function App() {
                             onBackToProfiles={handleBackToProfileSelection}
                             refreshing={refreshing}
                         />
-                        <main className="main-content">
+                        <main className="main-content app-flex-content">
                             <CollectionView 
                                 entries={entries} 
                                 mangas={mangas}
@@ -220,6 +222,25 @@ function App() {
                             />
                         </main>
                     </div>
+                    {/* Global footer with nuke trigger */}
+                    <footer className="app-footer">
+                        <span>© {new Date().getFullYear()} MangaCount</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowNukeModal(true)}
+                            className="nuke-footer-link"
+                        >
+                            nuke all data
+                        </button>
+                    </footer>
+                    <NukeDataModal
+                        isOpen={showNukeModal}
+                        onClose={() => setShowNukeModal(false)}
+                        onSuccess={() => {
+                            setShowNukeModal(false);
+                            // Optionally reload data here
+                        }}
+                    />
                 </div>
             </LoadBearingCheck>
         </ThemeProvider>

@@ -201,21 +201,8 @@ const Sidebar = ({
                 </div>
 
                 {/* Danger Zone section */}
-                <div className="sidebar-section danger-zone">
-                    <h3>⚠️ Danger Zone</h3>
-                    <div className="danger-actions">
-                        <button
-                            className="danger-button nuke-button"
-                            onClick={() => setShowNukeModal(true)}
-                            title="Clear all data from database"
-                        >
-                            💥 Nuclear Option
-                        </button>
-                        <small className="danger-warning">
-                            This will permanently delete ALL data!
-                        </small>
-                    </div>
-                </div>
+                {/* Danger Zone section intentionally left blank: nuke button moved to modal footer */}
+                <div className="sidebar-section danger-zone"></div>
             </aside>
 
             <AddEntryModal

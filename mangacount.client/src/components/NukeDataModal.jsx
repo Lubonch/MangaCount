@@ -7,6 +7,12 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
     const [confirmationText, setConfirmationText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    // New: track which data types to delete
+    const [deleteEntries, setDeleteEntries] = useState(true);
+    const [deleteProfiles, setDeleteProfiles] = useState(false);
+    const [deleteManga, setDeleteManga] = useState(false);
+    const [deleteFormats, setDeleteFormats] = useState(false);
+    const [deletePublishers, setDeletePublishers] = useState(false);
 
     const REQUIRED_TEXT = "DELETE ALL DATA";
     const TOTAL_STEPS = 3;
@@ -17,6 +23,11 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
             setStep(1);
             setConfirmationText('');
             setError('');
+            setDeleteEntries(true);
+            setDeleteProfiles(false);
+            setDeleteManga(false);
+            setDeleteFormats(false);
+            setDeletePublishers(false);
         }
     }, [isOpen]);
 
@@ -49,6 +60,10 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
             setError('You must type exactly "DELETE ALL DATA" to proceed');
             return;
         }
+        if (!deleteEntries && (deleteProfiles || deleteManga || deleteFormats || deletePublishers)) {
+            setError('You must select entry deletion to delete other data types.');
+            return;
+        }
 
         setIsLoading(true);
         setError('');
@@ -61,7 +76,12 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                 },
                 body: JSON.stringify({
                     isConfirmed: true,
-                    confirmationText: confirmationText
+                    confirmationText: confirmationText,
+                    deleteEntries,
+                    deleteProfiles,
+                    deleteManga,
+                    deleteFormats,
+                    deletePublishers
                 })
             });
 
@@ -113,7 +133,7 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                         <div className="confirmation-step">
                             <h3>🚨 WARNING: This action cannot be undone!</h3>
                             <div className="warning-content">
-                                <p>You are about to permanently delete ALL data from the database:</p>
+                                <p>You are about to permanently delete data from the database. Continue to select what to delete.</p>
                                 {statistics && (
                                     <div className="data-summary">
                                         <div className="data-item">📚 <strong>{statistics.totalManga}</strong> manga entries</div>
@@ -123,24 +143,75 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                                         <div className="data-item">🏢 <strong>{statistics.totalPublishers}</strong> publishers</div>
                                     </div>
                                 )}
-                                <div className="consequences">
-                                    <h4>Consequences:</h4>
-                                    <ul>
-                                        <li>All manga and reading progress will be lost</li>
-                                        <li>All user profiles will be deactivated</li>
-                                        <li>Custom formats and publishers will be removed (except defaults)</li>
-                                        <li>You will need to re-import or recreate all data</li>
-                                    </ul>
-                                </div>
                             </div>
                         </div>
                     )}
 
                     {step === 2 && (
                         <div className="confirmation-step">
-                            <h3>🔥 Are you absolutely sure?</h3>
+                            <h3>🔥 Select what to delete</h3>
                             <div className="warning-content">
-                                <p>This will <strong>permanently delete everything</strong> in your manga collection database.</p>
+                                <p>Choose which data you want to delete. You must select entry deletion to delete other data types.</p>
+                                <div className="nuke-checkboxes" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: '1rem 0' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={deleteEntries}
+                                            onChange={e => {
+                                                setDeleteEntries(e.target.checked);
+                                                if (!e.target.checked) setDeleteProfiles(false);
+                                            }}
+                                        />
+                                        <span>Delete entries <span style={{ color: '#aaa' }}></span></span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={deleteProfiles}
+                                            disabled={!deleteEntries}
+                                            onChange={e => setDeleteProfiles(e.target.checked)}
+                                        />
+                                        <span>Delete profiles <span style={{ color: '#aaa' }}>(requires deleting entries)</span></span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={deleteManga}
+                                            onChange={e => setDeleteManga(e.target.checked)}
+                                            disabled={!deleteEntries}
+                                        />
+                                        <span>Delete manga</span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={deleteFormats}
+                                            onChange={e => setDeleteFormats(e.target.checked)}
+                                            disabled={!deleteEntries}
+                                        />
+                                        <span>Delete formats</span>
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={deletePublishers}
+                                            onChange={e => setDeletePublishers(e.target.checked)}
+                                            disabled={!deleteEntries}
+                                        />
+                                        <span>Delete publishers</span>
+                                    </label>
+                                </div>
+                                <div className="consequences">
+                                    <h4>Consequences:</h4>
+                                    <ul>
+                                        {deleteEntries && <li>All manga and reading progress will be lost</li>}
+                                        {deleteProfiles && <li>All user profiles will be deactivated</li>}
+                                        {deleteFormats && <li>Custom formats will be removed (except defaults)</li>}
+                                        {deletePublishers && <li>Custom publishers will be removed (except defaults)</li>}
+                                        {deleteManga && <li>All manga will be deleted</li>}
+                                        {!deleteEntries && <li>No data will be deleted unless you select at least one option.</li>}
+                                    </ul>
+                                </div>
                                 <div className="final-warning">
                                     <p>⚠️ <strong>There is NO way to recover this data once deleted!</strong></p>
                                     <p>Consider backing up your database before proceeding.</p>
@@ -176,28 +247,51 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                     <button type="button" onClick={onClose} className="cancel-button">
                         Cancel
                     </button>
-                    
                     {step > 1 && step < TOTAL_STEPS && (
                         <button type="button" onClick={handleBack} className="back-button">
                             Back
                         </button>
                     )}
-                    
-                    {step < TOTAL_STEPS ? (
+                    {step < TOTAL_STEPS && (
                         <button type="button" onClick={handleNext} className="next-button">
                             Continue
                         </button>
-                    ) : (
-                        <button 
-                            type="button" 
-                            onClick={handleFinalNuke}
-                            disabled={confirmationText !== REQUIRED_TEXT || isLoading}
-                            className="nuke-button"
-                        >
-                            {isLoading ? 'Deleting...' : '💥 NUKE DATABASE'}
-                        </button>
                     )}
                 </div>
+                {/* Footer with copyright and nuke trigger */}
+                <footer style={{
+                    marginTop: '2rem',
+                    padding: '1rem 0 0 0',
+                    borderTop: '1px solid #333',
+                    textAlign: 'center',
+                    fontSize: '0.95rem',
+                    color: '#888',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <span>© {new Date().getFullYear()} MangaCount</span>
+                    {step === 3 && (
+                        <button
+                            type="button"
+                            onClick={handleFinalNuke}
+                            disabled={confirmationText !== REQUIRED_TEXT || isLoading}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#c00',
+                                textDecoration: 'underline',
+                                cursor: confirmationText === REQUIRED_TEXT && !isLoading ? 'pointer' : 'not-allowed',
+                                marginTop: '0.5rem',
+                                fontSize: '1rem',
+                                opacity: confirmationText === REQUIRED_TEXT && !isLoading ? 1 : 0.5,
+                                fontWeight: 500
+                            }}
+                        >
+                            {isLoading ? 'Deleting...' : 'nuke all data'}
+                        </button>
+                    )}
+                </footer>
             </div>
         </div>
     );
