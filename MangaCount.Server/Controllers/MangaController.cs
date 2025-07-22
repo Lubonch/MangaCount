@@ -5,6 +5,7 @@ using MangaCount.Server.Model;
 using MangaCount.Server.Services.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace MangaCount.Server.Controllers
 {
@@ -92,6 +93,13 @@ namespace MangaCount.Server.Controllers
                 _logger.LogError(ex, "Error updating manga with ID {Id}", id);
                 return StatusCode(500, new { message = "Error updating manga", detail = ex.Message });
             }
+        }
+
+        [HttpGet]
+        [Route("~/GetMangaFromISBN/")]
+        public async Task<string> GetMangaFromISBN(string ISBNCode)
+        {
+            return await _mangaService.GetMangaFromISBNAsync(ISBNCode);
         }
     }
 }
