@@ -1,5 +1,5 @@
-﻿CSS Variables for Light Theme */
-:root[data-theme="light"] {
+﻿/* CSS Variables for Light Theme */
+html[data-theme="light"] {
     --bg-primary: #f5f5f5;
     --bg-secondary: #ffffff;
     --bg-tertiary: #fafafa;
@@ -33,7 +33,7 @@
 }
 
 /* CSS Variables for Dark Theme (Default) */
-:root[data-theme="dark"] {
+html[data-theme="dark"] {
     --bg-primary: #1a1a1a;
     --bg-secondary: #2d2d2d;
     --bg-tertiary: #404040;
