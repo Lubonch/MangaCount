@@ -6,11 +6,6 @@ import path from 'path';
 import child_process from 'child_process';
 import { env } from 'process';
 
-const loadBearingImagePath = path.join(__dirname, 'loadbearingimage.jpg');
-if (!fs.existsSync(loadBearingImagePath)) {
-    throw new Error("Ah, I wouldn't take it down if I were you. It's a load-bearing image.");
-}
-
 const baseFolder =
     env.APPDATA !== undefined && env.APPDATA !== ''
         ? `${env.APPDATA}/ASP.NET/https`
