@@ -169,6 +169,12 @@ dotnet dev-certs https --trust
 6. Push to the branch (`git push origin feature/amazing-feature`)
 7. Open a Pull Request
 
+Please review our [Security Policy](SECURITY.md) for security best practices and vulnerability reporting.
+
+## Security
+
+We take security seriously. If you discover a security vulnerability, please review our [Security Policy](SECURITY.md) for information on how to report it responsibly.
+
 ## License
 
 This project is licensed under the MIT License.

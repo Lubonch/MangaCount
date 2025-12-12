@@ -49,9 +49,13 @@ jobs:
     - name: Install ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
+    # Security Note: We use `find` instead of `ls` with glob patterns to avoid
+    # potential command injection vulnerabilities when processing file paths.
+    # File paths are properly quoted when passed to commands.
     - name: Generate backend coverage report
       run: |
-        if ls ./coverage/backend/**/coverage.cobertura.xml 1> /dev/null 2>&1; then
+        # Use find instead of ls for safer glob pattern handling
+        if find ./coverage/backend -name "coverage.cobertura.xml" -type f | grep -q .; then
           reportgenerator \
             -reports:"./coverage/backend/**/coverage.cobertura.xml" \
             -targetdir:"./coverage/backend/report" \
