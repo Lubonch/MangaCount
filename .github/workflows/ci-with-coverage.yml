@@ -51,7 +51,8 @@ jobs:
 
     # Security Note: We use `find` instead of `ls` with glob patterns to avoid
     # potential command injection vulnerabilities when processing file paths.
-    # File paths are properly quoted when passed to commands.
+    # The reportgenerator tool safely handles glob patterns in its -reports parameter
+    # internally without shell expansion, so that usage is secure.
     - name: Generate backend coverage report
       run: |
         # Use find instead of ls for safer glob pattern handling

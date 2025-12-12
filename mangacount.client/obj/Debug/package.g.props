@@ -25,9 +25,9 @@
     <PackageJsonDevdependenciesEslintPluginReactHooks Condition="$(PackageJsonDevdependenciesEslintPluginReactHooks) == ''">^5.2.0</PackageJsonDevdependenciesEslintPluginReactHooks>
     <PackageJsonDevdependenciesEslintPluginReactRefresh Condition="$(PackageJsonDevdependenciesEslintPluginReactRefresh) == ''">^0.4.20</PackageJsonDevdependenciesEslintPluginReactRefresh>
     <PackageJsonDevdependenciesGlobals Condition="$(PackageJsonDevdependenciesGlobals) == ''">^16.3.0</PackageJsonDevdependenciesGlobals>
-    <PackageJsonDevdependenciesVite Condition="$(PackageJsonDevdependenciesVite) == ''">^7.0.4</PackageJsonDevdependenciesVite>
-    <PackageJsonDevdependenciesVitest Condition="$(PackageJsonDevdependenciesVitest) == ''">^2.1.8</PackageJsonDevdependenciesVitest>
-    <PackageJsonDevdependenciesVitestCoverageV8 Condition="$(PackageJsonDevdependenciesVitestCoverageV8) == ''">^2.1.8</PackageJsonDevdependenciesVitestCoverageV8>
+    <PackageJsonDevdependenciesVite Condition="$(PackageJsonDevdependenciesVite) == ''">^7.2.6</PackageJsonDevdependenciesVite>
+    <PackageJsonDevdependenciesVitest Condition="$(PackageJsonDevdependenciesVitest) == ''">^4.0.15</PackageJsonDevdependenciesVitest>
+    <PackageJsonDevdependenciesVitestCoverageV8 Condition="$(PackageJsonDevdependenciesVitestCoverageV8) == ''">^4.0.15</PackageJsonDevdependenciesVitestCoverageV8>
     <PackageJsonDevdependenciesJsdom Condition="$(PackageJsonDevdependenciesJsdom) == ''">^25.0.1</PackageJsonDevdependenciesJsdom>
   </PropertyGroup>
 </Project>

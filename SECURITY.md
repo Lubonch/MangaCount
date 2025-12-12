@@ -151,5 +151,3 @@ When using glob patterns in GitHub Actions workflows:
 ## Security Updates
 
 We regularly review and update our security practices. This document will be updated as new security considerations are identified.
-
-Last updated: December 2024
