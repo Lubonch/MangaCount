@@ -1,13 +1,13 @@
-# MangaCount - Guía Completa de Migración a Angular con Web API
+# MangaCount - Guía Completa de Implementación desde Cero con Angular y Web API
 
 ## 📋 Tabla de Contenidos
 1. [Descripción General](#descripción-general)
 2. [Arquitectura del Sistema](#arquitectura-del-sistema)
 3. [Backend - ASP.NET Core Web API](#backend---aspnet-core-web-api)
-4. [Frontend - React (a migrar a Angular)](#frontend---react-a-migrar-a-angular)
+4. [Frontend - Angular](#frontend---angular)
 5. [Base de Datos - SQL Server](#base-de-datos---sql-server)
 6. [Funcionalidades Principales](#funcionalidades-principales)
-7. [Guía de Implementación Angular](#guía-de-implementación-angular)
+7. [Guía de Implementación](#guía-de-implementación)
 
 ---
 
@@ -15,17 +15,18 @@
 
 **MangaCount** es una aplicación web para gestionar colecciones de manga. Permite a los usuarios crear múltiples perfiles, agregar mangas a su colección, realizar seguimiento de volúmenes, establecer prioridades, y gestionar información sobre editoriales y formatos.
 
-### Tecnologías Actuales
+### Tecnologías
 - **Backend**: ASP.NET Core 8.0 Web API
-- **Frontend**: React 19.1.0 + Vite (a migrar a Angular)
+- **Frontend**: Angular 17
 - **Base de Datos**: SQL Server
-- **ORM**: Fluent NHibernate (migrar desde Dapper)
+- **ORM**: Fluent NHibernate
 - **Mapping**: AutoMapper
-- **Testing**: Vitest (Frontend)
+- **State Management**: NgRx (Angular)
+- **UI Components**: Angular Material
 
 ### Puerto y Configuración
 - **Backend**: `https://localhost:7044` (default .NET)
-- **Frontend React**: `https://localhost:63920` (Vite dev server)
+- **Frontend Angular**: `https://localhost:4200` (default Angular dev server)
 - **CORS**: Configurado para permitir comunicación entre frontend y backend
 
 ### Modelo de Perfiles Locales (Tenants)
@@ -59,12 +60,19 @@ MangaCount/
 │   └── wwwroot/                    # Archivos estáticos
 │       └── profiles/               # Imágenes de perfil
 │
-├── mangacount.client/              # Frontend React (a migrar)
+├── mangacount.client/              # Frontend Angular
 │   ├── src/
-│   │   ├── components/             # Componentes React
-│   │   ├── contexts/               # Context API (Theme)
-│   │   └── test/                   # Tests unitarios
-│   └── public/                     # Assets públicos
+│   │   ├── app/
+│   │   │   ├── core/               # Servicios core, guards, interceptors
+│   │   │   ├── features/           # Módulos de características (manga, profile, etc.)
+│   │   │   ├── shared/             # Componentes compartidos, pipes, directives
+│   │   │   ├── store/              # NgRx state management
+│   │   │   └── models/             # Interfaces TypeScript
+│   │   ├── assets/                 # Assets estáticos
+│   │   ├── environments/           # Configuración de entornos
+│   │   └── styles/                 # Estilos globales
+│   ├── angular.json                # Configuración Angular CLI
+│   └── package.json                # Dependencias npm
 │
 └── MangaCount.Server.Tests/        # Tests del backend
 ```
@@ -342,13 +350,13 @@ if (!File.Exists(loadBearingImagePath))
 
 builder.Services.AddControllers();
 
-// CORS para React (cambiar para Angular)
+// CORS para Angular
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
+    options.AddPolicy("AllowAngularApp",
         policy =>
         {
-            policy.WithOrigins("https://localhost:63920")
+            policy.WithOrigins("https://localhost:4200")
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
@@ -363,7 +371,7 @@ CustomExtensions.AddInjectionRepositories(builder.Services);
 
 var app = builder.Build();
 
-app.UseCors("AllowReactApp");
+app.UseCors("AllowAngularApp");
 app.UseStaticFiles();
 
 // Crear directorio para imágenes de perfil
@@ -686,26 +694,28 @@ INSERT INTO [dbo].[Publishers] ([Name]) VALUES ('Unknown');
 
 ---
 
-## Frontend - React (a migrar a Angular)
+## Frontend - Angular
 
 ### 1. Estructura de Componentes
 
-#### **App.jsx** (Componente Principal)
+#### **AppComponent** (Componente Principal)
 **Responsabilidades**:
-- Gestión de estado global de la aplicación
+- Gestión de estado global de la aplicación con NgRx
 - Flujo de navegación entre selección de perfil y colección
 - Carga inicial de datos (perfiles, mangas, entradas)
 - Manejo de cambio de perfil
-- Provider del ThemeContext
+- Provider del tema global
 
-**Estados principales**:
-```javascript
-const [entries, setEntries] = useState([]);          // Entradas del perfil actual
-const [mangas, setMangas] = useState([]);            // Catálogo de mangas
-const [profiles, setProfiles] = useState([]);        // Lista de perfiles
-const [selectedProfile, setSelectedProfile] = useState(null);  // Perfil activo
-const [loading, setLoading] = useState(true);        // Estado de carga
-const [appPhase, setAppPhase] = useState('loading'); // Fase de la app
+**Estados principales (NgRx)**:
+```typescript
+interface AppState {
+  entries: Entry[];          // Entradas del perfil actual
+  mangas: Manga[];           // Catálogo de mangas
+  profiles: Profile[];       // Lista de perfiles
+  selectedProfile: Profile | null;  // Perfil activo
+  loading: boolean;          // Estado de carga
+  appPhase: AppPhase;        // Fase de la app
+}
 ```
 
 **Fases de la aplicación**:
@@ -715,34 +725,36 @@ const [appPhase, setAppPhase] = useState('loading'); // Fase de la app
 - `error`: Error en carga
 
 **Funciones principales**:
-```javascript
+```typescript
 initializeApp()                    // Inicializa la aplicación
 loadProfiles()                     // Carga lista de perfiles
 loadData(isRefresh)                // Carga datos del perfil
 loadEntries(profileId)             // Carga entradas del perfil
 loadMangas()                       // Carga catálogo de mangas
-handleProfileSelect(profile)       // Selecciona un perfil
-handleBackToProfileSelection()     // Vuelve a selección de perfil
-handleImportSuccess()              // Callback de importación exitosa
+selectProfile(profile)             // Selecciona un perfil
+backToProfileSelection()           // Vuelve a selección de perfil
+onImportSuccess()                  // Callback de importación exitosa
 ```
 
-#### **ProfileSelector.jsx**
+#### **ProfileSelectorComponent**
 **Responsabilidades**:
 - Mostrar lista de perfiles disponibles
 - Crear nuevos perfiles
 - Subir imágenes de perfil
 - Eliminar perfiles
 
-**Props**:
-```javascript
-{
-  onProfileSelect: (profile) => void,
-  selectedProfileId: number,
-  isChangingProfile: boolean,
-  showBackButton: boolean,
-  onBackToMain: () => void,
-  lastSelectedProfile: Profile
-}
+**Inputs**:
+```typescript
+@Input() selectedProfileId: number;
+@Input() isChangingProfile: boolean;
+@Input() showBackButton: boolean;
+@Input() lastSelectedProfile: Profile;
+```
+
+**Outputs**:
+```typescript
+@Output() profileSelected = new EventEmitter<Profile>();
+@Output() backToMain = new EventEmitter<void>();
 ```
 
 **Funcionalidades**:
@@ -751,7 +763,7 @@ handleImportSuccess()              // Callback de importación exitosa
 - Highlighting del último perfil usado
 - Validación de nombre único
 
-#### **CollectionView.jsx**
+#### **CollectionViewComponent**
 **Responsabilidades**:
 - Mostrar colección de mangas del perfil
 - Filtros múltiples (estado, editorial, formato)
@@ -759,6 +771,20 @@ handleImportSuccess()              // Callback de importación exitosa
 - Modos de vista (cards/table)
 - Edición rápida de cantidad de volúmenes
 - Edición de entradas y mangas
+
+**Inputs**:
+```typescript
+@Input() entries: Entry[];
+@Input() mangas: Manga[];
+@Input() selectedProfile: Profile;
+```
+
+**Outputs**:
+```typescript
+@Output() entryUpdated = new EventEmitter<Entry>();
+@Output() mangaUpdated = new EventEmitter<Manga>();
+@Output() importRequested = new EventEmitter<void>();
+```
 
 **Filtros disponibles**:
 - `all`: Todos
@@ -789,7 +815,7 @@ handleEditManga()                  // Abre modal de edición de manga
 loadFilterOptions()                // Carga opciones de filtro dinámicas
 ```
 
-#### **Sidebar.jsx**
+#### **SidebarComponent**
 **Responsabilidades**:
 - Acciones rápidas (agregar entrada/manga)
 - Importar colección desde TSV
@@ -798,15 +824,19 @@ loadFilterOptions()                // Carga opciones de filtro dinámicas
 - Mostrar perfil actual
 - Eliminar datos del perfil (nuke)
 
-**Props**:
-```javascript
-{
-  mangas: Manga[],
-  selectedProfile: Profile,
-  onImportSuccess: () => void,
-  onBackToProfiles: () => void,
-  refreshing: boolean
-}
+**Inputs**:
+```typescript
+@Input() mangas: Manga[];
+@Input() selectedProfile: Profile;
+@Input() refreshing: boolean;
+```
+
+**Outputs**:
+```typescript
+@Output() importSuccess = new EventEmitter<void>();
+@Output() backToProfiles = new EventEmitter<void>();
+@Output() themeChanged = new EventEmitter<string>();
+@Output() nukeRequested = new EventEmitter<void>();
 ```
 
 **Funcionalidades**:
@@ -1040,7 +1070,7 @@ App (Estado Global)
 
 ---
 
-## Guía de Implementación Angular
+## Guía de Implementación
 
 ### 1. Configuración Inicial
 
