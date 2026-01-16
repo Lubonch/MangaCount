@@ -17,9 +17,9 @@
 
 ### Tecnologías Actuales
 - **Backend**: ASP.NET Core 8.0 Web API
-- **Frontend**: React 19.1.0 + Vite
+- **Frontend**: React 19.1.0 + Vite (a migrar a Angular)
 - **Base de Datos**: SQL Server
-- **ORM**: Dapper
+- **ORM**: Fluent NHibernate (migrar desde Dapper)
 - **Mapping**: AutoMapper
 - **Testing**: Vitest (Frontend)
 
@@ -27,6 +27,14 @@
 - **Backend**: `https://localhost:7044` (default .NET)
 - **Frontend React**: `https://localhost:63920` (Vite dev server)
 - **CORS**: Configurado para permitir comunicación entre frontend y backend
+
+### Modelo de Perfiles Locales (Tenants)
+**Importante**: Los perfiles funcionan como tenants locales, lo que significa:
+- ✅ **No requiere autenticación/login** - Los perfiles son locales al dispositivo
+- ✅ **Múltiples colecciones independientes** - Cada perfil es un tenant separado
+- ✅ **Persistencia local** - Los perfiles se almacenan en la base de datos local
+- ✅ **Cambio instantáneo** - Cambiar de perfil es inmediato sin re-autenticación
+- ✅ **Datos aislados** - Cada perfil tiene su propia colección de mangas
 
 ---
 
@@ -39,12 +47,13 @@ MangaCount/
 ├── MangaCount.Server/              # Backend Web API
 │   ├── Controllers/                # API Endpoints
 │   ├── Domain/                     # Entidades de dominio
+│   ├── Infrastructure/             # Capa de infraestructura (Fluent NHibernate)
+│   │   ├── Mappings/               # Mapeos Fluent NHibernate
+│   │   ├── Repositories/           # Implementaciones de repositorios
+│   │   └── Data/                   # Configuración NHibernate
+│   ├── Application/                # Servicios de aplicación
 │   ├── DTO/                        # Data Transfer Objects
 │   ├── Model/                      # View Models
-│   ├── Repositories/               # Acceso a datos (Dapper)
-│   │   └── Contracts/              # Interfaces de repositorios
-│   ├── Services/                   # Lógica de negocio
-│   │   └── Contracts/              # Interfaces de servicios
 │   ├── Configs/                    # Configuración y DI
 │   ├── Scripts/                    # Scripts SQL
 │   └── wwwroot/                    # Archivos estáticos
@@ -269,29 +278,52 @@ public static class CustomExtensions
 }
 ```
 
-#### Patrón Repositorio
-Todos los repositorios implementan operaciones CRUD usando **Dapper**:
-- `Create(T entity)` - Insertar nuevo registro
-- `Update(T entity)` - Actualizar registro existente
-- `GetById(int id)` - Obtener por ID
-- `GetAll()` - Obtener todos los registros
-- Métodos específicos según entidad
+#### Patrón Repositorio con Fluent NHibernate
+Todos los repositorios implementan operaciones CRUD usando **Fluent NHibernate**:
+- `Save(T entity)` - Insertar o actualizar registro
+- `Delete(T entity)` - Eliminar registro
+- `GetById(int id)` - Obtener por ID con lazy loading
+- `GetAll()` - Obtener todos los registros con fetch joins
+- Métodos específicos según entidad con consultas LINQ
 
-**Ejemplo de MangaRepository**:
+**Ejemplo de MangaRepository con Fluent NHibernate**:
 ```csharp
-public Manga Create(Manga manga)
+public class MangaRepository : IMangaRepository
 {
-    var sql = @"INSERT INTO [dbo].[Manga]
-                ([Name],[Volumes],[FormatId],[PublisherId])
-                VALUES(@Name,@Volumes,@FormatId,@PublisherId); 
-                SELECT CAST(SCOPE_IDENTITY() as int);";
-    
-    using (var connection = new SqlConnection(connString))
+    private readonly ISession _session;
+
+    public MangaRepository(ISession session)
     {
-        connection.Open();
-        var newId = connection.QuerySingle<int>(sql, parameters);
-        manga.Id = newId;
-        return manga;
+        _session = session;
+    }
+
+    public Manga GetById(int id)
+    {
+        return _session.Get<Manga>(id);
+    }
+
+    public IEnumerable<Manga> GetAll()
+    {
+        return _session.Query<Manga>()
+            .Fetch(m => m.Format)
+            .Fetch(m => m.Publisher)
+            .ToList();
+    }
+
+    public Manga Save(Manga manga)
+    {
+        using var transaction = _session.BeginTransaction();
+        try
+        {
+            _session.SaveOrUpdate(manga);
+            transaction.Commit();
+            return manga;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
     }
 }
 ```
@@ -355,7 +387,200 @@ app.MapFallbackToFile("/index.html");
 app.Run();
 ```
 
-### 5. Configuración de Base de Datos
+### 5. Configuración de Fluent NHibernate
+
+#### Mapeos de Entidades
+
+**MangaMap.cs**:
+```csharp
+public class MangaMap : ClassMap<Manga>
+{
+    public MangaMap()
+    {
+        Id(x => x.Id).GeneratedBy.Identity();
+        Map(x => x.Name).Column("Name").Length(255).Not.Nullable();
+        Map(x => x.Volumes).Column("Volumes").Nullable();
+        
+        References(x => x.Format)
+            .Column("FormatId")
+            .LazyLoad()
+            .Not.Nullable();
+            
+        References(x => x.Publisher)
+            .Column("PublisherId")
+            .LazyLoad()
+            .Not.Nullable();
+            
+        HasMany(x => x.Entries)
+            .KeyColumn("MangaId")
+            .LazyLoad()
+            .Cascade.All();
+    }
+}
+```
+
+**EntryMap.cs**:
+```csharp
+public class EntryMap : ClassMap<Entry>
+{
+    public EntryMap()
+    {
+        Id(x => x.Id).GeneratedBy.Identity();
+        Map(x => x.Quantity).Column("Quantity").Not.Nullable();
+        Map(x => x.Pending).Column("Pending").Length(500).Nullable();
+        Map(x => x.Priority).Column("Priority").Not.Nullable();
+        
+        References(x => x.Manga)
+            .Column("MangaId")
+            .LazyLoad()
+            .Not.Nullable();
+            
+        References(x => x.Profile)
+            .Column("ProfileId")
+            .LazyLoad()
+            .Not.Nullable();
+    }
+}
+```
+
+#### Configuración de NHibernate
+
+**NHibernateHelper.cs**:
+```csharp
+public class NHibernateHelper
+{
+    private static ISessionFactory _sessionFactory;
+
+    public static ISessionFactory SessionFactory
+    {
+        get
+        {
+            if (_sessionFactory == null)
+                InitializeSessionFactory();
+            return _sessionFactory;
+        }
+    }
+
+    private static void InitializeSessionFactory()
+    {
+        _sessionFactory = Fluently.Configure()
+            .Database(MsSqlConfiguration.MsSql2012
+                .ConnectionString(c => c.FromConnectionStringWithKey("MangacountDatabase"))
+                .ShowSql())
+            .Mappings(m => m.FluentMappings
+                .AddFromAssemblyOf<MangaMap>())
+            .BuildSessionFactory();
+    }
+
+    public static ISession OpenSession()
+    {
+        return SessionFactory.OpenSession();
+    }
+}
+```
+
+#### Inyección de Dependencias Actualizada
+
+```csharp
+public static class CustomExtensions
+{
+    public static void AddNHibernate(IServiceCollection services, string connectionString)
+    {
+        services.AddSingleton<ISessionFactory>(provider =>
+        {
+            return Fluently.Configure()
+                .Database(MsSqlConfiguration.MsSql2012
+                    .ConnectionString(connectionString)
+                    .ShowSql())
+                .Mappings(m => m.FluentMappings
+                    .AddFromAssemblyOf<MangaMap>())
+                .BuildSessionFactory();
+        });
+
+        services.AddScoped<ISession>(provider =>
+            provider.GetService<ISessionFactory>().OpenSession());
+    }
+
+    public static void AddInjectionServices(IServiceCollection services)
+    {
+        services.AddScoped<IMangaService, MangaService>();
+        services.AddScoped<IEntryService, EntryService>();
+        services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<IPublisherService, PublisherService>();
+        services.AddScoped<IFormatService, FormatService>();
+        services.AddScoped<IDatabaseService, DatabaseService>();
+    }
+    
+    public static void AddInjectionRepositories(IServiceCollection services)
+    {
+        services.AddScoped<IMangaRepository, MangaRepository>();
+        services.AddScoped<IEntryRepository, EntryRepository>();
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IPublisherRepository, PublisherRepository>();
+        services.AddScoped<IFormatRepository, FormatRepository>();
+    }
+}
+```
+
+### 6. Modelo de Perfiles Locales (Tenants)
+
+#### Arquitectura de Multi-Tenancy Local
+
+**Características principales**:
+- **Sin autenticación externa** - Los perfiles son locales al dispositivo
+- **Tenants independientes** - Cada perfil tiene datos completamente aislados
+- **Cambio instantáneo** - No requiere login/logout entre perfiles
+- **Persistencia automática** - Los perfiles se guardan automáticamente
+
+#### Funcionamiento de Perfiles
+
+```csharp
+// El perfil actual se mantiene en el estado de la aplicación
+public class ProfileContext
+{
+    public Profile CurrentProfile { get; private set; }
+    
+    public void SetCurrentProfile(Profile profile)
+    {
+        CurrentProfile = profile;
+        // Persistir en localStorage para recordar entre sesiones
+        LocalStorage.Set("currentProfileId", profile.Id);
+    }
+    
+    public async Task LoadLastProfile()
+    {
+        var lastProfileId = LocalStorage.Get<int?>("currentProfileId");
+        if (lastProfileId.HasValue)
+        {
+            CurrentProfile = await _profileRepository.GetById(lastProfileId.Value);
+        }
+    }
+}
+```
+
+#### Filtrado por Perfil
+
+**Todas las consultas incluyen filtrado por perfil actual**:
+```csharp
+public IEnumerable<Entry> GetEntriesForCurrentProfile(int profileId)
+{
+    return _session.Query<Entry>()
+        .Where(e => e.Profile.Id == profileId)
+        .Fetch(e => e.Manga)
+        .ThenFetch(m => m.Format)
+        .ThenFetch(m => m.Publisher)
+        .ToList();
+}
+```
+
+#### Ventajas del Modelo Local
+- ✅ **Simplicidad** - No requiere sistema de autenticación complejo
+- ✅ **Performance** - Cambio instantáneo entre perfiles
+- ✅ **Offline-ready** - Funciona sin conexión a internet
+- ✅ **Privacidad** - Datos permanecen locales
+- ✅ **Multi-usuario** - Múltiples personas pueden usar la misma aplicación
+
+### 7. Configuración de Base de Datos
 
 **appsettings.json**:
 ```json
@@ -383,12 +608,11 @@ app.Run();
 **MangaCount.Server.csproj**:
 ```xml
 <PackageReference Include="AutoMapper" Version="15.0.1" />
-<PackageReference Include="Dapper" Version="2.1.66" />
+<PackageReference Include="FluentNHibernate" Version="3.4.0" />
+<PackageReference Include="NHibernate" Version="5.5.2" />
 <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="8.*-*" />
 <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
 <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-```
-
 ---
 
 ## Base de Datos - SQL Server
@@ -752,6 +976,14 @@ App (Estado Global)
 ---
 
 ## Funcionalidades Principales
+
+### 📋 Modelo de Perfiles Locales (Tenants)
+**Importante**: Esta aplicación utiliza un modelo de **perfiles locales** donde:
+- 🔐 **No hay sistema de login/autenticación** - Los perfiles son locales al dispositivo
+- 👥 **Múltiples usuarios locales** - Cada perfil representa un usuario diferente en el mismo dispositivo
+- ⚡ **Cambio instantáneo** - Cambiar entre perfiles no requiere autenticación
+- 💾 **Persistencia local** - Los perfiles se almacenan en la base de datos local
+- 🔒 **Privacidad local** - No hay cuentas de usuario globales o en la nube
 
 ### 1. Gestión de Perfiles
 - ✅ Crear perfiles con nombre y foto
