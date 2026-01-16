@@ -1,5 +1,7 @@
-import { HttpClient } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { ProfileService } from './core/services/profile.service';
+import { ThemeService } from './core/services/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -8,24 +10,27 @@ import { Component, signal } from '@angular/core';
   styleUrl: './app.css'
 })
 export class App implements OnInit {
-  public forecasts: WeatherForecast[] = [];
+  title = 'MangaCount';
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private profileService: ProfileService,
+    private themeService: ThemeService,
+    private router: Router
+  ) {}
 
-  ngOnInit() {
-    this.getForecasts();
-  }
+  ngOnInit(): void {
+    // Initialize theme
+    this.themeService.theme$.subscribe(theme => {
+      document.documentElement.setAttribute('data-theme', theme);
+    });
 
-  getForecasts() {
-    this.http.get<WeatherForecast[]>('/weatherforecast').subscribe(
-      (result) => {
-        this.forecasts = result;
-      },
-      (error) => {
-        console.error(error);
+    // Initialize routing based on selected profile
+    this.profileService.selectedProfile$.subscribe(profile => {
+      if (profile) {
+        this.router.navigate(['/collection']);
+      } else {
+        this.router.navigate(['/profiles']);
       }
-    );
+    });
   }
-
-  protected readonly title = signal('mangacount.client');
 }

@@ -1,0 +1,136 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="onClose()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ editingManga ? 'Editar Manga' : 'Agregar Manga' }}</h2>
+      <button class="close-btn" (click)="onClose()">✕</button>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="modal-body">
+      <div class="form-group">
+        <label for="mangaName">Nombre del manga:</label>
+        <input 
+          type="text" 
+          id="mangaName"
+          [(ngModel)]="manga.name"
+          name="mangaName"
+          class="form-control"
+          placeholder="Ingresa el nombre del manga"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label for="volumes">Número total de volúmenes (opcional):</label>
+        <input 
+          type="number" 
+          id="volumes"
+          [(ngModel)]="manga.volumes"
+          name="volumes"
+          min="1"
+          class="form-control"
+          placeholder="Deja vacío si es serie en curso">
+      </div>
+
+      <div class="form-group">
+        <label for="format">Formato:</label>
+        <div class="select-with-add">
+          <select 
+            id="format"
+            [(ngModel)]="manga.formatId"
+            name="format"
+            class="form-control">
+            <option *ngFor="let format of formats" [value]="format.id">
+              {{ format.name }}
+            </option>
+          </select>
+          <button 
+            type="button" 
+            class="add-btn"
+            (click)="showNewFormatInput = true">
+            +
+          </button>
+        </div>
+        
+        <div class="new-item-input" *ngIf="showNewFormatInput">
+          <input 
+            type="text"
+            [(ngModel)]="newFormatName"
+            name="newFormatName"
+            placeholder="Nombre del nuevo formato"
+            class="form-control">
+          <div class="input-actions">
+            <button 
+              type="button"
+              (click)="createFormat()"
+              class="save-btn-small"
+              [disabled]="!newFormatName.trim()">
+              ✓
+            </button>
+            <button 
+              type="button"
+              (click)="showNewFormatInput = false; newFormatName = ''"
+              class="cancel-btn-small">
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="publisher">Editorial:</label>
+        <div class="select-with-add">
+          <select 
+            id="publisher"
+            [(ngModel)]="manga.publisherId"
+            name="publisher"
+            class="form-control">
+            <option *ngFor="let publisher of publishers" [value]="publisher.id">
+              {{ publisher.name }}
+            </option>
+          </select>
+          <button 
+            type="button" 
+            class="add-btn"
+            (click)="showNewPublisherInput = true">
+            +
+          </button>
+        </div>
+
+        <div class="new-item-input" *ngIf="showNewPublisherInput">
+          <input 
+            type="text"
+            [(ngModel)]="newPublisherName"
+            name="newPublisherName"
+            placeholder="Nombre de la nueva editorial"
+            class="form-control">
+          <div class="input-actions">
+            <button 
+              type="button"
+              (click)="createPublisher()"
+              class="save-btn-small"
+              [disabled]="!newPublisherName.trim()">
+              ✓
+            </button>
+            <button 
+              type="button"
+              (click)="showNewPublisherInput = false; newPublisherName = ''"
+              class="cancel-btn-small">
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button 
+          type="submit" 
+          class="save-btn"
+          [disabled]="!manga.name.trim()">
+          {{ editingManga ? 'Actualizar' : 'Guardar' }}
+        </button>
+        <button type="button" (click)="onClose()" class="cancel-btn">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

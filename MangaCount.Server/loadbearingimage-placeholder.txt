@@ -1,0 +1,12 @@
+# Load-Bearing Image Placeholder
+
+This file serves as a placeholder for the required load-bearing image.
+The application will not start without this file present.
+
+To create the actual load-bearing image:
+1. Create or find a JPG image
+2. Rename it to "loadbearingimage.jpg" 
+3. Place it in the root directory of MangaCount.Server
+4. This file can then be deleted
+
+The load-bearing image is an easter egg referencing the classic XKCD comic about load-bearing comments in code.

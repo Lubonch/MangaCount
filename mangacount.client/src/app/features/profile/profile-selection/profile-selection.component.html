@@ -1,0 +1,72 @@
+<div class="profile-selection-container">
+  <div class="header">
+    <h1>MangaCount</h1>
+    <p>Selecciona tu perfil o crea uno nuevo</p>
+  </div>
+
+  <div class="profiles-grid" *ngIf="!loading">
+    <div 
+      *ngFor="let profile of profiles" 
+      class="profile-card"
+      (click)="selectProfile(profile)">
+      <img 
+        [src]="profile.profilePicture || '/assets/default-avatar.png'" 
+        [alt]="profile.name"
+        class="profile-avatar">
+      <h3>{{ profile.name }}</h3>
+      <p>Creado: {{ profile.createdDate | date:'short' }}</p>
+      <button 
+        class="delete-btn" 
+        (click)="deleteProfile(profile, $event)"
+        title="Eliminar perfil">
+        ❌
+      </button>
+    </div>
+
+    <div class="profile-card add-profile" (click)="openCreateModal()">
+      <div class="add-icon">➕</div>
+      <h3>Nuevo Perfil</h3>
+    </div>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    <p>Cargando perfiles...</p>
+  </div>
+
+  <!-- Create Profile Modal -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h2>Crear Nuevo Perfil</h2>
+      
+      <form (ngSubmit)="createProfile()">
+        <div class="form-group">
+          <label for="profileName">Nombre:</label>
+          <input 
+            type="text" 
+            id="profileName"
+            [(ngModel)]="newProfile.name" 
+            name="profileName"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="profilePicture">Foto de perfil (opcional):</label>
+          <input 
+            type="file" 
+            id="profilePicture"
+            (change)="onFileSelected($event)"
+            accept="image/*">
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" [disabled]="!newProfile.name" class="create-btn">
+            Crear Perfil
+          </button>
+          <button type="button" (click)="closeCreateModal()" class="cancel-btn">
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
