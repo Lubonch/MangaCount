@@ -1,50 +1,20 @@
-﻿using MangaCount.Server.Configs;
-
 var builder = WebApplication.CreateBuilder(args);
 
-var loadBearingImagePath = Path.Combine(Directory.GetCurrentDirectory(), "loadbearingimage.jpg");
-if (!File.Exists(loadBearingImagePath))
-{
-    throw new FileNotFoundException("Ah, I wouldn't take it down if I were you. It's a load-bearing image.", "loadbearingimage.jpg");
-}
+// Add services to the container.
 
 builder.Services.AddControllers();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReactApp",
-        policy =>
-        {
-            policy.WithOrigins("https://localhost:63920")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
-        });
-});
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-CustomExtensions.AddInjectionServices(builder.Services);
-CustomExtensions.AddInjectionRepositories(builder.Services);
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-app.UseCors("AllowReactApp");
-
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.MapStaticAssets();
 
-var profilesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "profiles");
-if (!Directory.Exists(profilesPath))
-{
-    Directory.CreateDirectory(profilesPath);
-}
-
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
@@ -56,6 +26,3 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
-
-// Make the implicit Program class accessible for testing
-public partial class Program { }

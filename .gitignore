@@ -1,315 +1,229 @@
-####################
-# MangaCount Project Specific
-####################
-
-# Upload directories
-uploads/
-wwwroot/uploads/
-temp-uploads/
-
-# Runtime generated content
-wwwroot/
-# Runtime generated content
-wwwroot/profiles/
-wwwroot/uploads/
-wwwroot/temp/
-# But keep static assets that should be tracked
-!wwwroot/css/
-!wwwroot/js/
-!wwwroot/lib/
-!wwwroot/*.html
-!wwwroot/*.ico
-!wwwroot/*.svg
-
-# Custom logs
-Logs/
-*.custom.log
-
-####################
-# .NET 8 / ASP.NET Core
-####################
-
-# Build outputs
+# .NET
 bin/
 obj/
-out/
-publish/
-*.dll
-*.exe
-*.pdb
-*.cache
-*.deps.json
-*.runtimeconfig.json
-*.runtimeconfig.dev.json
-
-# Project artifacts
-project.lock.json
-project.fragment.lock.json
-artifacts/
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-[Ww][Ii][Nn]32/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bld/
-[Ll]og/
-[Ll]ogs/
-
-# Visual Studio / VS Code
-.vs/
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-*.rsuser
-*.suo
 *.user
-*.userosscache
-*.sln.docstates
-*.userprefs
-*.code-workspace
-.localhistory/
+*.suo
+*.cache
+*.log
+*.tmp
+*.temp
+*.swp
+*.bak
+*.orig
+*.rej
+*.vspscc
+*.vssscc
+*.scc
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+*.pubxml
+*.azurePubxml
+*.pubxml.user
+*.nupkg
+*.snupkg
+*.msbuild.log
+*.msbuild.binlog
+*.nuget.props
+*.nuget.targets
+*.g.props
+*.g.targets
+*.AssemblyInfo.cs
+*.AssemblyInfoInputs.cache
+*.GeneratedMSBuildEditorConfig.editorconfig
+*.GlobalUsings.g.cs
+*.assets.cache
+*.AssemblyReference.cache
+*.dswa.cache.json
+*.proxy.json
+*.removed.txt
+*.nuget.dgspec.json
+*.nuget.g.props
+*.nuget.g.targets
+*.nuget.cache
+project.assets.json
+project.nuget.cache
 
-# Test Results
-[Tt]est[Rr]esult*/
-[Bb]uild[Ll]og.*
-*.VisualState.xml
-TestResult.xml
-nunit-*.xml
-coverage*.json
-coverage*.xml
-coverage*.info
+# Visual Studio
+.vs/
+.vscode/settings.json
+*.vsidx
+*.futdcache.v2
+*.suo
+DocumentLayout.json
+DocumentLayout.backup.json
+CopilotIndices/
+
+# Project Evaluation
+ProjectEvaluation/
+*.metadata.v10.bin
+*.projects.v10.bin
+*.strings.v10.bin
+
+# Node.js / Angular
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+.yarnrc
+dist/
+build/
+coverage/
+*.tgz
+*.tar.gz
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist
+.serverless/
+.fusebox/
+.fusebox
+*.log
+.DS_Store
+Thumbs.db
+*.swc
+*.tsbuildinfo
+
+# Angular
+.angular/
+*.tsbuildinfo
+*.ngfactory.ts
+*.ngstyle.ts
+*.ngsummary.json
+*.ngsummary.ts
+
+# Testing
+.nyc_output/
+coverage/
+test-results/
+junit.xml
+*.trx
 *.coverage
 *.coveragexml
 
-# .NET Tools
-.fake/
-.paket/paket.exe
-paket-files/
-.ionide/
-
-# MSBuild and related
-*.binlog
+# IDEs
+.idea/
+*.sln.iml
 *.tmp
-*.tmp_proj
-*_wpftmp.csproj
-FodyWeavers.xsd
+*.temp
 
-# Database files
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Database
 *.mdf
 *.ldf
-*.ndf
+*.sdf
+*.db
 *.sqlite
 *.sqlite3
-*.db
-*.db3
 
-####################
-# React / Vite / Node.js
-####################
+# Logs
+logs/
+*.log
+log.txt
+*.log.*
 
-# Dependencies
-node_modules/
-jspm_packages/
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
 
-# Build outputs
-dist/
-dist-ssr/
-build/
-.next/
-out/
-.nuxt/
+# Optional npm cache directory
+.npm
 
-# Vite specific
-.vite/
-*.local
+# Optional REPL history
+.node_repl_history
 
-# Environment files
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
 
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
+# next.js build output
+.next
 
-# Coverage directory used by tools like istanbul
-coverage/
-*.lcov
-.nyc_output/
+# nuxt.js build output
+.nuxt
 
-# Cache files
-.npm/
-.yarn-integrity
-.cache/
-.parcel-cache/
-.eslintcache
-.stylelintcache
-*.tsbuildinfo
+# vuepress build output
+.vuepress/dist
 
-# Package files
-*.tgz
-*.tar.gz
+# Serverless directories
+.serverless
 
-# Storybook build outputs
-.out/
-.storybook-out/
-storybook-static/
+# FuseBox cache
+.fusebox/
 
-####################
-# Configuration & Security
-####################
+# DynamoDB Local files
+.dynamodb/
 
-# Sensitive configuration files
-appsettings.Development.json
-appsettings.Production.json
-appsettings.Staging.json
-appsettings.Local.json
-# Keep appsettings.json for base configuration
+# TernJS port file
+.tern-port
 
-# SSL certificates and keys
-*.pfx
-*.p12
-*.key
-*.crt
-*.cer
-*.pem
-# Development certificates (auto-generated)
-**/.aspnet/https/
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
 
-# Connection strings and secrets
-secrets.json
-*.secrets.json
-user-secrets/
+# Temporary folders
+tmp/
+temp/
 
-####################
-# OS Generated Files
-####################
-
-# Windows
-Thumbs.db
-Thumbs.db:encryptable
-ehthumbs.db
-ehthumbs_vista.db
-*.stackdump
-[Dd]esktop.ini
-$RECYCLE.BIN/
-*.lnk
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-Icon
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# Linux
-*~
-.fuse_hidden*
-.directory
-.Trash-*
-.nfs*
-
-####################
-# IDE and Editors
-####################
-
-# JetBrains
-.idea/
-*.sln.iml
-
-# Sublime Text
-*.sublime-workspace
-*.sublime-project
-
-# Vim
-*.swp
-*.swo
-*~
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-####################
-# MangaCount Project Specific
-####################
-
-# Upload directories
-uploads/
-wwwroot/uploads/
-temp-uploads/
-
-# Custom logs
-Logs/
-*.custom.log
-
-# Keep your load-bearing images! 🏗️
-# loadbearingimage.jpg
-# mangacount.client/loadbearingimage.jpg
-
-# TSV import files (optional - uncomment if you don't want to track sample files)
-# *.tsv
-# sample-data/
-
-# Local development database backups
-*.bak
+# Backup files
 *.backup
+*.bak
 
-####################
-# Package Managers
-####################
-
-# NuGet
-*.nupkg
-*.snupkg
-.nuget/
-packages/
-!packages/build/
-!packages/repositories.config
-
-# npm/yarn/pnpm
+# Lock files
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-.pnpm-store/
 
-####################
-# Temporary files
-####################
-*.tmp
-*.temp
-*.swp
-*.swo
+# JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
 .DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Linux
+*~
+
+# Application specific
+loadbearingimage.jpg
+wwwroot/profiles/
+*.tsv
