@@ -16,8 +16,8 @@
 **MangaCount** es una aplicación web para gestionar colecciones de manga. Permite a los usuarios crear múltiples perfiles, agregar mangas a su colección, realizar seguimiento de volúmenes, establecer prioridades, y gestionar información sobre editoriales y formatos.
 
 ### Tecnologías
-- **Backend**: ASP.NET Core 8.0 Web API
-- **Frontend**: Angular 17
+- **Backend**: ASP.NET Core 10.0 Web API
+- **Frontend**: Angular 20.2.0
 - **Base de Datos**: SQL Server
 - **ORM**: Fluent NHibernate
 - **Mapping**: AutoMapper
