@@ -1,7 +1,0 @@
-<Solution>
-  <Project Path="mangacount.client/mangacount.client.esproj">
-    <Build />
-    <Deploy />
-  </Project>
-  <Project Path="MangaCount.Server/MangaCount.Server.csproj" />
-</Solution>
