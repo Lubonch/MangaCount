@@ -1,0 +1,220 @@
+// Global application styles
+.manga-app {
+  min-height: 100vh;
+  background-color: #fafafa;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    
+    .app-title {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 300;
+    }
+    
+    .profile-selector {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      
+      mat-form-field {
+        min-width: 200px;
+        
+        .mat-mdc-form-field-subscript-wrapper {
+          display: none;
+        }
+      }
+      
+      .add-profile-btn {
+        height: 40px;
+      }
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      gap: 16px;
+      
+      .app-title {
+        text-align: center;
+      }
+    }
+  }
+}
+
+.app-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  
+  .content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    
+    h2 {
+      margin: 0;
+      color: #333;
+      font-weight: 400;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      
+      button {
+        height: 40px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+    }
+  }
+  
+  .filters-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    
+    .search-field {
+      flex: 1;
+      max-width: 300px;
+    }
+    
+    mat-button-toggle-group {
+      mat-button-toggle {
+        padding: 8px 16px;
+        
+        &.mat-button-toggle-checked {
+          background-color: #3f51b5;
+          color: white;
+        }
+      }
+    }
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 16px;
+      
+      .search-field {
+        max-width: 100%;
+      }
+    }
+  }
+  
+  .manga-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+    
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+    }
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    color: #666;
+    
+    .empty-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    h3 {
+      margin: 0 0 8px 0;
+      font-weight: 400;
+    }
+    
+    p {
+      margin: 0;
+      max-width: 400px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+  }
+}
+
+.welcome-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  color: #666;
+  
+  .welcome-icon {
+    font-size: 80px;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+    opacity: 0.5;
+  }
+  
+  h2 {
+    margin: 0 0 12px 0;
+    font-weight: 300;
+    color: #333;
+  }
+  
+  p {
+    margin: 0;
+    max-width: 400px;
+    line-height: 1.5;
+  }
+}
+
+// Material Design overrides
+.mat-mdc-form-field-appearance-fill .mdc-text-field {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mat-mdc-form-field-appearance-fill .mat-mdc-form-field-flex {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+// Dark theme support
+@media (prefers-color-scheme: dark) {
+  .manga-app {
+    background-color: #121212;
+    color: #e0e0e0;
+  }
+  
+  .app-content .filters-section {
+    background: #1e1e1e;
+    color: #e0e0e0;
+  }
+  
+  .app-content h2,
+  .welcome-screen h2 {
+    color: #e0e0e0;
+  }
+}
