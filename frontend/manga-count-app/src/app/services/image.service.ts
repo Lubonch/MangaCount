@@ -34,7 +34,7 @@ export class ImageService {
 
     // Search using Jikan API (MyAnimeList data)
     const searchUrl = `${this.jikanBaseUrl}/manga?q=${encodeURIComponent(title)}&limit=1`;
-    
+
     return this.http.get<JikanMangaSearchResponse>(searchUrl).pipe(
       map(response => {
         if (response.data && response.data.length > 0) {
@@ -60,7 +60,7 @@ export class ImageService {
     canvas.width = 200;
     canvas.height = 300;
     const ctx = canvas.getContext('2d');
-    
+
     if (!ctx) {
       return 'data:image/svg+xml,' + encodeURIComponent(this.getDefaultPlaceholderSvg(title));
     }
@@ -76,12 +76,12 @@ export class ImageService {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.fillRect(40, 60, 120, 160);
     ctx.fillRect(50, 70, 100, 140);
-    
+
     // Add title text
     ctx.fillStyle = 'white';
     ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
-    
+
     const lines = this.wrapText(title, 16);
     lines.forEach((line, index) => {
       ctx.fillText(line, 100, 240 + (index * 18));
@@ -103,7 +103,7 @@ export class ImageService {
         <rect width="200" height="300" fill="url(#grad)"/>
         <rect x="40" y="60" width="120" height="160" fill="rgba(255,255,255,0.2)" rx="5"/>
         <rect x="50" y="70" width="100" height="140" fill="rgba(255,255,255,0.1)" rx="3"/>
-        <text x="100" y="240" font-family="Arial, sans-serif" font-size="12" font-weight="bold" 
+        <text x="100" y="240" font-family="Arial, sans-serif" font-size="12" font-weight="bold"
               fill="white" text-anchor="middle">${shortTitle}</text>
       </svg>
     `;
@@ -122,7 +122,7 @@ export class ImageService {
         currentLine = word;
       }
     }
-    
+
     if (currentLine) lines.push(currentLine);
     return lines.slice(0, 3); // Max 3 lines
   }

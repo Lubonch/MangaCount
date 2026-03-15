@@ -57,7 +57,7 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProfiles();
-    
+
     // Subscribe to profile changes
     this.profileService.selectedProfile$.subscribe(profile => {
       this.selectedProfile = profile;
@@ -86,13 +86,13 @@ export class AppComponent implements OnInit {
   }
 
   loadMangaForProfile(profileId: number): void {
-    const incomplete = this.filterStatus === 'incomplete' ? true : 
+    const incomplete = this.filterStatus === 'incomplete' ? true :
                       this.filterStatus === 'complete' ? false : undefined;
-    
+
     this.mangaApiService.getMangaByProfile(profileId, this.searchTerm, incomplete).subscribe({
       next: (manga) => {
         this.mangaList = manga;
-        
+
         // Apply priority filter if needed
         if (this.filterStatus === 'priority') {
           this.mangaList = this.mangaList.filter(m => m.priority);

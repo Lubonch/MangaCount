@@ -30,7 +30,7 @@ export interface MangaDialogData {
   ],
   template: `
     <h2 mat-dialog-title>{{ data.mode === 'add' ? 'Add Manga' : 'Edit Manga' }}</h2>
-    
+
     <mat-dialog-content class="dialog-content">
       <form [formGroup]="mangaForm" class="manga-form">
         <mat-form-field appearance="fill">
@@ -87,11 +87,11 @@ export interface MangaDialogData {
         </div>
       </form>
     </mat-dialog-content>
-    
+
     <mat-dialog-actions align="end">
       <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-raised-button color="primary" 
-              (click)="onSave()" 
+      <button mat-raised-button color="primary"
+              (click)="onSave()"
               [disabled]="mangaForm.invalid">
         {{ data.mode === 'add' ? 'Add' : 'Update' }}
       </button>
@@ -102,28 +102,28 @@ export interface MangaDialogData {
       width: 500px;
       max-width: 90vw;
     }
-    
+
     .manga-form {
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
-    
+
     .form-row {
       display: flex;
       gap: 16px;
-      
+
       mat-form-field {
         flex: 1;
       }
     }
-    
+
     .checkbox-row {
       display: flex;
       gap: 24px;
       margin: 8px 0;
     }
-    
+
     @media (max-width: 600px) {
       .form-row {
         flex-direction: column;
@@ -176,7 +176,7 @@ export class MangaDialogComponent implements OnInit {
   onSave(): void {
     if (this.mangaForm.valid) {
       const formValue = this.mangaForm.value;
-      
+
       if (this.data.mode === 'add') {
         const request: CreateMangaRequest = {
           profileId: this.data.profileId,

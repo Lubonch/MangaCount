@@ -2,7 +2,7 @@
   <header class="app-header">
     <div class="header-content">
       <h1 class="app-title">Manga Collection Manager</h1>
-      
+
       <div class="profile-selector">
         <mat-form-field appearance="fill">
           <mat-label>Select Profile</mat-label>
@@ -13,7 +13,7 @@
             </mat-option>
           </mat-select>
         </mat-form-field>
-        
+
         <button mat-raised-button color="primary" (click)="openAddProfileDialog()" class="add-profile-btn">
           Add Profile
         </button>
@@ -24,16 +24,16 @@
   <main class="app-content" *ngIf="selectedProfile">
     <div class="content-header">
       <h2>{{selectedProfile.name}}'s Collection</h2>
-      
+
       <div class="action-buttons">
         <button mat-raised-button color="accent" (click)="openAddMangaDialog()">
           Add Manga
         </button>
-        
+
         <button mat-raised-button (click)="openImportDialog()">
           Import TSV
         </button>
-        
+
         <button mat-raised-button (click)="exportCollection()">
           Export TSV
         </button>
@@ -56,8 +56,8 @@
     </div>
 
     <div class="manga-grid" *ngIf="mangaList.length > 0">
-      <app-manga-card 
-        *ngFor="let manga of mangaList" 
+      <app-manga-card
+        *ngFor="let manga of mangaList"
         [manga]="manga"
         (edit)="editManga($event)"
         (delete)="deleteManga($event)">

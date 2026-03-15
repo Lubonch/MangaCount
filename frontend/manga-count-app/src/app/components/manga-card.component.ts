@@ -22,8 +22,8 @@ import { ImageService } from '../services/image.service';
   template: `
     <mat-card class="manga-card">
       <div class="manga-image">
-        <img 
-          [src]="imageUrl || imageService.generatePlaceholderDataUrl(manga.title)" 
+        <img
+          [src]="imageUrl || imageService.generatePlaceholderDataUrl(manga.title)"
           [alt]="manga.title"
           (error)="onImageError($event)"
           class="cover-image"
@@ -35,10 +35,10 @@ import { ImageService } from '../services/image.service';
           <mat-icon>priority_high</mat-icon>
         </div>
       </div>
-      
+
       <mat-card-content class="manga-details">
         <h3 class="manga-title" [title]="manga.title">{{manga.title}}</h3>
-        
+
         <div class="manga-info">
           <div class="volumes-info">
             <span class="purchased">{{manga.purchased}}</span>
@@ -46,17 +46,17 @@ import { ImageService } from '../services/image.service';
             <span class="total">{{manga.total}}</span>
             <span class="volumes-label">volumes</span>
           </div>
-          
+
           <div class="progress-section" *ngIf="getProgressPercentage() !== null">
-            <mat-progress-bar 
-              mode="determinate" 
+            <mat-progress-bar
+              mode="determinate"
               [value]="getProgressPercentage()!"
               [color]="manga.complete ? 'primary' : 'accent'">
             </mat-progress-bar>
             <span class="progress-text">{{getProgressPercentage()}}%</span>
           </div>
         </div>
-        
+
         <div class="manga-meta">
           <mat-chip-set>
             <mat-chip [class.complete]="manga.complete" [class.incomplete]="!manga.complete">
@@ -66,13 +66,13 @@ import { ImageService } from '../services/image.service';
             <mat-chip class="publisher-chip">{{manga.publisher}}</mat-chip>
           </mat-chip-set>
         </div>
-        
+
         <div class="pending-info" *ngIf="manga.pending">
           <mat-icon class="pending-icon">info</mat-icon>
           <span class="pending-text">Missing: {{manga.pending}}</span>
         </div>
       </mat-card-content>
-      
+
       <mat-card-actions class="manga-actions">
         <button mat-button (click)="onEdit()">
           <mat-icon>edit</mat-icon>

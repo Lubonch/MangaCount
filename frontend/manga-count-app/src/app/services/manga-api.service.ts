@@ -37,7 +37,7 @@ export class MangaApiService {
     if (incomplete !== undefined) {
       params = params.set('incomplete', incomplete.toString());
     }
-    
+
     return this.http.get<Manga[]>(`${this.baseUrl}/manga/profile/${profileId}`, { params });
   }
 
@@ -65,8 +65,8 @@ export class MangaApiService {
   }
 
   exportTsv(profileId: number): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/manga/profile/${profileId}/export-tsv`, { 
-      responseType: 'blob' 
+    return this.http.get(`${this.baseUrl}/manga/profile/${profileId}/export-tsv`, {
+      responseType: 'blob'
     });
   }
 
