@@ -57,15 +57,23 @@ MangaCount/
 - [x] Create ProfilesController and MangaController
 - [x] Add import/export endpoints
 
-#### Step 5: Angular Frontend Foundation
+#### Step 5: Angular Frontend Foundation ✅
 - [x] Set up Angular with Angular 21 CLI
-- [ ] Create manga list and forms
-- [ ] Implement profile selector
+- [x] Create manga list and forms
+- [x] Implement profile selector
+- [x] Build responsive manga card components with Material Design
+- [x] Implement search and filtering functionality
+- [x] Create add/edit manga dialog forms
+- [x] Integrate TSV import/export in frontend
+- [x] Transform visual design to modern, attractive interface
 
-#### Step 6: Image Integration
-- [ ] Integrate Jikan API for manga covers
-- [ ] Implement caching system
-- [ ] Add fallback placeholders
+#### Step 6: Image Integration ✅
+- [x] Integrate Jikan API for manga covers
+- [x] Implement caching system
+- [x] Add fallback placeholders
+- [x] Create ImageService with automatic image fetching
+- [x] Implement placeholder generation for missing covers
+- [x] Add loading states and error handling
 
 ### Phase 2: Enhanced Features
 

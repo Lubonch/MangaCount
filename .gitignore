@@ -434,3 +434,6 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+# Published builds
+published/
+*.exe

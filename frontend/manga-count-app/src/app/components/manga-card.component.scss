@@ -8,12 +8,12 @@
   border-radius: 20px;
   overflow: hidden;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.12),
     0 0 0 1px rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -28,14 +28,14 @@
 
   &:hover {
     transform: translateY(-8px) scale(1.02);
-    box-shadow: 
+    box-shadow:
       0 20px 60px rgba(0, 0, 0, 0.15),
       0 0 0 1px rgba(102, 126, 234, 0.3);
-    
+
     &::before {
       opacity: 1;
     }
-    
+
     .cover-image {
       transform: scale(1.05);
     }
@@ -48,19 +48,19 @@
   height: 240px;
   overflow: hidden;
   background: linear-gradient(135deg, #f6f9fc 0%, #e9ecef 100%);
-  
+
   .cover-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    
+
     &.loading {
       opacity: 0.6;
       filter: blur(1px);
     }
   }
-  
+
   .image-loader {
     position: absolute;
     top: 50%;
@@ -75,14 +75,14 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
-    
+
     mat-icon {
       color: white;
       animation: pulse 2s ease-in-out infinite;
       font-size: 24px;
     }
   }
-  
+
   .priority-badge {
     position: absolute;
     top: 12px;
@@ -97,7 +97,7 @@
     justify-content: center;
     box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
     animation: glow-priority 2s ease-in-out infinite alternate;
-    
+
     mat-icon {
       font-size: 20px;
       width: 20px;
@@ -107,29 +107,29 @@
 }
 
 @keyframes pulse {
-  0%, 100% { 
-    transform: scale(1); 
-    opacity: 1; 
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
-  50% { 
-    transform: scale(1.1); 
-    opacity: 0.8; 
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
   }
 }
 
 @keyframes glow-priority {
-  0% { 
-    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4); 
+  0% {
+    box-shadow: 0 4px 16px rgba(255, 107, 107, 0.4);
   }
-  100% { 
-    box-shadow: 0 8px 32px rgba(255, 107, 107, 0.6), 0 0 20px rgba(255, 107, 107, 0.3); 
+  100% {
+    box-shadow: 0 8px 32px rgba(255, 107, 107, 0.6), 0 0 20px rgba(255, 107, 107, 0.3);
   }
 }
 
 .manga-details {
   flex: 1;
   padding: 20px;
-  
+
   .manga-title {
     margin: 0 0 16px 0;
     font-size: 18px;
@@ -149,7 +149,7 @@
 
 .manga-info {
   margin-bottom: 16px;
-  
+
   .volumes-info {
     display: flex;
     align-items: center;
@@ -159,43 +159,43 @@
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.05) 100%);
     border-radius: 12px;
     border: 1px solid rgba(76, 175, 80, 0.2);
-    
+
     .purchased {
       font-weight: 700;
       font-size: 16px;
       color: #2e7d32;
     }
-    
+
     .separator {
       color: #666;
       font-weight: 500;
     }
-    
+
     .total {
       font-weight: 600;
       font-size: 16px;
       color: #424242;
     }
-    
+
     .volumes-label {
       color: #666;
       font-size: 13px;
       font-weight: 500;
     }
   }
-  
+
   .progress-section {
     display: flex;
     align-items: center;
     gap: 12px;
-    
+
     mat-progress-bar {
       flex: 1;
       height: 8px;
       border-radius: 4px;
       overflow: hidden;
     }
-    
+
     .progress-text {
       font-size: 13px;
       font-weight: 600;
@@ -208,43 +208,43 @@
 
 .manga-meta {
   margin-bottom: 16px;
-  
+
   mat-chip-set {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    
+
     mat-chip {
       font-size: 11px;
       height: 28px;
       font-weight: 600;
       border-radius: 14px;
       transition: all 0.2s ease;
-      
+
       &.complete {
         background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
         color: white;
         box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
       }
-      
+
       &.incomplete {
         background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
         color: white;
         box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
       }
-      
+
       &.format-chip {
         background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
         color: white;
         box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
       }
-      
+
       &.publisher-chip {
         background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
         color: white;
         box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
       }
-      
+
       &:hover {
         transform: translateY(-1px);
       }
@@ -261,7 +261,7 @@
   border-left: 4px solid #ffc107;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
-  
+
   .pending-icon {
     color: #f57c00;
     font-size: 18px;
@@ -269,7 +269,7 @@
     height: 18px;
     animation: pulse-warning 2s ease-in-out infinite;
   }
-  
+
   .pending-text {
     font-size: 13px;
     font-weight: 600;
@@ -281,30 +281,30 @@
   padding: 16px 20px 20px;
   display: flex;
   gap: 12px;
-  
+
   button {
     flex: 1;
     height: 40px;
     border-radius: 20px;
     font-weight: 600;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    
+
     &:first-child {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-      
+
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
       }
     }
-    
+
     &:last-child {
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
       color: white;
       box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-      
+
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
@@ -314,10 +314,10 @@
 }
 
 @keyframes pulse-warning {
-  0%, 100% { 
-    opacity: 1; 
+  0%, 100% {
+    opacity: 1;
   }
-  50% { 
-    opacity: 0.6; 
+  50% {
+    opacity: 0.6;
   }
 }
