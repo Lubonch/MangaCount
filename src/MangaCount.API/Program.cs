@@ -6,8 +6,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// builder.Services.AddEndpointsApiExplorer(); // Commented out due to OpenAPI dependency
+// builder.Services.AddSwaggerGen(); // Commented out due to compatibility issues
 
 // Configure Entity Framework
 builder.Services.AddDbContext<MangaDbContext>(options =>
@@ -41,8 +41,8 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    // app.UseSwagger(); // Commented out due to compatibility issues
+    // app.UseSwaggerUI(); // Commented out due to compatibility issues
 }
 
 app.UseHttpsRedirection();

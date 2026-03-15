@@ -9,13 +9,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatCardModule } from '@angular/material/card';
-import { MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatChipsModule } from '@angular/material/chips';
 
 import { MangaApiService } from './services/manga-api.service';
 import { ProfileService } from './services/profile.service';
+import { ImageService } from './services/image.service';
 import { MangaCardComponent } from './components/manga-card.component';
-import { Profile, Manga } from './models/manga.models';
+import { MangaDialogComponent, MangaDialogData } from './components/manga-dialog.component';
+import { Profile, Manga, CreateMangaRequest, UpdateMangaRequest } from './models/manga.models';
 
 @Component({
   selector: 'app-root',
@@ -33,7 +35,8 @@ import { Profile, Manga } from './models/manga.models';
     MatCardModule,
     MatDialogModule,
     MatChipsModule,
-    MangaCardComponent
+    MangaCardComponent,
+    MangaDialogComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
@@ -47,7 +50,9 @@ export class AppComponent implements OnInit {
 
   constructor(
     private mangaApiService: MangaApiService,
-    private profileService: ProfileService
+    private profileService: ProfileService,
+    private imageService: ImageService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -133,8 +138,35 @@ export class AppComponent implements OnInit {
   }
 
   openAddMangaDialog(): void {
-    // TODO: Implement add manga dialog
-    console.log('Add manga dialog - TODO');
+    if (!this.selectedProfile) return;
+
+    const dialogData: MangaDialogData = {
+      profileId: this.selectedProfile.id,
+      mode: 'add'
+    };
+
+    const dialogRef = this.dialog.open(MangaDialogComponent, {
+      data: dialogData,
+      width: '600px',
+      maxWidth: '95vw',
+      disableClose: false
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && this.selectedProfile) {
+        const request = result as CreateMangaRequest;
+        this.mangaApiService.createManga(request).subscribe({
+          next: (manga) => {
+            console.log('Manga added:', manga);
+            this.loadMangaForProfile(this.selectedProfile!.id);
+          },
+          error: (error) => {
+            console.error('Failed to add manga:', error);
+            alert('Failed to add manga. Please try again.');
+          }
+        });
+      }
+    });
   }
 
   openImportDialog(): void {
@@ -184,8 +216,36 @@ export class AppComponent implements OnInit {
   }
 
   editManga(manga: Manga): void {
-    // TODO: Implement edit manga dialog
-    console.log('Edit manga:', manga);
+    if (!this.selectedProfile) return;
+
+    const dialogData: MangaDialogData = {
+      manga: manga,
+      profileId: this.selectedProfile.id,
+      mode: 'edit'
+    };
+
+    const dialogRef = this.dialog.open(MangaDialogComponent, {
+      data: dialogData,
+      width: '600px',
+      maxWidth: '95vw',
+      disableClose: false
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && this.selectedProfile) {
+        const request = result as UpdateMangaRequest;
+        this.mangaApiService.updateManga(manga.id, request).subscribe({
+          next: () => {
+            console.log('Manga updated:', manga.title);
+            this.loadMangaForProfile(this.selectedProfile!.id);
+          },
+          error: (error) => {
+            console.error('Failed to update manga:', error);
+            alert('Failed to update manga. Please try again.');
+          }
+        });
+      }
+    });
   }
 
   deleteManga(manga: Manga): void {
