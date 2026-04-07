@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="MangaCount.API/MangaCount.API.csproj" />
-  <Project Path="MangaCount.Application/MangaCount.Application.csproj" />
-  <Project Path="MangaCount.Domain/MangaCount.Domain.csproj" />
-  <Project Path="MangaCount.Infrastructure/MangaCount.Infrastructure.csproj" />
-</Solution>
