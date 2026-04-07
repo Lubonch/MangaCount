@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MangaCount – Demo</title>
+<style>
+/* ── Variables ── */
+:root {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --text-primary: #e8e8e8;
+  --text-secondary: #b8b8b8;
+  --text-muted: #888;
+  --border: #404040;
+  --shadow: rgba(0,0,0,.35);
+  --sidebar-bg: #1e1e1e;
+  --sidebar-text: #e8e8e8;
+  --color-complete: #2ecc71;
+  --color-priority: #f1c40f;
+  --color-incomplete: #e74c3c;
+  --color-info: #3498db;
+  --bg-complete: rgba(46,204,113,.10);
+  --bg-priority: rgba(241,196,15,.10);
+  --bg-incomplete: rgba(231,76,60,.10);
+  --accent: #3498db;
+}
+[data-theme="light"] {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #fff;
+  --bg-tertiary: #fafafa;
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --text-muted: #95a5a6;
+  --border: #e5e5e5;
+  --shadow: rgba(0,0,0,.10);
+  --sidebar-bg: #2c3e50;
+  --sidebar-text: #ecf0f1;
+  --color-complete: #27ae60;
+  --color-priority: #f39c12;
+  --color-incomplete: #e74c3c;
+  --bg-complete: #f8fff8;
+  --bg-priority: #fffef8;
+  --bg-incomplete: #fffafa;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh}
+
+/* ── Layout ── */
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;flex-shrink:0;background:var(--sidebar-bg);color:var(--sidebar-text);display:flex;flex-direction:column;padding:1.5rem 1rem;gap:1rem;border-right:1px solid var(--border)}
+.sidebar h1{font-size:1.3rem;font-weight:700;display:flex;align-items:center;gap:.5rem;color:var(--sidebar-text)}
+.sidebar h1 span{font-size:1.4rem}
+.sidebar-section{padding:.5rem 0;border-top:1px solid rgba(255,255,255,.08)}
+.sidebar-section label{display:block;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;opacity:.6;margin-bottom:.5rem}
+
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;font-size:.85rem}
+.stat-val{font-weight:700;color:var(--color-info)}
+.stat-val.green{color:var(--color-complete)}
+.stat-val.red{color:var(--color-incomplete)}
+.stat-val.yellow{color:var(--color-priority)}
+
+.filter-btn{display:block;width:100%;text-align:left;background:none;border:none;color:var(--sidebar-text);cursor:pointer;padding:.4rem .6rem;border-radius:6px;font-size:.9rem;transition:background .15s}
+.filter-btn:hover{background:rgba(255,255,255,.08)}
+.filter-btn.active{background:var(--accent);color:#fff}
+
+.theme-btn{width:100%;padding:.5rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:var(--sidebar-text);cursor:pointer;font-size:.85rem;margin-top:auto}
+.theme-btn:hover{background:rgba(255,255,255,.12)}
+
+/* ── Main ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{padding:1rem 1.5rem;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.topbar input{flex:1;min-width:200px;padding:.5rem .75rem;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.9rem;outline:none;transition:border-color .2s}
+.topbar input:focus{border-color:var(--accent)}
+.topbar input::placeholder{color:var(--text-muted)}
+
+.sort-select{padding:.5rem .75rem;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:.85rem;cursor:pointer;outline:none}
+
+.export-btn{padding:.5rem 1rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:.85rem;cursor:pointer;font-weight:600;transition:opacity .2s}
+.export-btn:hover{opacity:.85}
+
+.load-banner{padding:.5rem 1.5rem;background:rgba(52,152,219,.12);border-bottom:1px solid rgba(52,152,219,.2);font-size:.8rem;color:var(--color-info);display:flex;align-items:center;gap:.5rem}
+
+/* ── Grid ── */
+.grid{flex:1;overflow-y:auto;padding:1.5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;align-content:start}
+
+/* ── Card ── */
+.card{background:var(--bg-secondary);border-radius:12px;border:1px solid var(--border);padding:1rem;display:flex;flex-direction:column;gap:.6rem;transition:transform .15s,box-shadow .15s;cursor:default}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow)}
+.card.complete{border-left:3px solid var(--color-complete);background:var(--bg-complete)}
+.card.priority{border-left:3px solid var(--color-priority);background:var(--bg-priority)}
+.card.incomplete{border-left:3px solid var(--color-incomplete);background:var(--bg-incomplete)}
+
+.card-title{font-size:.95rem;font-weight:700;line-height:1.3;color:var(--text-primary)}
+.card-meta{font-size:.75rem;color:var(--text-muted);display:flex;gap:.4rem;flex-wrap:wrap}
+.tag{background:var(--bg-tertiary);border:1px solid var(--border);padding:.1rem .45rem;border-radius:4px}
+
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:4px;font-size:.7rem;font-weight:600;text-transform:uppercase}
+.badge.complete{background:rgba(46,204,113,.2);color:var(--color-complete)}
+.badge.priority{background:rgba(241,196,15,.2);color:var(--color-priority)}
+.badge.incomplete{background:rgba(231,76,60,.2);color:var(--color-incomplete)}
+
+/* ── Progress ── */
+.progress-wrap{display:flex;flex-direction:column;gap:.3rem}
+.progress-label{display:flex;justify-content:space-between;font-size:.8rem;color:var(--text-secondary);align-items:center}
+.edit-input{width:3.2rem;padding:.1rem .3rem;background:var(--bg-tertiary);border:1px solid var(--accent);border-radius:4px;color:var(--text-primary);font-size:.8rem;text-align:center;outline:none}
+.progress-bar{height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .3s}
+.fill-complete{background:var(--color-complete)}
+.fill-priority{background:var(--color-priority)}
+.fill-incomplete{background:var(--color-incomplete)}
+
+/* ── Empty / loading ── */
+.empty{grid-column:1/-1;text-align:center;padding:3rem;color:var(--text-muted)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 1rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.65rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.toast.ok{background:var(--color-complete);color:#fff}
+.toast.err{background:var(--color-incomplete);color:#fff}
+
+/* ── Responsive ── */
+@media(max-width:640px){.sidebar{display:none}.grid{padding:1rem;grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h1><span>📚</span> MangaCount</h1>
+
+    <div class="sidebar-section">
+      <label>Colección</label>
+      <div class="stat-row"><span>Series</span><span class="stat-val" id="stat-total">–</span></div>
+      <div class="stat-row"><span>Completas</span><span class="stat-val green" id="stat-complete">–</span></div>
+      <div class="stat-row"><span>Incompletas</span><span class="stat-val red" id="stat-incomplete">–</span></div>
+      <div class="stat-row"><span>Volúmenes</span><span class="stat-val" id="stat-vols">–</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <label>Filtrar</label>
+      <button class="filter-btn active" data-f="all">Todas</button>
+      <button class="filter-btn" data-f="complete">✅ Completas</button>
+      <button class="filter-btn" data-f="incomplete">❌ Incompletas</button>
+      <button class="filter-btn" data-f="priority">⭐ Prioridad</button>
+    </div>
+
+    <div class="sidebar-section">
+      <label>Demo</label>
+      <p style="font-size:.78rem;color:var(--sidebar-text);opacity:.7;line-height:1.5">
+        Editá los volúmenes haciendo click en el número. Los cambios viven en memoria.<br><br>
+        Usá <strong>Exportar TSV</strong> para guardar.
+      </p>
+    </div>
+
+    <button class="theme-btn" id="themeBtn">🌙 Cambiar tema</button>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="load-banner" id="loadBanner" style="display:none">
+      ℹ️ Cargando desde <strong>Inventario.tsv</strong> — demo estático de MangaCount
+    </div>
+
+    <div class="topbar">
+      <input type="text" id="search" placeholder="Buscar por título…" />
+      <select class="sort-select" id="sortSel">
+        <option value="name">A–Z</option>
+        <option value="pct">% completitud</option>
+        <option value="pending">Más pendientes</option>
+        <option value="priority">Prioridad primero</option>
+      </select>
+      <button class="export-btn" id="exportBtn">⬇ Exportar TSV</button>
+    </div>
+
+    <div class="grid" id="grid">
+      <div class="empty"><div class="spinner"></div>Cargando colección…</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+let rows = [];        // { title, bought, total, pending, complete, priority, format, publisher }
+let filter = 'all';
+let search = '';
+let sortBy = 'name';
+
+// ── TSV parsing ─────────────────────────────────────────────────
+function parseTSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  // Skip header (line 0)
+  return lines.slice(1).map(line => {
+    const cols = line.split('\t');
+    const total   = parseInt(cols[2]) || 0;
+    const bought  = Math.min(parseInt(cols[1]) || 0, total || 9999);
+    return {
+      title:     (cols[0] || '').trim(),
+      bought,
+      total,
+      pending:   (cols[3] || '').trim(),
+      complete:  (cols[4] || '').trim().toUpperCase() === 'TRUE',
+      priority:  (cols[5] || '').trim().toUpperCase() === 'TRUE',
+      format:    (cols[6] || '').trim(),
+      publisher: (cols[7] || '').trim(),
+    };
+  }).filter(r => r.title);
+}
+
+function serializeTSV() {
+  const header = 'Titulo\tComprados\tTotal\tPendiente(No consecutivos)\tCompleta\tPrioridad\tFormato\tEditorial';
+  const lines = rows.map(r =>
+    [r.title, r.bought, r.total, r.pending,
+     r.complete ? 'TRUE' : 'FALSE',
+     r.priority ? 'TRUE' : 'FALSE',
+     r.format, r.publisher].join('\t')
+  );
+  return [header, ...lines].join('\n');
+}
+
+// ── Load ─────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('./Inventario.tsv');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    rows = parseTSV(text);
+    document.getElementById('loadBanner').style.display = 'flex';
+    render();
+  } catch (e) {
+    document.getElementById('grid').innerHTML =
+      `<div class="empty">
+        <p style="font-size:1.1rem;margin-bottom:.5rem">No se pudo cargar <code>Inventario.tsv</code></p>
+        <p style="font-size:.85rem;opacity:.6">Si estás abriendo el archivo local con file://, usá un servidor HTTP (ej: <code>npx serve Pages/</code>)</p>
+      </div>`;
+  }
+}
+
+// ── Derived status ───────────────────────────────────────────────
+function status(r) {
+  if (r.total > 0 && r.bought >= r.total) return 'complete';
+  if (r.priority) return 'priority';
+  return 'incomplete';
+}
+function pct(r) {
+  if (!r.total) return null;
+  return Math.round((r.bought / r.total) * 100);
+}
+
+// ── Stats ────────────────────────────────────────────────────────
+function updateStats() {
+  const complete   = rows.filter(r => status(r) === 'complete').length;
+  const incomplete = rows.filter(r => status(r) !== 'complete').length;
+  const vols       = rows.reduce((a, r) => a + r.bought, 0);
+  document.getElementById('stat-total').textContent     = rows.length;
+  document.getElementById('stat-complete').textContent  = complete;
+  document.getElementById('stat-incomplete').textContent = incomplete;
+  document.getElementById('stat-vols').textContent      = vols;
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function visible() {
+  let list = rows.filter(r => {
+    if (filter === 'complete'   && status(r) !== 'complete')  return false;
+    if (filter === 'incomplete' && status(r) === 'complete')  return false;
+    if (filter === 'priority'   && !r.priority)               return false;
+    if (search && !r.title.toLowerCase().includes(search))    return false;
+    return true;
+  });
+
+  list.sort((a, b) => {
+    if (sortBy === 'name')     return a.title.localeCompare(b.title, 'es');
+    if (sortBy === 'pct')      return (pct(b) ?? -1) - (pct(a) ?? -1);
+    if (sortBy === 'pending')  return (b.total - b.bought) - (a.total - a.bought);
+    if (sortBy === 'priority') {
+      if (a.priority === b.priority) return a.title.localeCompare(b.title, 'es');
+      return a.priority ? -1 : 1;
+    }
+    return 0;
+  });
+  return list;
+}
+
+function cardHTML(r) {
+  const s    = status(r);
+  const p    = pct(r);
+  const idx  = rows.indexOf(r);
+  const fillClass = s === 'complete' ? 'fill-complete' : s === 'priority' ? 'fill-priority' : 'fill-incomplete';
+  const meta = [r.format, r.publisher].filter(Boolean).join(' · ');
+  const badgeLabel = s === 'complete' ? '✅ Completo' : s === 'priority' ? '⭐ Prioridad' : '📖 Incompleto';
+
+  const progressHTML = r.total > 0
+    ? `<div class="progress-wrap">
+        <div class="progress-label">
+          <span>
+            <input class="edit-input" type="number" min="0" max="${r.total}"
+              value="${r.bought}" data-idx="${idx}" title="Editar volúmenes comprados"
+            /> / ${r.total} vol.
+          </span>
+          <span>${p}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill ${fillClass}" style="width:${p}%"></div></div>
+      </div>`
+    : `<div class="progress-label" style="font-size:.8rem;color:var(--text-muted)">
+        <input class="edit-input" type="number" min="0" value="${r.bought}" data-idx="${idx}" title="Editar volúmenes comprados" /> vol. (en curso)
+      </div>`;
+
+  return `<div class="card ${s}">
+    <div class="card-title">${escHtml(r.title)}</div>
+    ${meta ? `<div class="card-meta"><span class="tag">${escHtml(meta)}</span></div>` : ''}
+    ${progressHTML}
+    <div><span class="badge ${s}">${badgeLabel}</span></div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function render() {
+  updateStats();
+  const list = visible();
+  const grid = document.getElementById('grid');
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty">Sin resultados para este filtro</div>`;
+    return;
+  }
+  grid.innerHTML = list.map(cardHTML).join('');
+
+  // Bind edit inputs
+  grid.querySelectorAll('.edit-input').forEach(input => {
+    input.addEventListener('change', e => {
+      const idx = parseInt(e.target.dataset.idx);
+      const val = parseInt(e.target.value);
+      if (isNaN(val) || val < 0) return;
+      rows[idx].bought = val;
+      // Recalculate complete flag
+      rows[idx].complete = rows[idx].total > 0 && val >= rows[idx].total;
+      render();
+      showToast(`"${rows[idx].title}" → ${val} vol.`, 'ok');
+    });
+    input.addEventListener('click', e => e.stopPropagation());
+  });
+}
+
+// ── Toast ─────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Export ────────────────────────────────────────────────────────
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const blob = new Blob([serializeTSV()], { type: 'text/tab-separated-values' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'Inventario.tsv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('TSV exportado ✓', 'ok');
+});
+
+// ── Controls ──────────────────────────────────────────────────────
+document.getElementById('search').addEventListener('input', e => {
+  search = e.target.value.toLowerCase().trim();
+  render();
+});
+
+document.getElementById('sortSel').addEventListener('change', e => {
+  sortBy = e.target.value;
+  render();
+});
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    filter = btn.dataset.f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙 Cambiar tema' : '☀️ Cambiar tema';
+});
+
+// ── Boot ──────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
