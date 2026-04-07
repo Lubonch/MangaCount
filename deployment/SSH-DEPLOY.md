@@ -20,6 +20,21 @@ Guía para compilar y desplegar MangaCount en el servidor LAN `192.168.0.50`.
 - PostgreSQL 16 (`MangaCount` database, user `pihole`, password `pihole`)
 - Directorio `/home/pihole/mangacount/app/` existente
 
+## ⚠️ ADVERTENCIAS IMPORTANTES
+
+### 🚫 NO instalar nginx
+MangaCount usa **Kestrel** (servidor HTTP integrado de .NET). **NUNCA instales nginx** en el servidor Pi-hole porque:
+- ❌ MangaCount NO necesita nginx (funciona independiente en puerto 3000)
+- ❌ nginx **conflicta con Pi-hole** (ambos usan puerto 80)
+- ❌ Causa error 403 Forbidden en Pi-hole web interface
+
+### ✅ Configuración correcta del servidor:
+```
+Pi-hole DNS (puerto 53) + Pi-hole Web (FTL:80) + MangaCount (Kestrel:3000)
+```
+
+Si **accidentalmente instalaste nginx**: usa `deploy.sh` que incluye validación automática.
+
 ---
 
 ## Deploy Completo (build + publish + copy + restart)

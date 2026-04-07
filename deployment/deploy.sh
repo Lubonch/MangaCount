@@ -19,6 +19,15 @@ fi
 ssh_cmd() { ssh $SSH_OPTS "$USER@$SERVER" "$@"; }
 scp_cmd() { scp $SSH_OPTS "$@"; }
 
+# Validación: verificar que nginx no esté instalado (conflicta con Pi-hole)
+echo "==> [0/4] Validando entorno del servidor..."
+if ssh_cmd "systemctl is-active nginx >/dev/null 2>&1"; then
+  echo "⚠️  ADVERTENCIA: nginx está corriendo en $SERVER"
+  echo "    nginx conflicta con Pi-hole (ambos usan puerto 80)"
+  echo "    Recomendación: desactivar nginx -> sudo systemctl stop nginx && sudo systemctl disable nginx"
+  echo ""
+fi
+
 echo "==> [1/4] Publicando aplicación..."
 cd "$REPO_ROOT"
 dotnet publish MangaCount.Server -c Release -o "$PUBLISH_DIR" --nologo -v quiet
