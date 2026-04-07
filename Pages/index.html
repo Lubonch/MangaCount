@@ -83,6 +83,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 .load-banner{padding:.5rem 1.5rem;background:rgba(52,152,219,.12);border-bottom:1px solid rgba(52,152,219,.2);font-size:.8rem;color:var(--color-info);display:flex;align-items:center;gap:.5rem}
 
+/* ── Welcome screen ── */
+.welcome{position:fixed;inset:0;background:var(--bg-primary);display:flex;align-items:center;justify-content:center;z-index:100;padding:1.5rem}
+.welcome-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;max-width:420px;width:100%;text-align:center;box-shadow:0 12px 40px var(--shadow);display:flex;flex-direction:column;gap:1.2rem}
+.welcome-card h2{font-size:1.6rem;font-weight:800}
+.welcome-card p{font-size:.9rem;color:var(--text-secondary);line-height:1.6}
+.file-drop{border:2px dashed var(--border);border-radius:10px;padding:1.8rem 1rem;cursor:pointer;transition:border-color .2s,background .2s;display:flex;flex-direction:column;align-items:center;gap:.6rem;color:var(--text-muted);font-size:.9rem}
+.file-drop:hover,.file-drop.over{border-color:var(--accent);background:rgba(52,152,219,.07);color:var(--accent)}
+.file-drop input{display:none}
+.file-drop-icon{font-size:2.2rem}
+.welcome-sample{font-size:.78rem;color:var(--text-muted)}
+.welcome-sample a{color:var(--accent);text-decoration:none}
+.welcome-sample a:hover{text-decoration:underline}
+
 /* ── Grid ── */
 .grid{flex:1;overflow-y:auto;padding:1.5rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;align-content:start}
 
@@ -164,7 +177,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <!-- Main -->
   <div class="main">
     <div class="load-banner" id="loadBanner" style="display:none">
-      ℹ️ Cargando desde <strong>Inventario.tsv</strong> — demo estático de MangaCount
+      📂 <span id="loadedFileName"></span> &nbsp;·&nbsp; <button id="changeFileBtn" style="background:none;border:none;color:var(--color-info);cursor:pointer;font-size:.8rem;text-decoration:underline">Cambiar archivo</button>
     </div>
 
     <div class="topbar">
@@ -226,22 +239,62 @@ function serializeTSV() {
   return [header, ...lines].join('\n');
 }
 
-// ── Load ─────────────────────────────────────────────────────────
-async function init() {
-  try {
-    const res = await fetch('./Inventario.tsv');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    rows = parseTSV(text);
-    document.getElementById('loadBanner').style.display = 'flex';
+// ── Welcome / file loading ───────────────────────────────────────
+function showWelcome() {
+  // Remove any existing welcome screen first
+  const existing = document.getElementById('welcomeScreen');
+  if (existing) existing.remove();
+
+  const welcome = document.createElement('div');
+  welcome.className = 'welcome';
+  welcome.id = 'welcomeScreen';
+  welcome.innerHTML = `
+    <div class="welcome-card">
+      <div style="font-size:2.5rem">📚</div>
+      <h2>MangaCount</h2>
+      <p>Demo estático — sin servidor ni base de datos.<br>Cargá tu inventario TSV para empezar.</p>
+      <label class="file-drop" id="dropZone">
+        <input type="file" id="fileInput" accept=".tsv,text/tab-separated-values,text/plain" />
+        <span class="file-drop-icon">📂</span>
+        <span>Hacé click para elegir un archivo<br><small style="opacity:.7">.tsv — valores separados por tabulaciones</small></span>
+      </label>
+      <p class="welcome-sample">¿No tenés un TSV? <a href="Inventario.tsv" download>Descargá el de ejemplo</a></p>
+    </div>
+  `;
+  document.body.appendChild(welcome);
+
+  const input   = welcome.querySelector('#fileInput');
+  const dropZone = welcome.querySelector('#dropZone');
+
+  input.addEventListener('change', e => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('over');
+    if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+}
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    rows = parseTSV(e.target.result);
+    if (!rows.length) { showToast('El archivo no tiene filas válidas', 'err'); return; }
+    document.getElementById('welcomeScreen')?.remove();
+    const banner = document.getElementById('loadBanner');
+    banner.style.display = 'flex';
+    document.getElementById('loadedFileName').textContent = file.name;
     render();
-  } catch (e) {
-    document.getElementById('grid').innerHTML =
-      `<div class="empty">
-        <p style="font-size:1.1rem;margin-bottom:.5rem">No se pudo cargar <code>Inventario.tsv</code></p>
-        <p style="font-size:.85rem;opacity:.6">Si estás abriendo el archivo local con file://, usá un servidor HTTP (ej: <code>npx serve Pages/</code>)</p>
-      </div>`;
-  }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function init() {
+  showWelcome();
 }
 
 // ── Derived status ───────────────────────────────────────────────
@@ -400,6 +453,11 @@ document.getElementById('themeBtn').addEventListener('click', () => {
 });
 
 // ── Boot ──────────────────────────────────────────────────────────
+document.getElementById('changeFileBtn').addEventListener('click', () => {
+  document.getElementById('loadBanner').style.display = 'none';
+  showWelcome();
+});
+
 init();
 </script>
 </body>
