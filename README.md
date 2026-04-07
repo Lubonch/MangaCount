@@ -1,20 +1,14 @@
 # 📚 MangaCount - Gestión de Colección de Manga
 
-Una elegante aplicación web para gestionar colecciones de manga con una interfaz moderna y atractiva, **ahora con bot de WhatsApp integrado** para gestionar tu colección desde tu teléfono. Diseñada para coleccionistas que desean llevar un registro detallado de sus series favoritas.
+Una aplicación web para gestionar colecciones de manga con una interfaz moderna. Diseñada para coleccionistas que desean llevar un registro detallado de sus series favoritas.
 
 ![MangaCount](https://img.shields.io/badge/Version-2.0.0-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)
-![Angular](https://img.shields.io/badge/Angular-21-red.svg)
-![WhatsApp Bot](https://img.shields.io/badge/WhatsApp-Bot-green.svg)
-![License](https://img.shields.io/badge/License-GPL%20v3.0-green.svg)
+![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
+![React](https://img.shields.io/badge/React-19-blue.svg)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## ✨ Características Principales
-
-### 📱 Bot de WhatsApp Integrado
-- **Gestión Móvil**: Controla tu colección directamente desde WhatsApp
-- **Comandos Intuitivos**: Interfaz de texto simple con respuestas inteligentes
-- **Sincronización Completa**: Los cambios se reflejan instantáneamente en la web
-- **Multi-perfil**: Soporte para múltiples usuarios desde el mismo bot
 
 ### 🎯 Gestión Completa
 - **Múltiples Perfiles**: Gestiona colecciones separadas para diferentes personas
@@ -40,38 +34,37 @@ Una elegante aplicación web para gestionar colecciones de manga con una interfa
 ## 🛠️ Stack Tecnológico
 
 ### Backend
-- **.NET 10** - Framework principal
+- **.NET 8** - Framework principal
 - **ASP.NET Core Web API** - API REST
-- **Entity Framework Core** - ORM
-- **SQLite** - Base de datos local
-- **CsvHelper** - Procesamiento de archivos TSV
+- **Dapper** - Micro ORM para acceso a datos (SQL directo, sin EF Core)
+- **Npgsql** - Driver PostgreSQL para .NET
+- **Swagger/OpenAPI** - Documentación de API (solo en desarrollo)
 
 ### Frontend
-- **Angular 21** - Framework SPA
-- **Angular Material** - Componentes UI
-- **TypeScript** - Lenguaje de programación
-- **SCSS** - Estilos avanzados con gradientes y animaciones
-- **RxJS** - Programación reactiva
+- **React 19** - Framework SPA moderno
+- **Vite** - Build tool y dev server
+- **TypeScript** - Lenguaje de programación tipado
+- **CSS Modules** - Estilos modulares y scoped
+- **Vitest** - Framework de testing para React
 
-### WhatsApp Bot
-- **Node.js** - Runtime de JavaScript
-- **whatsapp-web.js** - Librería de WhatsApp Web
-- **Winston** - Sistema de logging
-- **Axios** - Cliente HTTP para comunicación con API
-- **dotenv** - Gestión de variables de entorno
+### Base de Datos
+- **PostgreSQL 16** - Sistema de gestión de base de datos
+- **Modelo normalizado** - Estructura `Profile → Entry → Manga → Format / Publisher`
 
 ### Arquitectura
-- **Clean Architecture / Hexagonal** - Separación de responsabilidades
-- **Domain-Driven Design** - Modelado centrado en el dominio
-- **Dependency Injection** - Inversión de dependencias
-- **Repository Pattern** - Abstracción de datos
+- **Arquitectura en Capas** - Separación clara de responsabilidades
+- **Dependency Injection** - Inversión de dependencias nativa de .NET
+- **Repository Pattern** - Abstracción de acceso a datos
+- **RESTful API** - Diseño de API siguiendo principios REST
+- **Frontend embebido** - El build de React se sirve como archivos estáticos desde el propio servidor .NET
 
-## 🚀 Instalación y Configuración
+## 🚀 Instalación y Configuración (Desarrollo Local)
 
 ### Prerrequisitos
-- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- [Node.js 18+](https://nodejs.org/) y npm
-- Git
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js 20+](https://nodejs.org/) y npm
+- [PostgreSQL 16+](https://www.postgresql.org/download/)
+- [VS Code](https://code.visualstudio.com/) o cualquier editor
 
 ### 1. Clonar el Repositorio
 ```bash
@@ -79,186 +72,141 @@ git clone https://github.com/Lubonch/MangaCount.git
 cd MangaCount
 ```
 
-### 2. Configurar Backend
-```bash
-# Construir la solución
-dotnet build src/MangaCount.API
+### 2. Configurar PostgreSQL
 
-# Publicar aplicación auto-contenida
-dotnet publish src/MangaCount.API --self-contained --configuration Release --runtime linux-x64 --output ./published
+Crear la base de datos y el usuario:
+```sql
+CREATE USER mangacount WITH PASSWORD 'tu_password';
+CREATE DATABASE "MangaCount" OWNER mangacount;
 ```
 
-### 3. Configurar Frontend
+Aplicar el esquema:
 ```bash
-cd frontend/manga-count-app
+psql -U mangacount -d MangaCount -f deployment/database-schema.sql
+```
+
+### 3. Configurar Backend
+
+Editar `MangaCount.Server/appsettings.json`:
+```json
+{
+  "ConnectionStrings": {
+    "MangacountDatabase": "Host=localhost;Database=MangaCount;Username=mangacount;Password=tu_password"
+  }
+}
+```
+
+```bash
+cd MangaCount.Server
+dotnet restore
+dotnet build
+```
+
+### 4. Configurar Frontend
+```bash
+cd mangacount.client
 npm install
 ```
 
-### 4. Ejecutar la Aplicación
+### 5. Ejecutar en Desarrollo
 
-#### Backend (API)
+**Terminal 1 - Backend:**
 ```bash
-# Desde la raíz del proyecto
-./published/MangaCount.API
-# La API estará disponible en http://localhost:5000
+cd MangaCount.Server
+dotnet run
 ```
 
-#### Frontend
+**Terminal 2 - Frontend (hot reload):**
 ```bash
-cd frontend/manga-count-app
-npm start
-# La aplicación estará disponible en http://localhost:4200
+cd mangacount.client
+npm run dev
 ```
+
+## 📋 URLs
+
+### Desarrollo Local
+- **Aplicación**: http://localhost:5000 (o el puerto que configure Kestrel)
+- **Swagger**: http://localhost:5000/swagger (solo en entorno Development)
+
+### Producción (Servidor LAN)
+- **Aplicación**: http://192.168.0.50:3000
+- Ver [deployment/SSH-DEPLOY.md](deployment/SSH-DEPLOY.md) para instrucciones de despliegue.
 
 ## 📋 Uso
 
 ### 1. Gestión de Perfiles
-- Crear nuevos perfiles desde el selector en el header
-- Cambiar between perfiles usando el dropdown
+- Crear nuevos perfiles desde el selector en la interfaz
+- Cambiar entre perfiles usando el dropdown
 - Los datos se mantienen separados por perfil
 
 ### 2. Agregar Manga
-- Usar el botón "Agregar Manga" en la barra superior
+- Usar el botón "Agregar Manga" en la interfaz
 - Completar el formulario con información detallada
-- Las imágenes se obtienen automáticamente
+- El sistema valida automáticamente los datos
 
 ### 3. Importar Colección Existente
 - Usar "Importar TSV" para cargar datos masivamente
 - El formato debe incluir: Título, Comprados, Total, Pendiente, Completa, Prioridad, Formato, Editorial
-- Ejemplo de TSV incluido: `Inventario - Lucas.tsv`
+- Archivo de ejemplo incluido: `Inventario - Lucas.tsv`
 
 ### 4. Gestionar Entradas
-- Editar manga existente con click en "Editar"
+- Editar manga existente con el botón "Editar"
 - Eliminar entradas con el botón "Eliminar"
 - Filtrar por estado de completitud o prioridad
-
-## 📱 Bot de WhatsApp
-
-MangaCount incluye un bot de WhatsApp que permite gestionar tu colección directamente desde WhatsApp usando comandos de texto.
-
-### Características del Bot
-- 📚 **Gestión completa de manga** - Agregar, listar, eliminar y buscar
-- 👤 **Soporte multi-perfil** - Cambiar entre diferentes usuarios/colecciones  
-- 🔍 **Búsqueda avanzada** - Filtrar por estado, prioridad o término de búsqueda
-- 📊 **Estadísticas detalladas** - Ver resúmenes de tu colección
-- 🤖 **Comandos intuitivos** - Interfaz fácil de usar con mensajes de ayuda
-
-### Configuración del Bot
-
-1. **Prerequisitos:**
-   ```bash
-   # Asegurar que la API esté ejecutándose
-   cd src/MangaCount.API
-   dotnet run
-   ```
-
-2. **Instalar dependencias del bot:**
-   ```bash
-   cd src/MangaCount.WhatsAppBot
-   npm install
-   ```
-
-3. **Configurar variables de entorno:**
-   ```bash
-   cp .env.example .env
-   # Editar .env con tus configuraciones (opcional)
-   ```
-
-4. **Ejecutar el bot:**
-   ```bash
-   # Opción 1: Usar el script de inicio (recomendado)
-   ./start.sh
-
-   # Opción 2: Ejecutar manualmente
-   node index.js
-   ```
-
-5. **Conectar WhatsApp:**
-   - Escanear el código QR que aparece en la terminal
-   - Abrir WhatsApp → Configuración → Dispositivos vinculados
-   - Escanear el código QR
-   - ¡El bot estará listo para usar!
-
-### Comandos del Bot
-
-```bash
-# Gestión de perfiles
-/profile create "Tu Nombre"
-/profile set "Tu Nombre" 
-/profile list
-
-# Agregar manga  
-/manga add "Attack on Titan" volumes:34 format:Tankoubon
-/manga add "One Piece" volumes:105
-
-# Ver y gestionar colección
-/manga list
-/manga delete "Naruto"
-/manga priority "Attack on Titan"
-
-# Búsqueda y estadísticas
-/search "One Piece"
-/search incomplete
-/search priority
-/stats
-
-# Ayuda e información
-/help
-/status
-```
-
-Para más información detallada sobre el bot, ver: [`src/MangaCount.WhatsAppBot/README.md`](src/MangaCount.WhatsAppBot/README.md)
-
-```
-MangaCount/
-├── src/
-│   ├── MangaCount.API/           # Controladores Web API
-│   ├── MangaCount.Application/   # Servicios de aplicación
-│   ├── MangaCount.Domain/        # Entidades y lógica de dominio
-│   ├── MangaCount.Infrastructure/ # Acceso a datos y contexto
-│   └── MangaCount.WhatsAppBot/   # Bot de WhatsApp con Node.js
-├── frontend/manga-count-app/     # Aplicación Angular
-│   ├── src/app/
-│   │   ├── components/          # Componentes Angular
-│   │   ├── services/           # Servicios HTTP y lógica
-│   │   ├── models/             # Interfaces TypeScript
-│   │   └── app.*               # Componente principal
-├── tests/                      # Pruebas unitarias
-├── docs/                       # Documentación
-└── published/                  # Build de producción
-```
 
 ## 🔌 API Endpoints
 
 ### Perfiles
-- `GET /api/profiles` - Listar todos los perfiles
-- `POST /api/profiles` - Crear nuevo perfil
-- `GET /api/profiles/{id}` - Obtener perfil específico
+- `GET /api/profile` - Listar todos los perfiles
+- `POST /api/profile` - Crear nuevo perfil
+- `GET /api/profile/{id}` - Obtener perfil específico
 
 ### Manga
-- `GET /api/manga/profile/{profileId}` - Obtener manga de un perfil
-- `POST /api/manga` - Crear nueva entrada
-- `PUT /api/manga/{id}` - Actualizar entrada existente
-- `DELETE /api/manga/{id}` - Eliminar entrada
-- `POST /api/manga/profile/{profileId}/import-tsv` - Importar desde TSV
-- `GET /api/manga/profile/{profileId}/export-tsv` - Exportar a TSV
+- `GET /api/manga` - Obtener todos los mangas
+- `POST /api/manga` - Crear nuevo manga
+- `PUT /api/manga/{id}` - Actualizar manga existente
+- `DELETE /api/manga/{id}` - Eliminar manga
 
-### Búsqueda y Filtrado
-- Parámetros de consulta: `search`, `incomplete`, etc.
+### Entradas (colección de perfil)
+- `GET /api/entry` - Obtener entradas
+- `POST /api/entry` - Crear nueva entrada
+- `PUT /api/entry/{id}` - Actualizar entrada
+- `DELETE /api/entry/{id}` - Eliminar entrada
+- `GET /api/entry/export/{profileId}` - Exportar colección a TSV
+- `POST /api/entry/import/{profileId}` - Importar colección desde TSV
 
-## 🎨 Interfaz Visual
+### Formatos y Editoriales
+- `GET /api/format` - Listar formatos
+- `GET /api/publisher` - Listar editoriales
 
-La aplicación cuenta con un diseño moderno y atractivo que incluye:
+### Base de Datos (admin)
+- `GET /api/database/statistics` - Estadísticas generales
+- `POST /api/database/nuke` - Limpiar todos los datos
 
-- **Fondo Dinámico**: Gradientes multi-color con efectos de partículas
-- **Tarjetas de Cristal**: Efectos backdrop-filter y bordes semi-transparentes
-- **Animaciones Fluidas**: Transiciones suaves con cubic-bezier timing
-- **Hover Effects**: Elevación 3D y scaling en interacciones
-- **Paleta Vibrante**: Colores inspirados en manga/anime (purple-pink-blue)
-- **Tags Coloridos**: Cada categoría con gradientes únicos
-- **Badges Animados**: Efectos glow pulsante para prioridades
 
-## 🔄 TSV Format
+## 📁 Estructura del Proyecto
+
+```
+MangaCount/
+├── MangaCount.Server/           # Backend .NET 8 Web API
+│   ├── Controllers/             # Controladores de API REST
+│   ├── Models/                  # DTOs y modelos
+│   ├── Services/                # Lógica de negocio
+│   └── Data/                    # Acceso a datos con Dapper
+├── mangacount.client/           # Frontend React 19 + Vite
+│   ├── src/
+│   │   ├── components/          # Componentes React
+│   │   ├── hooks/               # Custom hooks
+│   │   ├── services/            # Servicios HTTP
+│   │   └── styles/              # Estilos CSS
+├── MangaCount.Server.Tests/     # Pruebas unitarias (.NET)
+├── deployment/                  # Scripts y guías de despliegue
+│   ├── SSH-DEPLOY.md            # Guía de deploy al servidor SSH
+│   └── database-schema.sql     # Esquema PostgreSQL
+└── Inventario - Lucas.tsv       # Archivo de importación de ejemplo
+```
+
+## � Formato TSV
 
 El formato de importación/exportación TSV incluye estas columnas:
 
@@ -273,6 +221,47 @@ El formato de importación/exportación TSV incluye estas columnas:
 | Formato | Tipo de formato | "Tankoubon" |
 | Editorial | Casa editora | "Kodansha" |
 
+## 🛠️ Desarrollo Local
+
+### Backend (.NET)
+```bash
+cd MangaCount.Server
+dotnet watch run
+# API disponible en http://localhost:5000 con hot reload
+```
+
+### Frontend (React)
+```bash
+cd mangacount.client  
+npm run dev
+# Aplicación disponible en http://localhost:5173 con hot reload
+```
+
+### Ejecutar Pruebas
+```bash
+# Pruebas backend
+cd MangaCount.Server.Tests
+dotnet test
+
+# Pruebas frontend  
+cd mangacount.client
+npm test
+```
+
+## 🐛 Solución de Problemas
+
+### Problemas de Conexión a Base de Datos
+- Verificar que PostgreSQL esté corriendo: `sudo systemctl status postgresql`
+- Revisar la cadena de conexión en `appsettings.json` o `appsettings.Production.json`
+- Probar conexión directa: `psql -U mangacount -d MangaCount -h localhost`
+
+### Issues de Build del Frontend
+```bash
+cd mangacount.client
+rm -rf node_modules package-lock.json
+npm install
+```
+
 ## 🤝 Contribución
 
 1. Fork el proyecto
@@ -281,69 +270,52 @@ El formato de importación/exportación TSV incluye estas columnas:
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
-### Desarrollo Local
-
-Para contribuir al proyecto:
-
-```bash
-# Backend - Ejecutar con hot reload
-dotnet watch --project src/MangaCount.API
-
-# Frontend - Desarrollo con live reload
-cd frontend/manga-count-app
-ng serve --open
-```
-
 ## 📝 Roadmap
 
-### ✅ Fase 2 - Completada (Bot WhatsApp)
-- [x] **Bot de WhatsApp**: Gestión completa de manga por WhatsApp ✨
-- [x] **Comandos Inteligentes**: Parser avanzado con validación
-- [x] **Multi-perfil**: Soporte para múltiples usuarios
-- [x] **Búsqueda Avanzada**: Filtros por estado y prioridad
-- [x] **Estadísticas**: Resúmenes detallados de colección
-- [x] **Integración API**: Sincronización completa con la web
+### ✅ **Completado**
+- [x] **Backend API completo** - .NET 8 con todos los controllers
+- [x] **Frontend React funcional** - UI completa con multi-perfil
+- [x] **PostgreSQL** - Base de datos normalizada y en producción
+- [x] **Sistema CRUD completo** - Operaciones para todas las entidades
+- [x] **Importación TSV** - Carga masiva de datos funcional
+- [x] **Exportación TSV** - Respaldo de colecciones
+- [x] **Deploy en servidor LAN** - Corriendo en http://192.168.0.50:3000
 
-### Fase 3 - Características Futuras  
-- [ ] **Autenticación**: Usuarios con cuentas personales
-- [ ] **Sincronización en la Nube**: Respaldo automático
-- [ ] **Recomendaciones**: Sistema de sugerencias basado en IA
-- [ ] **Lista de Deseos**: Gestión de manga por comprar
-- [ ] **Estadísticas Avanzadas**: Dashboards y métricas web
-- [ ] **Bot Avanzado**: Notificaciones automáticas y comandos por voz
+### 🚧 **Pendiente**
+- [ ] **Integración Jikan API** - Imágenes automáticas de portadas (MyAnimeList)
+- [ ] **Búsqueda Avanzada** - Filtros combinados en frontend
+- [ ] **Dashboard de Estadísticas** - Métricas visuales de colección
+- [ ] **Testing Automatizado** - Cobertura >75% en backend y frontend
+- [ ] **Paginación** - Para colecciones grandes
 
-### Mejoras Técnicas
-- [ ] Pruebas unitarias completas
-- [ ] Optimización de rendimiento
-- [ ] PWA (Progressive Web App)
-- [ ] Modo offline
-- [ ] Internacionalización (i18n)
+## 🐛 Issues Conocidos
 
-## 🐛 Problemas Conocidos
-
-- Las imágenes de Jikan API pueden tener rate limiting
-- La compilación de .NET 10 requiere runtime específico en producción
-- Algunos gradientes CSS pueden no funcionar en navegadores antiguos
+- Formato con nombre vacío `""` puede aparecer si el TSV tiene un campo de formato en blanco
+- Las imágenes de Jikan API (portadas) aún no están integradas
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia GNU General Public License v3.0. Ver el archivo `LICENSE` para más detalles.
+Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
 ## 🙏 Agradecimientos
 
-- [Jikan API](https://jikan.moe/) - Datos de manga desde MyAnimeList
-- [Angular Material](https://material.angular.io/) - Componentes UI elegantes
-- [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) - ORM robusto
+- [Jikan API](https://jikan.moe/) - Datos de manga desde MyAnimeList (integración pendiente)
+- [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM simple y eficiente
+- [Npgsql](https://www.npgsql.org/) - Driver PostgreSQL para .NET
+- [React](https://react.dev/) - Framework de UI moderno y potente
+- [.NET](https://dotnet.microsoft.com/) - Platform robusta para backend
+- [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM eficiente
+- [Vite](https://vitejs.dev/) - Build tool rápido para desarrollo
 - Comunidad de desarrolladores por las mejores prácticas
 
 ## 📞 Contacto y Soporte
 
 - **GitHub Issues**: Para reportar bugs o sugerir features
-- **Documentación**: Revisa la carpeta `/docs` para guías detalladas
-- **Wiki del Proyecto**: Información técnica adicional
+- **Pull Requests**: Para contribuir al código
+- **Documentación**: Revisa `PLAN.md` para roadmap detallado
 
 ---
 
 **¡Disfruta gestionando tu colección de manga! 📚✨**
 
-*"El conocimiento es poder, pero el manga es vida." - Autor Desconocido*
+*"Una colección organizada es una mente en paz." - MangaCount Team*

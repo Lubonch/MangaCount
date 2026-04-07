@@ -1,7 +1,7 @@
 using Dapper;
 using MangaCount.Server.Domain;
 using MangaCount.Server.Repositories.Contracts;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.Extensions.Logging;
 using System.Data;
 
@@ -25,19 +25,17 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var sql = @"
-                    INSERT INTO [dbo].[Profile]([Name], [ProfilePicture], [CreatedDate], [IsActive])
-                    VALUES (@Name, @ProfilePicture, @CreatedDate, @IsActive);
-                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                    INSERT INTO profile (name, createdat)
+                    VALUES (@Name, @CreatedDate)
+                    RETURNING id;";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var newId = connection.QuerySingle<int>(sql, new
                     {
                         Name = profile.Name,
-                        ProfilePicture = profile.ProfilePicture,
-                        CreatedDate = profile.CreatedDate,
-                        IsActive = profile.IsActive
+                        CreatedDate = profile.CreatedDate
                     });
 
                     return GetById(newId);
@@ -61,7 +59,7 @@ namespace MangaCount.Server.Repositories
                     SET [Name] = @Name, [ProfilePicture] = @ProfilePicture, [IsActive] = @IsActive 
                     WHERE [Id] = @Id";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     connection.Execute(sql, new
@@ -88,9 +86,9 @@ namespace MangaCount.Server.Repositories
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                var sql = "SELECT * FROM [dbo].[Profile] WHERE [Id] = @Id";
+                var sql = "SELECT id, name, createdat AS CreatedDate FROM profile WHERE id = @Id";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var profileResult = connection.QueryFirstOrDefault<Profile>(sql, new { Id = id });
@@ -110,9 +108,9 @@ namespace MangaCount.Server.Repositories
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                var sql = "SELECT * FROM [dbo].[Profile] WHERE [IsActive] = 1 ORDER BY [Name]";
+                var sql = "SELECT id, name, createdat AS CreatedDate FROM profile ORDER BY name";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var profileResult = connection.Query<Profile>(sql).ToList();
@@ -132,10 +130,10 @@ namespace MangaCount.Server.Repositories
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                // Soft delete - just mark as inactive
-                var sql = "UPDATE [dbo].[Profile] SET [IsActive] = 0 WHERE [Id] = @Id";
+                // Hard delete since we don't have IsActive column
+                var sql = "DELETE FROM profile WHERE id = @Id";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     connection.Execute(sql, new { Id = id });

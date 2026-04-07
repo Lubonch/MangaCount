@@ -1,6 +1,6 @@
 using MangaCount.Server.Domain;
 using MangaCount.Server.Repositories.Contracts;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Dapper;
 
 namespace MangaCount.Server.Repositories
@@ -15,22 +15,22 @@ namespace MangaCount.Server.Repositories
 
         public IEnumerable<Format> GetAll()
         {
-            using var connection = new SqlConnection(_connectionString);
-            return connection.Query<Format>("SELECT * FROM Formats");
+            using var connection = new NpgsqlConnection(_connectionString);
+            return connection.Query<Format>("SELECT id, name FROM format");
         }
 
         public Format GetById(int id)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = new NpgsqlConnection(_connectionString);
             return connection.QuerySingleOrDefault<Format>(
-                "SELECT * FROM Formats WHERE Id = @Id", new { Id = id });
+                "SELECT id, name FROM format WHERE id = @Id", new { Id = id });
         }
 
         public Format Create(Format format)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = new NpgsqlConnection(_connectionString);
             var id = connection.ExecuteScalar<int>(
-                "INSERT INTO Formats (Name) VALUES (@Name); SELECT CAST(SCOPE_IDENTITY() as int);",
+                "INSERT INTO format (name) VALUES (@Name) RETURNING id;",
                 format);
             format.Id = id;
             return format;
@@ -38,16 +38,16 @@ namespace MangaCount.Server.Repositories
 
         public Format Update(Format format)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = new NpgsqlConnection(_connectionString);
             connection.Execute(
-                "UPDATE Formats SET Name = @Name WHERE Id = @Id", format);
+                "UPDATE format SET name = @Name WHERE id = @Id", format);
             return format;
         }
 
         public void Delete(int id)
         {
-            using var connection = new SqlConnection(_connectionString);
-            connection.Execute("DELETE FROM Formats WHERE Id = @Id", new { Id = id });
+            using var connection = new NpgsqlConnection(_connectionString);
+            connection.Execute("DELETE FROM format WHERE id = @Id", new { Id = id });
         }
     }
 }

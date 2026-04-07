@@ -1,6 +1,6 @@
 using MangaCount.Server.Domain;
 using MangaCount.Server.Repositories.Contracts;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Dapper;
 
 namespace MangaCount.Server.Repositories
@@ -15,22 +15,22 @@ namespace MangaCount.Server.Repositories
 
         public IEnumerable<Publisher> GetAll()
         {
-            using var connection = new SqlConnection(_connectionString);
-            return connection.Query<Publisher>("SELECT * FROM Publishers");
+            using var connection = new NpgsqlConnection(_connectionString);
+            return connection.Query<Publisher>("SELECT id, name FROM publisher");
         }
 
         public Publisher GetById(int id)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = new NpgsqlConnection(_connectionString);
             return connection.QuerySingleOrDefault<Publisher>(
-                "SELECT * FROM Publishers WHERE Id = @Id", new { Id = id });
+                "SELECT id, name FROM publisher WHERE id = @Id", new { Id = id });
         }
 
         public Publisher Create(Publisher publisher)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = new NpgsqlConnection(_connectionString);
             var id = connection.ExecuteScalar<int>(
-                "INSERT INTO Publishers (Name) VALUES (@Name); SELECT CAST(SCOPE_IDENTITY() as int);",
+                "INSERT INTO publisher (name) VALUES (@Name) RETURNING id;",
                 publisher);
             publisher.Id = id;
             return publisher;
@@ -38,16 +38,16 @@ namespace MangaCount.Server.Repositories
 
         public Publisher Update(Publisher publisher)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var connection = new NpgsqlConnection(_connectionString);
             connection.Execute(
-                "UPDATE Publishers SET Name = @Name WHERE Id = @Id", publisher);
+                "UPDATE publisher SET name = @Name WHERE id = @Id", publisher);
             return publisher;
         }
 
         public void Delete(int id)
         {
-            using var connection = new SqlConnection(_connectionString);
-            connection.Execute("DELETE FROM Publishers WHERE Id = @Id", new { Id = id });
+            using var connection = new NpgsqlConnection(_connectionString);
+            connection.Execute("DELETE FROM publisher WHERE id = @Id", new { Id = id });
         }
     }
 }

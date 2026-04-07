@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using MangaCount.Server.Domain;
 using MangaCount.Server.Repositories.Contracts;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using System;
 using System.Data;
 
@@ -24,24 +24,24 @@ namespace MangaCount.Server.Repositories
 
                 var sql = @"
             SELECT 
-                e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
-                m.Id, m.Name, m.Volumes, m.FormatId, m.PublisherId,
-                f.Id, f.Name,
-                p.Id, p.Name
-            FROM [dbo].[Entry] e
-            LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
-            LEFT JOIN [dbo].[Formats] f ON m.FormatId = f.Id
-            LEFT JOIN [dbo].[Publishers] p ON m.PublisherId = p.Id";
+                e.id, e.mangaid AS MangaId, e.profileid AS ProfileId, e.purchasedvolumes AS Quantity, e.pendingvolumes AS Pending, e.ispriority AS Priority,
+                m.id, m.title AS Name, m.totalvolumes AS Volumes, m.formatid AS FormatId, m.publisherid AS PublisherId,
+                f.id, f.name,
+                p.id, p.name
+            FROM entry e
+            LEFT JOIN manga m ON e.mangaid = m.id
+            LEFT JOIN format f ON m.formatid = f.id
+            LEFT JOIN publisher p ON m.publisherid = p.id";
 
                 var parameters = new DynamicParameters();
 
                 if (profileId.HasValue)
                 {
-                    sql += " WHERE e.ProfileId = @ProfileId";
+                    sql += " WHERE e.profileid = @ProfileId";
                     parameters.Add("@ProfileId", profileId.Value);
                 }
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var entryResult = connection.Query<Entry, Manga, Format, Publisher, Entry>(
@@ -74,13 +74,13 @@ namespace MangaCount.Server.Repositories
 
                 var sql = @"
                     SELECT 
-                        e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
-                        m.Id, m.Name, m.Volumes
-                    FROM [dbo].[Entry] e
-                    LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
-                    WHERE e.Id = @Id";
+                        e.id, e.mangaid AS MangaId, e.profileid AS ProfileId, e.purchasedvolumes AS Quantity, e.pendingvolumes AS Pending, e.ispriority AS Priority,
+                        m.id, m.title AS Name, m.totalvolumes AS Volumes, m.formatid AS FormatId, m.publisherid AS PublisherId
+                    FROM entry e
+                    LEFT JOIN manga m ON e.mangaid = m.id
+                    WHERE e.id = @Id";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var entryResult = connection.Query<Entry, Manga, Entry>(
@@ -110,11 +110,15 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var sql = @"
-                    INSERT INTO [dbo].[Entry]([MangaId],[ProfileId],[Priority],[Pending],[Quantity]) 
-                    VALUES (@MangaId,@ProfileId,@Priority,@Pending,@Quantity);
-                    SELECT CAST(SCOPE_IDENTITY() as int);";
+                    INSERT INTO entry (mangaid, profileid, purchasedvolumes, pendingvolumes, ispriority) 
+                    VALUES (@MangaId, @ProfileId, @Quantity, @Pending, @Priority)
+                    ON CONFLICT (profileid, mangaid) DO UPDATE
+                        SET purchasedvolumes = EXCLUDED.purchasedvolumes,
+                            pendingvolumes = EXCLUDED.pendingvolumes,
+                            ispriority = EXCLUDED.ispriority
+                    RETURNING id;";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var newId = connection.QuerySingle<int>(sql, new
@@ -142,12 +146,12 @@ namespace MangaCount.Server.Repositories
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var sql = @"
-                    UPDATE [dbo].[Entry] 
-                    SET [MangaId] = @MangaId, [ProfileId] = @ProfileId, [Priority] = @Priority, 
-                        [Pending] = @Pending, [Quantity] = @Quantity 
-                    WHERE [Id] = @Id";
+                    UPDATE entry 
+                    SET mangaid = @MangaId, profileid = @ProfileId, ispriority = @Priority, 
+                        pendingvolumes = @Pending, purchasedvolumes = @Quantity 
+                    WHERE id = @Id";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     connection.Execute(sql, new
@@ -177,13 +181,13 @@ namespace MangaCount.Server.Repositories
 
                 var sql = @"
                     SELECT 
-                        e.Id, e.MangaId, e.ProfileId, e.Quantity, e.Pending, e.Priority,
-                        m.Id, m.Name, m.Volumes
-                    FROM [dbo].[Entry] e
-                    LEFT JOIN [dbo].[Manga] m ON e.MangaId = m.Id
-                    WHERE e.ProfileId IN (@ProfileId1, @ProfileId2)";
+                        e.id, e.mangaid AS MangaId, e.profileid AS ProfileId, e.purchasedvolumes AS Quantity, e.pendingvolumes AS Pending, e.ispriority AS Priority,
+                        m.id, m.title AS Name, m.totalvolumes AS Volumes, m.formatid AS FormatId, m.publisherid AS PublisherId
+                    FROM entry e
+                    LEFT JOIN manga m ON e.mangaid = m.id
+                    WHERE e.profileid IN (@ProfileId1, @ProfileId2)";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var entryResult = connection.Query<Entry, Manga, Entry>(

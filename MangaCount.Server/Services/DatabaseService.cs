@@ -1,5 +1,5 @@
 using MangaCount.Server.Services.Contracts;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Dapper;
 
 namespace MangaCount.Server.Services
@@ -21,16 +21,16 @@ namespace MangaCount.Server.Services
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                using var connection = new SqlConnection(connString);
+                using var connection = new NpgsqlConnection(connString);
                 await connection.OpenAsync();
 
                 var stats = new DatabaseStatistics
                 {
-                    TotalEntries = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Entry]"),
-                    TotalManga = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Manga]"),
-                    TotalProfiles = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Profile] WHERE [IsActive] = 1"),
-                    TotalFormats = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Formats]"),
-                    TotalPublishers = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Publishers]")
+                    TotalEntries = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM entry"),
+                    TotalManga = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM manga"),
+                    TotalProfiles = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM profile"),
+                    TotalFormats = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM format"),
+                    TotalPublishers = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM publisher")
                 };
 
                 return stats;
@@ -64,17 +64,17 @@ namespace MangaCount.Server.Services
             try
             {
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
-                using var connection = new SqlConnection(connString);
+                using var connection = new NpgsqlConnection(connString);
                 await connection.OpenAsync();
 
                 var preview = new DeletionPreview { IsValid = true };
 
                 // Get current counts
-                var totalEntries = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Entry]");
-                var totalManga = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Manga]");
-                var totalProfiles = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Profile] WHERE [IsActive] = 1");
-                var totalFormats = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Formats]");
-                var totalPublishers = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Publishers]");
+                var totalEntries = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM entry");
+                var totalManga = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM manga");
+                var totalProfiles = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM profile");
+                var totalFormats = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM format");
+                var totalPublishers = await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM publisher");
 
                 // Check dependencies and validate options
                 if (options.DeleteManga && !options.DeleteEntries && totalEntries > 0)
@@ -123,7 +123,7 @@ namespace MangaCount.Server.Services
                 if (options.DeleteFormats)
                 {
                     var formatsToDelete = options.KeepDefaultFormatsAndPublishers ? 
-                        await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Formats] WHERE [Id] > 1") : 
+                        await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM format WHERE id > 1") : 
                         totalFormats;
                     preview.EstimatedFormatsDeleted = formatsToDelete;
                     preview.Actions.Add($"Delete {formatsToDelete} formats" + 
@@ -133,7 +133,7 @@ namespace MangaCount.Server.Services
                 if (options.DeletePublishers)
                 {
                     var publishersToDelete = options.KeepDefaultFormatsAndPublishers ? 
-                        await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM [dbo].[Publishers] WHERE [Id] > 1") : 
+                        await connection.QuerySingleAsync<int>("SELECT COUNT(*) FROM publisher WHERE id > 1") : 
                         totalPublishers;
                     preview.EstimatedPublishersDeleted = publishersToDelete;
                     preview.Actions.Add($"Delete {publishersToDelete} publishers" + 
@@ -171,7 +171,7 @@ namespace MangaCount.Server.Services
                 }
 
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
-                using var connection = new SqlConnection(connString);
+                using var connection = new NpgsqlConnection(connString);
                 await connection.OpenAsync();
 
                 using var transaction = await connection.BeginTransactionAsync();
@@ -181,32 +181,32 @@ namespace MangaCount.Server.Services
                     // Delete in correct order to respect foreign key constraints
                     if (options.DeleteEntries)
                     {
-                        await connection.ExecuteAsync("DELETE FROM [dbo].[Entry]", transaction: transaction);
+                        await connection.ExecuteAsync("DELETE FROM entry", transaction: transaction);
                         _logger.LogInformation("Deleted all entries");
                     }
 
                     if (options.DeleteManga)
                     {
-                        await connection.ExecuteAsync("DELETE FROM [dbo].[Manga]", transaction: transaction);
+                        await connection.ExecuteAsync("DELETE FROM manga", transaction: transaction);
                         _logger.LogInformation("Deleted all manga");
                     }
 
                     if (options.DeleteProfiles)
                     {
-                        await connection.ExecuteAsync("UPDATE [dbo].[Profile] SET [IsActive] = 0", transaction: transaction);
-                        _logger.LogInformation("Deactivated all profiles");
+                        await connection.ExecuteAsync("DELETE FROM profile", transaction: transaction);
+                        _logger.LogInformation("Deleted all profiles");
                     }
 
                     if (options.DeleteFormats)
                     {
                         if (options.KeepDefaultFormatsAndPublishers)
                         {
-                            await connection.ExecuteAsync("DELETE FROM [dbo].[Formats] WHERE [Id] > 1", transaction: transaction);
+                            await connection.ExecuteAsync("DELETE FROM format WHERE id > 1", transaction: transaction);
                             _logger.LogInformation("Deleted custom formats (kept default)");
                         }
                         else
                         {
-                            await connection.ExecuteAsync("DELETE FROM [dbo].[Formats]", transaction: transaction);
+                            await connection.ExecuteAsync("DELETE FROM format", transaction: transaction);
                             _logger.LogInformation("Deleted all formats");
                         }
                     }
@@ -215,12 +215,12 @@ namespace MangaCount.Server.Services
                     {
                         if (options.KeepDefaultFormatsAndPublishers)
                         {
-                            await connection.ExecuteAsync("DELETE FROM [dbo].[Publishers] WHERE [Id] > 1", transaction: transaction);
+                            await connection.ExecuteAsync("DELETE FROM publisher WHERE id > 1", transaction: transaction);
                             _logger.LogInformation("Deleted custom publishers (kept default)");
                         }
                         else
                         {
-                            await connection.ExecuteAsync("DELETE FROM [dbo].[Publishers]", transaction: transaction);
+                            await connection.ExecuteAsync("DELETE FROM publisher", transaction: transaction);
                             _logger.LogInformation("Deleted all publishers");
                         }
                     }
@@ -229,24 +229,24 @@ namespace MangaCount.Server.Services
                     if (options.ResetIdentities)
                     {
                         if (options.DeleteEntries)
-                            await connection.ExecuteAsync("DBCC CHECKIDENT('[dbo].[Entry]', RESEED, 0)", transaction: transaction);
+                            await connection.ExecuteAsync("ALTER SEQUENCE entry_id_seq RESTART WITH 1", transaction: transaction);
                         
                         if (options.DeleteManga)
-                            await connection.ExecuteAsync("DBCC CHECKIDENT('[dbo].[Manga]', RESEED, 0)", transaction: transaction);
+                            await connection.ExecuteAsync("ALTER SEQUENCE manga_id_seq RESTART WITH 1", transaction: transaction);
                         
                         if (options.DeleteProfiles)
-                            await connection.ExecuteAsync("DBCC CHECKIDENT('[dbo].[Profile]', RESEED, 0)", transaction: transaction);
+                            await connection.ExecuteAsync("ALTER SEQUENCE profile_id_seq RESTART WITH 1", transaction: transaction);
                         
                         if (options.DeleteFormats)
                         {
-                            var reseedValue = options.KeepDefaultFormatsAndPublishers ? 1 : 0;
-                            await connection.ExecuteAsync($"DBCC CHECKIDENT('[dbo].[Formats]', RESEED, {reseedValue})", transaction: transaction);
+                            var reseedValue = options.KeepDefaultFormatsAndPublishers ? 2 : 1;
+                            await connection.ExecuteAsync($"ALTER SEQUENCE format_id_seq RESTART WITH {reseedValue}", transaction: transaction);
                         }
                         
                         if (options.DeletePublishers)
                         {
-                            var reseedValue = options.KeepDefaultFormatsAndPublishers ? 1 : 0;
-                            await connection.ExecuteAsync($"DBCC CHECKIDENT('[dbo].[Publishers]', RESEED, {reseedValue})", transaction: transaction);
+                            var reseedValue = options.KeepDefaultFormatsAndPublishers ? 2 : 1;
+                            await connection.ExecuteAsync($"ALTER SEQUENCE publisher_id_seq RESTART WITH {reseedValue}", transaction: transaction);
                         }
                         
                         _logger.LogInformation("Reset identity columns");

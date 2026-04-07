@@ -1,12 +1,18 @@
 ﻿using MangaCount.Server.Configs;
 
-var builder = WebApplication.CreateBuilder(args);
-
+// Check for the load-bearing image
 var loadBearingImagePath = Path.Combine(Directory.GetCurrentDirectory(), "loadbearingimage.jpg");
 if (!File.Exists(loadBearingImagePath))
 {
-    throw new FileNotFoundException("Ah, I wouldn't take it down if I were you. It's a load-bearing image.", "loadbearingimage.jpg");
+    // Try in wwwroot if not found in current directory
+    loadBearingImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "loadbearingimage.jpg");
+    if (!File.Exists(loadBearingImagePath))
+    {
+        throw new FileNotFoundException("Ah, I wouldn't take it down if I were you. It's a load-bearing image.", "loadbearingimage.jpg");
+    }
 }
+
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
@@ -53,7 +59,14 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.MapFallbackToFile("/index.html");
+app.MapWhen(x => !x.Request.Path.Value.StartsWith("/api"), builder =>
+{
+    builder.Run(async (context) =>
+    {
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(Path.Combine(app.Environment.WebRootPath, "index.html"));
+    });
+});
 
 app.Run();
 

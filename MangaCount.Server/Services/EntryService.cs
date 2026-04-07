@@ -5,7 +5,7 @@ using MangaCount.Server.Model;
 using MangaCount.Server.Repositories;
 using MangaCount.Server.Repositories.Contracts;
 using System.Net;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 
@@ -16,11 +16,13 @@ namespace MangaCount.Server.Services
         private IEntryRepository _entryRepository;
         private IMangaRepository _mangaRepository;
         private Mapper mapper;
+        private readonly IConfiguration _configuration;
         
-        public EntryService(IEntryRepository entryRepository, IMangaRepository mangaRepository)
+        public EntryService(IEntryRepository entryRepository, IMangaRepository mangaRepository, IConfiguration configuration)
         {
             _entryRepository = entryRepository;
             _mangaRepository = mangaRepository;
+            _configuration = configuration;
             mapper = MapperConfig.InitializeAutomapper();
         }
         
@@ -287,19 +289,14 @@ namespace MangaCount.Server.Services
         {
             try
             {
-                IConfigurationRoot _configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                using var connection = new SqlConnection(connString);
+                using var connection = new NpgsqlConnection(connString);
                 await connection.OpenAsync();
 
                 // Try to find existing format
                 var existingFormat = await connection.QuerySingleOrDefaultAsync<Domain.Format>(
-                    "SELECT * FROM [dbo].[Formats] WHERE [Name] = @Name", 
+                    "SELECT id, name FROM format WHERE name = @Name", 
                     new { Name = formatName });
 
                 if (existingFormat != null)
@@ -309,7 +306,7 @@ namespace MangaCount.Server.Services
 
                 // Create new format if it doesn't exist
                 var newId = await connection.QuerySingleAsync<int>(
-                    "INSERT INTO [dbo].[Formats] ([Name]) VALUES (@Name); SELECT CAST(SCOPE_IDENTITY() as int);",
+                    "INSERT INTO format (name) VALUES (@Name) RETURNING id;",
                     new { Name = formatName });
 
                 return newId;
@@ -325,19 +322,14 @@ namespace MangaCount.Server.Services
         {
             try
             {
-                IConfigurationRoot _configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                using var connection = new SqlConnection(connString);
+                using var connection = new NpgsqlConnection(connString);
                 await connection.OpenAsync();
 
                 // Try to find existing publisher
                 var existingPublisher = await connection.QuerySingleOrDefaultAsync<Domain.Publisher>(
-                    "SELECT * FROM [dbo].[Publishers] WHERE [Name] = @Name", 
+                    "SELECT id, name FROM publisher WHERE name = @Name", 
                     new { Name = publisherName });
 
                 if (existingPublisher != null)
@@ -347,7 +339,7 @@ namespace MangaCount.Server.Services
 
                 // Create new publisher if it doesn't exist
                 var newId = await connection.QuerySingleAsync<int>(
-                    "INSERT INTO [dbo].[Publishers] ([Name]) VALUES (@Name); SELECT CAST(SCOPE_IDENTITY() as int);",
+                    "INSERT INTO publisher (name) VALUES (@Name) RETURNING id;",
                     new { Name = publisherName });
 
                 return newId;

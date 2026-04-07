@@ -1,0 +1,22 @@
+[Unit]
+Description=MangaCount Web API
+After=network.target
+After=postgresql.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/dotnet /home/pihole/mangacount/app/MangaCount.Server.dll --urls=http://0.0.0.0:3000
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+SyslogIdentifier=mangacount
+User=pihole
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
+Environment=ASPNETCORE_URLS=http://0.0.0.0:3000
+WorkingDirectory=/home/pihole/mangacount/app
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

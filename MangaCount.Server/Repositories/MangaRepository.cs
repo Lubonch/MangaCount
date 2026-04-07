@@ -2,7 +2,7 @@
 using MangaCount.Server.Domain;
 using MangaCount.Server.Model;
 using MangaCount.Server.Repositories.Contracts;
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Linq;
@@ -21,20 +21,20 @@ namespace MangaCount.Server.Repositories
             {
                 IConfigurationRoot _configuration = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
+                    .AddJsonFile("appsettings.Production.json")
                     .Build();
 
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@Name", manga.Name, DbType.AnsiString, ParameterDirection.Input, manga.Name.Length);
-                parameters.Add("@Volumes", manga.Volumes, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@FormatId", manga.FormatId, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@PublisherId", manga.PublisherId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@title", manga.Name, DbType.AnsiString, ParameterDirection.Input, manga.Name.Length);
+                parameters.Add("@totalvolumes", manga.Volumes, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@formatid", manga.FormatId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@publisherid", manga.PublisherId, DbType.Int32, ParameterDirection.Input);
 
-                var sql = "INSERT INTO [dbo].[Manga]([Name],[Volumes],[FormatId],[PublisherId])VALUES(@Name,@Volumes,@FormatId,@PublisherId); SELECT CAST(SCOPE_IDENTITY() as int);";
+                var sql = "INSERT INTO manga (title, totalvolumes, formatid, publisherid) VALUES (@title, @totalvolumes, @formatid, @publisherid) RETURNING id;";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     var newId = connection.QuerySingle<int>(sql, parameters);
@@ -54,21 +54,21 @@ namespace MangaCount.Server.Repositories
             {
                 IConfigurationRoot _configuration = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
+                    .AddJsonFile("appsettings.Production.json")
                     .Build();
 
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
                 var parameters = new DynamicParameters();
-                parameters.Add("@Id", manga.Id, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@Name", manga.Name, DbType.AnsiString, ParameterDirection.Input, manga.Name.Length);
-                parameters.Add("@Volumes", manga.Volumes, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@FormatId", manga.FormatId, DbType.Int32, ParameterDirection.Input);
-                parameters.Add("@PublisherId", manga.PublisherId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@id", manga.Id, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@title", manga.Name, DbType.AnsiString, ParameterDirection.Input, manga.Name.Length);
+                parameters.Add("@totalvolumes", manga.Volumes, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@formatid", manga.FormatId, DbType.Int32, ParameterDirection.Input);
+                parameters.Add("@publisherid", manga.PublisherId, DbType.Int32, ParameterDirection.Input);
 
-                var sql = "UPDATE [dbo].[Manga] SET [Name] = @Name, [Volumes] = @Volumes, [FormatId] = @FormatId, [PublisherId] = @PublisherId WHERE [Id] = @Id";
+                var sql = "UPDATE manga SET title = @title, totalvolumes = @totalvolumes, formatid = @formatid, publisherid = @publisherid WHERE id = @id";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     connection.Execute(sql, parameters);
@@ -99,7 +99,7 @@ namespace MangaCount.Server.Repositories
 
                 var sql = "SELECT * FROM [dbo].[Manga] WHERE [Id] = @Id;";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     mangaResult = connection.Query<Manga>(sql, parameters).FirstOrDefault();
@@ -124,14 +124,14 @@ namespace MangaCount.Server.Repositories
 
                 IConfigurationRoot _configuration = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
+                    .AddJsonFile("appsettings.Production.json")
                     .Build();
 
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                var sql = "SELECT * FROM [dbo].[Manga];";
+                var sql = "SELECT id, title AS Name, totalvolumes AS Volumes, formatid AS FormatId, publisherid AS PublisherId FROM manga;";
 
-                using (var connection = new SqlConnection(connString))
+                using (var connection = new NpgsqlConnection(connString))
                 {
                     connection.Open();
                     mangaResult = connection.Query<Manga>(sql).ToList();
