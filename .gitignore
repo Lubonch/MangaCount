@@ -437,3 +437,7 @@ temp/
 # Published builds
 published/
 *.exe
+
+# Pages demo build output
+Pages/dist/
+Pages/node_modules/
