@@ -1,0 +1,20 @@
+[Unit]
+Description=MangaCount WhatsApp Bot
+After=network.target
+After=mangacount.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /home/pihole/mangacount/bot/index.js
+Restart=always
+RestartSec=15
+KillSignal=SIGINT
+SyslogIdentifier=mangacount-bot
+User=pihole
+WorkingDirectory=/home/pihole/mangacount/bot
+EnvironmentFile=/home/pihole/mangacount/bot/.env
+TimeoutStartSec=60
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

@@ -7,6 +7,7 @@ Una aplicación web para gestionar colecciones de manga con una interfaz moderna
 ![React](https://img.shields.io/badge/React-19-blue.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
+![WhatsApp Bot](https://img.shields.io/badge/WhatsApp-Bot-25D366.svg)
 
 ## ✨ Características Principales
 
@@ -20,6 +21,12 @@ Una aplicación web para gestionar colecciones de manga con una interfaz moderna
 - **Imágenes Automáticas**: Obtención automática de portadas desde MyAnimeList (Jikan API)
 - **Placeholders Dinámicos**: Generación automática de imágenes placeholder cuando no se encuentra portada
 - **Interfaz Moderna**: Diseño inspirado en manga/anime con gradientes vibrantes y efectos de cristal
+
+### 🤖 Bot de WhatsApp
+- **Consulta por chat**: Buscá series, revisá pendientes y actualizá volúmenes desde WhatsApp
+- **Multi-perfil**: Seleccioná tu perfil al iniciar la conversación
+- **Confirmación de cambios**: El bot pide confirmación antes de actualizar datos
+- **Siempre disponible**: Corre como servicio en el servidor LAN
 
 ### 📊 Importación y Exportación
 - **Importación TSV**: Carga masiva desde archivos de valores separados por tabulaciones
@@ -50,6 +57,12 @@ Una aplicación web para gestionar colecciones de manga con una interfaz moderna
 ### Base de Datos
 - **PostgreSQL 16** - Sistema de gestión de base de datos
 - **Modelo normalizado** - Estructura `Profile → Entry → Manga → Format / Publisher`
+
+### Bot de WhatsApp
+- **Node.js 18** - Runtime del bot
+- **whatsapp-web.js** - Cliente de WhatsApp vía puppeteer
+- **axios** - Cliente HTTP para comunicarse con la API
+- **Google Chrome** - Browser headless requerido por puppeteer
 
 ### Arquitectura
 - **Arquitectura en Capas** - Separación clara de responsabilidades
@@ -203,6 +216,24 @@ MangaCount/
 ├── deployment/                  # Scripts y guías de despliegue
 │   ├── SSH-DEPLOY.md            # Guía de deploy al servidor SSH
 │   └── database-schema.sql     # Esquema PostgreSQL
+├── WhatsappBot/                 # Bot de WhatsApp (Node.js)
+│   ├── index.js                 # Entrada: cliente WhatsApp + QR
+│   ├── src/
+│   │   ├── api.js               # Wrapper HTTP sobre la API de MangaCount
+│   │   ├── session.js           # Estado en memoria por número de teléfono
+│   │   ├── router.js            # Dispatcher de mensajes y flujos
+│   │   └── commands/
+│   │       ├── buscar.js        # Buscar series por título
+│   │       ├── pendientes.js    # Listar series incompletas
+│   │       └── actualizar.js   # Actualizar volúmenes con confirmación
+│   └── .env                     # MANGA_API_URL (no versionado)
+├── deployment/
+│   ├── SSH-DEPLOY.md            # Guía de deploy al servidor SSH
+│   ├── deploy.sh                # Script de deploy del servidor web
+│   ├── deploy-bot.sh            # Script de deploy del bot
+│   ├── mangacount.service       # Servicio systemd para la API
+│   ├── mangacount-bot.service   # Servicio systemd para el bot
+│   └── database-schema.sql     # Esquema PostgreSQL
 └── Inventario - Lucas.tsv       # Archivo de importación de ejemplo
 ```
 
@@ -220,6 +251,45 @@ El formato de importación/exportación TSV incluye estas columnas:
 | Prioridad | Marcado como prioritario | TRUE/FALSE |
 | Formato | Tipo de formato | "Tankoubon" |
 | Editorial | Casa editora | "Kodansha" |
+
+## 🤖 Bot de WhatsApp — Setup
+
+### Primer deploy (requiere escanear QR)
+```bash
+# Desde la raíz del proyecto
+bash deployment/deploy-bot.sh
+```
+
+El script copia los archivos al servidor, instala dependencias y registra el servicio systemd. Como es la primera vez, hay que escanear el QR manualmente:
+
+```bash
+ssh -i ~/.ssh/id_mangacount pihole@192.168.0.50
+cd /home/pihole/mangacount/bot
+node index.js
+# Escaneá el QR con WhatsApp desde el teléfono del bot
+# Cuando aparezca "✅ Bot conectado y listo", presioná Ctrl+C
+
+sudo systemctl enable --now mangacount-bot
+```
+
+A partir del primer scan, el bot arranca automáticamente con el sistema.
+
+### Comandos disponibles
+| Comando | Descripción |
+|---------|-------------|
+| `ping` | Test de conexión → responde `pong` |
+| `buscar [título]` | Busca series en la colección del perfil activo |
+| `pendientes` | Lista series incompletas, ordenadas por prioridad |
+| `actualizar [título] [cantidad]` | Actualiza volúmenes con confirmación |
+| `perfil` | Cambia de perfil |
+
+### Redeploy (sin re-escanear QR)
+```bash
+bash deployment/deploy-bot.sh
+```
+La sesión de WhatsApp se preserva en `.wwebjs_auth/` en el servidor.
+
+---
 
 ## 🛠️ Desarrollo Local
 
@@ -280,6 +350,7 @@ npm install
 - [x] **Importación TSV** - Carga masiva de datos funcional
 - [x] **Exportación TSV** - Respaldo de colecciones
 - [x] **Deploy en servidor LAN** - Corriendo en http://192.168.0.50:3000
+- [x] **Bot de WhatsApp** - Consulta y actualización de colección via chat
 
 ### 🚧 **Pendiente**
 - [ ] **Integración Jikan API** - Imágenes automáticas de portadas (MyAnimeList)
