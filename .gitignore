@@ -441,3 +441,5 @@ published/
 # Pages demo build output
 Pages/dist/
 Pages/node_modules/
+mangacount.client/obj/
+mangacount.client/obj/Debug/

@@ -23,11 +23,11 @@ namespace MangaCount.Server.Tests.Services
         [Fact]
         public void GetAllMangas_ShouldReturnMappedMangas()
         {
-            // Arrange
+            // Arrange - repository returns mangas in alphabetical order (as the DB would with ORDER BY title)
             var mangas = new List<Manga>
             {
-                new Manga { Id = 1, Name = "One Piece", Volumes = 100 },
-                new Manga { Id = 2, Name = "Naruto", Volumes = 72 }
+                new Manga { Id = 2, Name = "Naruto", Volumes = 72 },
+                new Manga { Id = 1, Name = "One Piece", Volumes = 100 }
             };
             _mockRepository.Setup(r => r.GetAllMangas()).Returns(mangas);
 
@@ -36,10 +36,10 @@ namespace MangaCount.Server.Tests.Services
 
             // Assert
             result.Should().HaveCount(2);
-            result[0].Name.Should().Be("One Piece");
-            result[0].Volumes.Should().Be(100);
-            result[1].Name.Should().Be("Naruto");
-            result[1].Volumes.Should().Be(72);
+            result[0].Name.Should().Be("Naruto");
+            result[0].Volumes.Should().Be(72);
+            result[1].Name.Should().Be("One Piece");
+            result[1].Volumes.Should().Be(100);
             _mockRepository.Verify(r => r.GetAllMangas(), Times.Once);
         }
 
