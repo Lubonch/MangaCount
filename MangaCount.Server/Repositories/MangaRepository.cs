@@ -129,7 +129,7 @@ namespace MangaCount.Server.Repositories
 
                 string connString = _configuration.GetConnectionString("MangacountDatabase")!;
 
-                var sql = "SELECT id, title AS Name, totalvolumes AS Volumes, formatid AS FormatId, publisherid AS PublisherId FROM manga;";
+                var sql = "SELECT id, title AS Name, totalvolumes AS Volumes, formatid AS FormatId, publisherid AS PublisherId FROM manga ORDER BY title;";
 
                 using (var connection = new NpgsqlConnection(connString))
                 {

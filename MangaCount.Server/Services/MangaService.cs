@@ -23,7 +23,7 @@ namespace MangaCount.Server.Services
         {
             List<MangaModel> mangaList = mapper.Map<List<MangaModel>>(_mangaRepository.GetAllMangas());
 
-            return mangaList.OrderBy(m => m.Name).ToList();
+            return mangaList;
         }
 
         public HttpResponseMessage SaveOrUpdate(DTO.MangaDTO mangaDTO)
