@@ -5,6 +5,7 @@ using MangaCount.Server.Model;
 using MangaCount.Server.Repositories.Contracts;
 using MangaCount.Server.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using System.Net;
 using System.Text;
@@ -16,13 +17,15 @@ namespace MangaCount.Server.Tests.Services
     {
         private readonly Mock<IEntryRepository> _mockEntryRepository;
         private readonly Mock<IMangaRepository> _mockMangaRepository;
+        private readonly Mock<IConfiguration> _mockConfiguration;
         private readonly EntryService _service;
 
         public EntryServiceTests()
         {
             _mockEntryRepository = new Mock<IEntryRepository>();
             _mockMangaRepository = new Mock<IMangaRepository>();
-            _service = new EntryService(_mockEntryRepository.Object, _mockMangaRepository.Object);
+            _mockConfiguration = new Mock<IConfiguration>();
+            _service = new EntryService(_mockEntryRepository.Object, _mockMangaRepository.Object, _mockConfiguration.Object);
         }
 
         [Fact]

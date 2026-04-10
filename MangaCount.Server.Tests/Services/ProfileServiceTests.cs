@@ -3,6 +3,7 @@ using MangaCount.Server.DTO;
 using MangaCount.Server.Model;
 using MangaCount.Server.Repositories.Contracts;
 using MangaCount.Server.Services;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System.Net;
 using Xunit;
@@ -13,12 +14,14 @@ namespace MangaCount.Server.Tests.Services
     public class ProfileServiceTests
     {
         private readonly Mock<IProfileRepository> _mockRepository;
+        private readonly Mock<ILogger<ProfileService>> _mockLogger;
         private readonly ProfileService _service;
 
         public ProfileServiceTests()
         {
             _mockRepository = new Mock<IProfileRepository>();
-            _service = new ProfileService(_mockRepository.Object);
+            _mockLogger = new Mock<ILogger<ProfileService>>();
+            _service = new ProfileService(_mockRepository.Object, _mockLogger.Object);
         }
 
         [Fact]
@@ -119,6 +122,13 @@ namespace MangaCount.Server.Tests.Services
                 IsActive = true, 
                 CreatedDate = DateTime.UtcNow 
             };
+            var existingProfile = new DomainProfile 
+            { 
+                Id = 1, 
+                Name = "Original Profile", 
+                IsActive = true, 
+                CreatedDate = DateTime.UtcNow 
+            };
             var updatedProfile = new DomainProfile 
             { 
                 Id = 1, 
@@ -126,6 +136,7 @@ namespace MangaCount.Server.Tests.Services
                 IsActive = true, 
                 CreatedDate = DateTime.UtcNow 
             };
+            _mockRepository.Setup(r => r.GetById(1)).Returns(existingProfile);
             _mockRepository.Setup(r => r.Update(It.IsAny<DomainProfile>())).Returns(updatedProfile);
 
             // Act
