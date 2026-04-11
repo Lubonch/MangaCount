@@ -67,6 +67,7 @@ Controllers/
  MangaController.cs
  ProfileController.cs
  PublisherController.cs
+ RecommendationController.cs
 Domain/
  Entry.cs
  Format.cs
@@ -79,10 +80,15 @@ DTO/
  MangaDTO.cs
  ProfileDTO.cs
  PublisherDTO.cs
+Logging/
+ DailyTextFileLogger.cs
+ DailyTextFileLoggerProvider.cs
+ DailyTextFileWriter.cs
 Model/
  EntryModel.cs
  MangaModel.cs
  ProfileModel.cs
+ RecommendationModels.cs
 obj/Debug/net8.0/
  .NETCoreApp,Version=v8.0.AssemblyAttributes.cs
  MangaCount.Server.AssemblyInfo.cs
@@ -104,16 +110,24 @@ Services/Contracts/
  IDatabaseService.cs
  IEntryService.cs
  IFormatService.cs
+ ILocalRecommendationEngine.cs
  IMangaService.cs
  IProfileService.cs
  IPublisherService.cs
+ IRecommendationRankingProvider.cs
+ IRecommendationService.cs
 Services/
  DatabaseService.cs
  EntryService.cs
  FormatService.cs
+ GitHubModelsRankingProvider.cs
+ LocalRecommendationEngine.cs
  MangaService.cs
+ OpenAiCompatibleRankingProviderBase.cs
+ OpenRouterRankingProvider.cs
  ProfileService.cs
  PublisherService.cs
+ RecommendationService.cs
 
 [metadataReferences]
 <NUGET>/

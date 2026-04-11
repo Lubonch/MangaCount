@@ -135,14 +135,14 @@ Install dependencies:
 ```bash
 cd WhatsappBot
 npm install
+cp .env.example .env
 ```
 
-Create `WhatsappBot/.env` with at least:
+Edit `WhatsappBot/.env` and set at least:
 
 ```dotenv
 MANGA_API_URL=http://localhost:3000/api
 WHATSAPP_ALLOWED_NUMBERS=5491112345678,5491123456789
-CHROME_BIN=/usr/bin/google-chrome-stable
 ```
 
 Notes:
@@ -152,6 +152,7 @@ Notes:
 - numbers are normalized before comparison.
 - senders not listed in the whitelist are ignored.
 - if the whitelist is empty, the bot ignores all incoming messages.
+- `CHROME_BIN` is optional. If it is unset, the bot tries `/usr/bin/chromium-browser`, `/usr/bin/chromium`, then `/usr/bin/google-chrome-stable`.
 
 Start the bot:
 
@@ -244,7 +245,7 @@ WhatsApp bot deployment:
 bash deployment/deploy-bot.sh
 ```
 
-The bot deploy script preserves the server-side `.env` file if it already exists.
+The bot deploy script preserves the server-side `.env` file if it already exists. If it does not exist yet, the script creates it from `WhatsappBot/.env.example` so you can fill in the allowed numbers before the first run.
 
 Additional deployment details are in `deployment/SSH-DEPLOY.md`.
 

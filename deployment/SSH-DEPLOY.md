@@ -1,184 +1,108 @@
-# Deploy a Servidor via SSH
+# Deploy Over SSH
 
-Guía para compilar y desplegar MangaCount en el servidor LAN `192.168.0.50`.
+This guide documents the server-side deployment flow used by the repository scripts.
 
-## Datos del Servidor
+## Server reference
 
-| Campo         | Valor                              |
-|---------------|------------------------------------|
-| IP            | `192.168.0.50`                     |
-| SSH User      | `pihole`                           |
-| SSH Password  | `pihole`                           |
-| App directory | `/home/pihole/mangacount/app/`     |
-| Puerto        | `3000`                             |
-| URL           | http://192.168.0.50:3000           |
-| Log           | `/home/pihole/mangacount/app/manga.log` |
+| Field | Value |
+| --- | --- |
+| IP | `192.168.0.50` |
+| SSH user | `pihole` |
+| App directory | `/home/pihole/mangacount/app/` |
+| Bot directory | `/home/pihole/mangacount/bot/` |
+| Shared logs directory | `/home/pihole/mangacount/logs/` |
+| API URL | `http://192.168.0.50:3000` |
 
-## Prerrequisitos en el Servidor (ya instalados)
+## Backend deploy
 
-- .NET 8 Runtime (`/usr/bin/dotnet`)
-- PostgreSQL 16 (`MangaCount` database, user `pihole`, password `pihole`)
-- Directorio `/home/pihole/mangacount/app/` existente
-
-## ⚠️ ADVERTENCIAS IMPORTANTES
-
-### 🚫 NO instalar nginx
-MangaCount usa **Kestrel** (servidor HTTP integrado de .NET). **NUNCA instales nginx** en el servidor Pi-hole porque:
-- ❌ MangaCount NO necesita nginx (funciona independiente en puerto 3000)
-- ❌ nginx **conflicta con Pi-hole** (ambos usan puerto 80)
-- ❌ Causa error 403 Forbidden en Pi-hole web interface
-
-### ✅ Configuración correcta del servidor:
-```
-Pi-hole DNS (puerto 53) + Pi-hole Web (FTL:80) + MangaCount (Kestrel:3000)
-```
-
-Si **accidentalmente instalaste nginx**: usa `deploy.sh` que incluye validación automática.
-
----
-
-## Deploy Completo (build + publish + copy + restart)
-
-Ejecutar desde la raíz del repositorio en la máquina local:
-
-### 1. Publicar la aplicación
+Run the standard backend deploy from the repository root:
 
 ```bash
-cd /mnt/Files-2tb/repos/MangaCount
-
-dotnet publish MangaCount.Server -c Release -o ./publish
+bash deployment/deploy.sh
 ```
 
-Esto compila el backend y copia el build del frontend (React) como archivos estáticos embebidos.
+The script:
 
-### 2. Copiar al servidor
+- publishes `MangaCount.Server` into `publish/`
+- copies the published output to `/home/pihole/mangacount/app/`
+- installs or refreshes `deployment/mangacount.service`
+- restarts the `mangacount` systemd service
+- validates `http://192.168.0.50:3000/api/profile`
+
+Do not restart the backend with `nohup` or `pkill`. The service unit is the canonical runtime definition.
+
+## WhatsApp bot deploy
+
+Run the bot deploy from the repository root:
 
 ```bash
-scp publish/MangaCount.Server.dll pihole@192.168.0.50:/home/pihole/mangacount/app/
+bash deployment/deploy-bot.sh
 ```
 
-> Si hay otros archivos nuevos en `publish/` (DLLs de dependencias, archivos `wwwroot/`), copiar el directorio completo la primera vez:
-> ```bash
-> scp -r publish/* pihole@192.168.0.50:/home/pihole/mangacount/app/
-> ```
+The script:
 
-### 3. Reiniciar la aplicación
+- syncs the tracked bot runtime into `/home/pihole/mangacount/bot/`
+- preserves the server-side `.env`, `.wwebjs_auth`, `.wwebjs_cache`, and `node_modules/`
+- creates `.env` from `.env.example` on the first deploy if it does not exist yet
+- refreshes `deployment/mangacount-bot.service`
+- installs Chromium if neither `chromium-browser` nor `chromium` is available
+
+If the bot has never authenticated before, the script stops after installing the service file and tells you how to scan the QR code manually.
+
+## Logs
+
+Backend application log:
 
 ```bash
-ssh pihole@192.168.0.50 'bash -s' << 'EOF'
-pkill -f MangaCount.Server.dll || true
-sleep 3
-cd /home/pihole/mangacount/app
-nohup /usr/bin/dotnet MangaCount.Server.dll --urls=http://0.0.0.0:3000 >> manga.log 2>&1 &
-echo "Iniciado con PID $!"
-EOF
+ssh pihole@192.168.0.50 'tail -f /home/pihole/mangacount/logs/backend.txt'
 ```
 
-### 4. Verificar que levantó
+Bot application log:
 
 ```bash
-sleep 3 && curl -s http://192.168.0.50:3000/api/profile
+ssh pihole@192.168.0.50 'tail -f /home/pihole/mangacount/logs/bot.txt'
 ```
 
----
-
-## Deploy Rápido (solo DLL, sin cambios de frontend)
-
-Cuando solo se modificó código C# (sin tocar `mangacount.client`):
+Backend service journal:
 
 ```bash
-# Desde la raíz del repo
-dotnet build MangaCount.Server -c Release
-
-scp MangaCount.Server/bin/Release/net8.0/MangaCount.Server.dll \
-    pihole@192.168.0.50:/home/pihole/mangacount/app/
-
-ssh pihole@192.168.0.50 \
-  'pkill -f MangaCount.Server.dll; sleep 3; cd /home/pihole/mangacount/app && nohup /usr/bin/dotnet MangaCount.Server.dll --urls=http://0.0.0.0:3000 >> manga.log 2>&1 &'
+ssh pihole@192.168.0.50 'journalctl -u mangacount -f --no-pager'
 ```
 
----
-
-## Ver Logs en Tiempo Real
+Bot service journal:
 
 ```bash
-ssh pihole@192.168.0.50 'tail -f /home/pihole/mangacount/app/manga.log'
+ssh pihole@192.168.0.50 'journalctl -u mangacount-bot -f --no-pager'
 ```
 
-Para ver las últimas 50 líneas:
+## Service status
+
+Backend:
 
 ```bash
-ssh pihole@192.168.0.50 'tail -50 /home/pihole/mangacount/app/manga.log'
+ssh pihole@192.168.0.50 'systemctl status mangacount --no-pager'
 ```
 
----
-
-## Verificar Estado del Proceso
+Bot:
 
 ```bash
-ssh pihole@192.168.0.50 'pgrep -a -f MangaCount'
+ssh pihole@192.168.0.50 'systemctl status mangacount-bot --no-pager'
 ```
 
----
+## First bot deploy checklist
 
-## Acceder a la Base de Datos en el Servidor
+1. Run `bash deployment/deploy-bot.sh`.
+2. If the script created `/home/pihole/mangacount/bot/.env`, edit it and set `WHATSAPP_ALLOWED_NUMBERS` before starting the bot.
+3. Connect to the server and run `cd /home/pihole/mangacount/bot && node index.js`.
+4. Scan the QR code with the WhatsApp account assigned to the bot.
+5. Stop the manual process and enable the service with `sudo systemctl enable --now mangacount-bot`.
+
+## Database access
 
 ```bash
 ssh pihole@192.168.0.50 'psql -U pihole -d MangaCount'
 ```
 
-Comandos útiles dentro de psql:
+## Production configuration
 
-```sql
--- Contar registros
-SELECT COUNT(*) FROM manga;
-SELECT COUNT(*) FROM entry;
-SELECT COUNT(*) FROM profile;
-
--- Ver formatos
-SELECT * FROM format;
-
--- Ver editoriales
-SELECT * FROM publisher;
-
--- Salir
-\q
-```
-
----
-
-## Importar Colección desde TSV
-
-Con la app corriendo, enviar el archivo TSV al endpoint de importación para el perfil `1`:
-
-```bash
-curl -X POST http://192.168.0.50:3000/api/entry/import/1 \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@/mnt/Files-2tb/repos/MangaCount/Inventario - Lucas.tsv"
-```
-
-La respuesta incluye un resumen de los registros importados.
-
----
-
-## Parar la Aplicación
-
-```bash
-ssh pihole@192.168.0.50 'pkill -f MangaCount.Server.dll'
-```
-
----
-
-## Cadena de Conexión en Producción
-
-El archivo `appsettings.Production.json` en el servidor contiene:
-
-```json
-{
-  "ConnectionStrings": {
-    "MangacountDatabase": "Host=localhost;Database=MangaCount;Username=pihole;Password=pihole"
-  }
-}
-```
-
-La variable de entorno `ASPNETCORE_ENVIRONMENT=Production` hace que la app use este archivo en lugar del `appsettings.json` de desarrollo.
+`ASPNETCORE_ENVIRONMENT=Production` is set by `deployment/mangacount.service`, so the backend uses `appsettings.Production.json` on the server.
