@@ -1,4 +1,5 @@
 ﻿using MangaCount.Server.Configs;
+using MangaCount.Server.Logging;
 
 // Check for the load-bearing image
 var loadBearingImagePath = Path.Combine(Directory.GetCurrentDirectory(), "loadbearingimage.jpg");
@@ -13,6 +14,9 @@ if (!File.Exists(loadBearingImagePath))
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+var backendLogsFolder = builder.Configuration["Logging:LogsFolder"] ?? "../logs";
+builder.Logging.AddProvider(new DailyTextFileLoggerProvider(new DailyTextFileWriter(backendLogsFolder, "backend.txt")));
 
 builder.Services.AddControllers();
 

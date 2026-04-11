@@ -5,6 +5,7 @@ set -e
 SERVER="192.168.0.50"
 USER="pihole"
 BOT_DIR="/home/pihole/mangacount/bot"
+LOG_DIR="/home/pihole/mangacount/logs"
 SSH_KEY="$HOME/.ssh/id_mangacount"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BOT_SRC="$REPO_ROOT/WhatsappBot"
@@ -20,7 +21,7 @@ ssh_cmd() { ssh $SSH_OPTS "$USER@$SERVER" "$@"; }
 scp_cmd() { scp $SSH_OPTS "$@"; }
 
 echo "==> [1/4] Preparando directorio en servidor..."
-ssh_cmd "mkdir -p $BOT_DIR/src/commands"
+ssh_cmd "mkdir -p $BOT_DIR/src/commands $LOG_DIR"
 
 echo "==> [2/4] Copiando archivos del bot..."
 # Archivos raíz

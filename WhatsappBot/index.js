@@ -4,6 +4,9 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { handleMessage } = require('./src/router');
 const { getAllowedNumberCount } = require('./src/authorization');
+const { createLogger } = require('./src/logger');
+
+const logger = createLogger({ fileName: 'bot.txt' });
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -19,28 +22,28 @@ const client = new Client({
 });
 
 client.on('qr', (qr) => {
-    console.log('\n📱 Escaneá este QR con WhatsApp:\n');
+    logger.info('QR generado para autenticar el bot de WhatsApp.');
     qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', () => {
     const allowedNumberCount = getAllowedNumberCount();
     if (allowedNumberCount === 0) {
-        console.warn('No hay numeros autorizados configurados en WHATSAPP_ALLOWED_NUMBERS. El bot ignorara todos los mensajes.');
+        logger.warn('No hay numeros autorizados configurados en WHATSAPP_ALLOWED_NUMBERS. El bot ignorara todos los mensajes.');
     } else {
-        console.log(`Números autorizados configurados: ${allowedNumberCount}`);
+        logger.info(`Numeros autorizados configurados: ${allowedNumberCount}`);
     }
 
-    console.log('✅ Bot conectado y listo');
+    logger.info('Bot conectado y listo.');
 });
 
 client.on('auth_failure', () => {
-    console.error('❌ Falló la autenticación. Borrá la carpeta .wwebjs_auth/ y volvé a escanear el QR.');
+    logger.error('Fallo la autenticacion. Borra la carpeta .wwebjs_auth y vuelve a escanear el QR.');
     process.exit(1);
 });
 
 client.on('disconnected', (reason) => {
-    console.warn('⚠️  Bot desconectado:', reason);
+    logger.warn('Bot desconectado:', reason);
 });
 
 client.on('message', async (msg) => {
@@ -50,7 +53,7 @@ client.on('message', async (msg) => {
     try {
         await handleMessage(client, msg);
     } catch (err) {
-        console.error('Error al procesar mensaje de', msg.from, ':', err.message);
+        logger.error('Error al procesar mensaje de', msg.from, ':', err);
     }
 });
 

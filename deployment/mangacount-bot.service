@@ -13,6 +13,7 @@ SyslogIdentifier=mangacount-bot
 User=pihole
 WorkingDirectory=/home/pihole/mangacount/bot
 EnvironmentFile=/home/pihole/mangacount/bot/.env
+Environment=BOT_LOGS_DIR=/home/pihole/mangacount/logs
 TimeoutStartSec=60
 TimeoutStopSec=30
 

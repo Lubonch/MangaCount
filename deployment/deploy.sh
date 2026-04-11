@@ -5,6 +5,7 @@ set -e
 SERVER="192.168.0.50"
 USER="pihole"
 APP_DIR="/home/pihole/mangacount/app"
+LOG_DIR="/home/pihole/mangacount/logs"
 SSH_KEY="$HOME/.ssh/id_mangacount"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PUBLISH_DIR="$REPO_ROOT/publish"
@@ -33,6 +34,8 @@ cd "$REPO_ROOT"
 dotnet publish MangaCount.Server -c Release -o "$PUBLISH_DIR" --nologo -v quiet
 
 echo "==> [2/4] Copiando archivos al servidor..."
+ssh_cmd "mkdir -p $APP_DIR $LOG_DIR"
+
 # Copiar todos los archivos raíz del publish para mantener DLLs, deps, runtimeconfig y configs sincronizados
 find "$PUBLISH_DIR" -maxdepth 1 -type f -print0 | while IFS= read -r -d '' file; do
   scp_cmd "$file" "$USER@$SERVER:$APP_DIR/"
@@ -67,6 +70,6 @@ if [ "$STATUS" = "200" ]; then
 else
   echo ""
   echo "✗ La app no respondió (HTTP $STATUS). Revisá los logs:"
-  echo "  ssh $SSH_OPTS $USER@$SERVER 'tail -50 $APP_DIR/manga.log'"
+  echo "  ssh $SSH_OPTS $USER@$SERVER 'tail -50 $LOG_DIR/backend.txt || tail -50 $APP_DIR/manga.log'"
   exit 1
 fi
