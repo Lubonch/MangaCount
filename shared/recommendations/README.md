@@ -2,6 +2,8 @@
 
 This folder contains the offline data that powers the recommendation feature in both frontends and the local fallback in the backend.
 
+For the full system design, teaching-oriented explanation, and architecture diagrams, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Files
 
 - `catalog.json`: known manga titles with metadata used for scoring and ranking.
