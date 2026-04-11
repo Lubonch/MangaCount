@@ -35,11 +35,13 @@ fi
 
 # src/
 scp_cmd "$BOT_SRC/src/api.js"    "$USER@$SERVER:$BOT_DIR/src/"
+scp_cmd "$BOT_SRC/src/authorization.js" "$USER@$SERVER:$BOT_DIR/src/"
 scp_cmd "$BOT_SRC/src/session.js" "$USER@$SERVER:$BOT_DIR/src/"
 scp_cmd "$BOT_SRC/src/router.js"  "$USER@$SERVER:$BOT_DIR/src/"
 scp_cmd "$BOT_SRC/src/commands/buscar.js"     "$USER@$SERVER:$BOT_DIR/src/commands/"
 scp_cmd "$BOT_SRC/src/commands/pendientes.js" "$USER@$SERVER:$BOT_DIR/src/commands/"
 scp_cmd "$BOT_SRC/src/commands/actualizar.js" "$USER@$SERVER:$BOT_DIR/src/commands/"
+scp_cmd "$BOT_SRC/src/commands/recomendar.js" "$USER@$SERVER:$BOT_DIR/src/commands/"
 
 echo "==> [3/4] Instalando dependencias en servidor..."
 # Instalar chromium si falta (necesario para puppeteer/whatsapp-web.js)

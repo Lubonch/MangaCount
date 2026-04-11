@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'Pages/**'
+      - 'shared/recommendations/**'
   workflow_dispatch:
 
 permissions:
