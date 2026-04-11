@@ -9,6 +9,7 @@ LOG_DIR="$APP_DIR/../logs"
 SSH_KEY="$HOME/.ssh/id_mangacount"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PUBLISH_DIR="$REPO_ROOT/publish"
+SERVICE_NAME="mangacount"
 # ─────────────────────────────────────────────────────────────────
 
 # Si no existe la SSH key, caer en autenticación por contraseña
@@ -50,14 +51,12 @@ for dir in wwwroot recommendations; do
   fi
 done
 
-echo "==> [3/4] Reiniciando aplicación..."
-ssh_cmd "bash -c '
-  pkill -f MangaCount.Server.dll || true
-  sleep 2
-  cd $APP_DIR
-  nohup /usr/bin/dotnet MangaCount.Server.dll --urls=http://0.0.0.0:3000 >> manga.log 2>&1 &
-  echo "PID=\$!"
-'"
+echo "==> [3/4] Actualizando servicio y reiniciando aplicación..."
+scp_cmd "$REPO_ROOT/deployment/mangacount.service" "$USER@$SERVER:/tmp/"
+ssh_cmd "sudo mv /tmp/mangacount.service /etc/systemd/system/"
+ssh_cmd "sudo systemctl daemon-reload"
+ssh_cmd "sudo systemctl enable $SERVICE_NAME >/dev/null 2>&1 || true"
+ssh_cmd "sudo systemctl restart $SERVICE_NAME"
 
 echo "==> [4/4] Validando..."
 sleep 5
@@ -70,6 +69,6 @@ if [ "$STATUS" = "200" ]; then
 else
   echo ""
   echo "✗ La app no respondió (HTTP $STATUS). Revisá los logs:"
-  echo "  ssh $SSH_OPTS $USER@$SERVER 'tail -50 $LOG_DIR/backend.txt || tail -50 $APP_DIR/manga.log'"
+  echo "  ssh $SSH_OPTS $USER@$SERVER 'journalctl -u $SERVICE_NAME -n 50 --no-pager && tail -50 $LOG_DIR/backend.txt'"
   exit 1
 fi

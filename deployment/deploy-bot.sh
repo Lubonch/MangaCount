@@ -10,6 +10,16 @@ SSH_KEY="$HOME/.ssh/id_mangacount"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BOT_SRC="$REPO_ROOT/WhatsappBot"
 SERVICE_NAME="mangacount-bot"
+BOT_RUNTIME_EXCLUDES=(
+  "--exclude=.env"
+  "--exclude=.gitignore"
+  "--exclude=.wwebjs_auth"
+  "--exclude=.wwebjs_cache"
+  "--exclude=node_modules"
+  "--exclude=*.log"
+  "--exclude=*.test.js"
+  "--exclude=PLAN.md"
+)
 # ─────────────────────────────────────────────────────────────────
 
 SSH_OPTS="-o StrictHostKeyChecking=no"
@@ -21,28 +31,16 @@ ssh_cmd() { ssh $SSH_OPTS "$USER@$SERVER" "$@"; }
 scp_cmd() { scp $SSH_OPTS "$@"; }
 
 echo "==> [1/4] Preparando directorio en servidor..."
-ssh_cmd "mkdir -p $BOT_DIR/src/commands $LOG_DIR"
+ssh_cmd "mkdir -p $BOT_DIR $LOG_DIR"
 
-echo "==> [2/4] Copiando archivos del bot..."
-# Archivos raíz
-scp_cmd "$BOT_SRC/index.js"    "$USER@$SERVER:$BOT_DIR/"
-scp_cmd "$BOT_SRC/package.json" "$USER@$SERVER:$BOT_DIR/"
+echo "==> [2/4] Sincronizando runtime del bot..."
+ssh_cmd "rm -rf $BOT_DIR/src"
+tar "${BOT_RUNTIME_EXCLUDES[@]}" -C "$BOT_SRC" -cf - . | ssh_cmd "tar -xf - -C $BOT_DIR"
 
-# .env: solo copiar si NO existe ya en el servidor (preservar config del server)
 if ! ssh_cmd "test -f $BOT_DIR/.env"; then
-  scp_cmd "$BOT_SRC/.env" "$USER@$SERVER:$BOT_DIR/"
-  echo "    → .env copiado (primera vez)"
+  ssh_cmd "cp $BOT_DIR/.env.example $BOT_DIR/.env"
+  echo "    → .env creado desde .env.example; revisa WHATSAPP_ALLOWED_NUMBERS antes del primer arranque"
 fi
-
-# src/
-scp_cmd "$BOT_SRC/src/api.js"    "$USER@$SERVER:$BOT_DIR/src/"
-scp_cmd "$BOT_SRC/src/authorization.js" "$USER@$SERVER:$BOT_DIR/src/"
-scp_cmd "$BOT_SRC/src/session.js" "$USER@$SERVER:$BOT_DIR/src/"
-scp_cmd "$BOT_SRC/src/router.js"  "$USER@$SERVER:$BOT_DIR/src/"
-scp_cmd "$BOT_SRC/src/commands/buscar.js"     "$USER@$SERVER:$BOT_DIR/src/commands/"
-scp_cmd "$BOT_SRC/src/commands/pendientes.js" "$USER@$SERVER:$BOT_DIR/src/commands/"
-scp_cmd "$BOT_SRC/src/commands/actualizar.js" "$USER@$SERVER:$BOT_DIR/src/commands/"
-scp_cmd "$BOT_SRC/src/commands/recomendar.js" "$USER@$SERVER:$BOT_DIR/src/commands/"
 
 echo "==> [3/4] Instalando dependencias en servidor..."
 # Instalar chromium si falta (necesario para puppeteer/whatsapp-web.js)
@@ -68,6 +66,7 @@ else
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "  PRIMER DEPLOY: necesitás escanear el QR de WhatsApp"
+  echo "  Si el script creo $BOT_DIR/.env, completa WHATSAPP_ALLOWED_NUMBERS antes de seguir."
   echo ""
   echo "  1. Conectate al servidor:"
   echo "     ssh -i ~/.ssh/id_mangacount pihole@$SERVER"

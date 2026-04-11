@@ -2,23 +2,36 @@ require('dotenv').config();
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const { resolveBrowserPath } = require('./src/browser');
 const { handleMessage } = require('./src/router');
 const { getAllowedNumberCount } = require('./src/authorization');
 const { createLogger } = require('./src/logger');
 
 const logger = createLogger({ fileName: 'bot.txt' });
+const browserPath = resolveBrowserPath();
+
+if (browserPath) {
+    logger.info(`Usando navegador compatible en ${browserPath}.`);
+} else {
+    logger.warn('No se detecto CHROME_BIN ni una ruta conocida de Chrome/Chromium. Puppeteer intentara resolver el navegador por defecto.');
+}
+
+const puppeteerOptions = {
+    headless: true,
+    args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+    ]
+};
+
+if (browserPath) {
+    puppeteerOptions.executablePath = browserPath;
+}
 
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome-stable',
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-        ]
-    }
+    puppeteer: puppeteerOptions,
 });
 
 client.on('qr', (qr) => {
