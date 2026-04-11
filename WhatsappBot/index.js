@@ -3,6 +3,7 @@ require('dotenv').config();
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { handleMessage } = require('./src/router');
+const { getAllowedNumberCount } = require('./src/authorization');
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -23,6 +24,13 @@ client.on('qr', (qr) => {
 });
 
 client.on('ready', () => {
+    const allowedNumberCount = getAllowedNumberCount();
+    if (allowedNumberCount === 0) {
+        console.warn('No hay numeros autorizados configurados en WHATSAPP_ALLOWED_NUMBERS. El bot ignorara todos los mensajes.');
+    } else {
+        console.log(`Números autorizados configurados: ${allowedNumberCount}`);
+    }
+
     console.log('✅ Bot conectado y listo');
 });
 

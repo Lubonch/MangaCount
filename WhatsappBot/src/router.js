@@ -1,9 +1,11 @@
 function getDefaultDependencies() {
     const { getSession, setSession, clearSession } = require('./session');
     const { getProfiles, getEntriesByProfile } = require('./api');
+    const { isNumberAllowed } = require('./authorization');
     const { handleBuscar } = require('./commands/buscar');
     const { handlePendientes } = require('./commands/pendientes');
     const { handleActualizar, handleConfirm } = require('./commands/actualizar');
+    const { handleRecomendar } = require('./commands/recomendar');
 
     return {
         getSession,
@@ -11,10 +13,12 @@ function getDefaultDependencies() {
         clearSession,
         getProfiles,
         getEntriesByProfile,
+        isNumberAllowed,
         handleBuscar,
         handlePendientes,
         handleActualizar,
         handleConfirm,
+        handleRecomendar,
     };
 }
 
@@ -34,9 +38,17 @@ function createMessageHandler(overrides = {}) {
     const cache = { value: null };
 
     return async function handleMessage(client, msg) {
-        const getSession = getDependency(overrides, cache, 'getSession');
         const from = msg.from;
         const body = msg.body.trim().toLowerCase();
+        const isNumberAllowed = getDependency(overrides, cache, 'isNumberAllowed');
+
+        if (!isNumberAllowed(from)) {
+            const clearSession = getDependency(overrides, cache, 'clearSession');
+            clearSession(from);
+            return;
+        }
+
+        const getSession = getDependency(overrides, cache, 'getSession');
         const session = getSession(from);
 
         // Ping de prueba
@@ -75,6 +87,7 @@ function createMessageHandler(overrides = {}) {
                 `✅ Perfil *${profile.name}* seleccionado. (${entries.length} series)\n\n` +
                 `¿Qué querés hacer?\n` +
                 `• *buscar [título]* — ver si tenés un manga\n` +
+                `• *recomendar* — recibir sugerencias para comprar\n` +
                 `• *pendientes* — tus series incompletas\n` +
                 `• *actualizar [título] [cantidad]* — marcar volúmenes comprados\n` +
                 `• *perfil* — cambiar de perfil`
@@ -93,6 +106,17 @@ function createMessageHandler(overrides = {}) {
         if (body.startsWith('buscar ')) {
             const handleBuscar = getDependency(overrides, cache, 'handleBuscar');
             await handleBuscar(msg, session, body.slice(7).trim());
+        } else if (body === 'recomendar' || body.startsWith('recomendar ')) {
+            const handleRecomendar = getDependency(overrides, cache, 'handleRecomendar');
+            const requestedLimit = body.slice(10).trim();
+            const limit = requestedLimit ? Number.parseInt(requestedLimit, 10) : undefined;
+
+            if (requestedLimit && Number.isNaN(limit)) {
+                await msg.reply('Usá: *recomendar* o *recomendar [cantidad]*');
+                return;
+            }
+
+            await handleRecomendar(msg, session, { limit });
         } else if (body === 'pendientes') {
             const handlePendientes = getDependency(overrides, cache, 'handlePendientes');
             await handlePendientes(msg, session);
@@ -103,6 +127,7 @@ function createMessageHandler(overrides = {}) {
             await msg.reply(
                 `No entendí ese comando. Opciones:\n` +
                 `• *buscar [título]*\n` +
+                `• *recomendar*\n` +
                 `• *pendientes*\n` +
                 `• *actualizar [título] [cantidad]*\n` +
                 `• *perfil*`
