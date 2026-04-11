@@ -100,6 +100,23 @@
     transform: translateY(-1px);
 }
 
+.action-button.recommend-btn {
+    background: transparent;
+    color: var(--sidebar-text);
+    border: 1px solid var(--sidebar-border);
+}
+
+.action-button.recommend-btn:hover {
+    background: var(--sidebar-accent);
+    transform: translateY(-1px);
+}
+
+.action-button.recommend-btn:disabled {
+    color: var(--sidebar-text-muted);
+    border-color: var(--sidebar-border);
+    background: transparent;
+}
+
 .action-button.load-btn {
     background-color: var(--color-info);
 }

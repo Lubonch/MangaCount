@@ -7,9 +7,12 @@ import ThemeToggle from './ThemeToggle';
 
 const Sidebar = ({
     mangas,
+    entries = [],
     selectedProfile,
     onImportSuccess,
     onBackToProfiles,
+    onRecommend = () => {},
+    recommendationsLoading = false,
     refreshing = false
 }) => {
     const [isImporting, setIsImporting] = useState(false);
@@ -136,6 +139,13 @@ const Sidebar = ({
                             onClick={() => setShowAddManga(true)}
                         >
                             + Add Manga
+                        </button>
+                        <button
+                            className="action-button recommend"
+                            onClick={onRecommend}
+                            disabled={!selectedProfile || entries.length === 0 || recommendationsLoading}
+                        >
+                            {recommendationsLoading ? 'Thinking...' : 'Recommendations'}
                         </button>
                     </div>
                 </div>

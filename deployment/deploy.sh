@@ -33,14 +33,19 @@ cd "$REPO_ROOT"
 dotnet publish MangaCount.Server -c Release -o "$PUBLISH_DIR" --nologo -v quiet
 
 echo "==> [2/4] Copiando archivos al servidor..."
-# Copiar todos los DLLs (necesario cuando cambian dependencias/NuGet packages)
-scp_cmd "$PUBLISH_DIR"/*.dll "$USER@$SERVER:$APP_DIR/"
+# Copiar todos los archivos raíz del publish para mantener DLLs, deps, runtimeconfig y configs sincronizados
+find "$PUBLISH_DIR" -maxdepth 1 -type f -print0 | while IFS= read -r -d '' file; do
+  scp_cmd "$file" "$USER@$SERVER:$APP_DIR/"
+done
 
-# Copiar wwwroot si existe (frontend actualizado)
-if [ -d "$PUBLISH_DIR/wwwroot" ]; then
-  echo "    → Copiando wwwroot (frontend)..."
-  scp_cmd -r "$PUBLISH_DIR/wwwroot" "$USER@$SERVER:$APP_DIR/"
-fi
+# Refrescar directorios publicados que pueden cambiar entre deploys
+for dir in wwwroot recommendations; do
+  if [ -d "$PUBLISH_DIR/$dir" ]; then
+    echo "    → Copiando $dir..."
+    ssh_cmd "rm -rf $APP_DIR/$dir"
+    scp_cmd -r "$PUBLISH_DIR/$dir" "$USER@$SERVER:$APP_DIR/"
+  fi
+done
 
 echo "==> [3/4] Reiniciando aplicación..."
 ssh_cmd "bash -c '

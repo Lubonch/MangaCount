@@ -45,10 +45,14 @@ export default defineConfig({
     plugins: [plugin()],
     resolve: {
         alias: {
-            '@': fileURLToPath(new URL('./src', import.meta.url))
+            '@': fileURLToPath(new URL('./src', import.meta.url)),
+            '@shared': fileURLToPath(new URL('../shared', import.meta.url))
         }
     },
     server: {
+        fs: {
+            allow: [fileURLToPath(new URL('..', import.meta.url))]
+        },
         proxy: {
             '^/api': {
                 target,

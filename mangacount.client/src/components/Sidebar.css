@@ -67,6 +67,23 @@
     transform: translateY(-1px);
 }
 
+.action-button.recommend {
+    background: transparent;
+    color: var(--sidebar-text);
+    border: 1px solid var(--sidebar-border);
+}
+
+.action-button.recommend:hover {
+    background: var(--sidebar-accent);
+    transform: translateY(-1px);
+}
+
+.action-button.recommend:disabled {
+    color: var(--sidebar-text-muted);
+    border-color: var(--sidebar-border);
+    background: transparent;
+}
+
 .import-section {
     background-color: var(--sidebar-accent);
     padding: 15px;

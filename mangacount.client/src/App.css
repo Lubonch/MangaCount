@@ -1,4 +1,4 @@
-﻿CSS Variables for Light Theme */
+﻿/* CSS Variables for Light Theme */
 :root[data-theme="light"] {
     --bg-primary: #f5f5f5;
     --bg-secondary: #ffffff;

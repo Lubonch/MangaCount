@@ -1,11 +1,15 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Sidebar from './components/Sidebar';
 import CollectionView from './components/CollectionView';   
 import LoadBearingCheck from './components/LoadBearingCheck';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProfileSelector from './components/ProfileSelector';
+import RecommendationModal from './components/RecommendationModal';
 import { ThemeProvider } from './contexts/ThemeContext';
+import catalog from '@shared/recommendations/catalog.json';
+import publisherCountries from '@shared/recommendations/publisher-countries.json';
+import { recommendManga } from '@shared/recommendations/recommendationEngine.js';
 
 function App() {
     const [entries, setEntries] = useState([]);
@@ -18,10 +22,34 @@ function App() {
     const [appPhase, setAppPhase] = useState('loading');
     const [isChangingProfile, setIsChangingProfile] = useState(false);
     const [lastSelectedProfile, setLastSelectedProfile] = useState(null);
+    const [showRecommendations, setShowRecommendations] = useState(false);
+    const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+    const [recommendationData, setRecommendationData] = useState(null);
+    const [recommendationError, setRecommendationError] = useState(null);
+    const recommendationRequestRef = useRef({ controller: null, requestId: 0 });
 
     useEffect(() => {
         initializeApp();
     }, []);
+
+    useEffect(() => {
+        return () => {
+            recommendationRequestRef.current.controller?.abort();
+        };
+    }, []);
+
+    const abortRecommendationRequest = () => {
+        recommendationRequestRef.current.controller?.abort();
+        recommendationRequestRef.current.controller = null;
+        recommendationRequestRef.current.requestId += 1;
+    };
+
+    const clearRecommendationState = () => {
+        setShowRecommendations(false);
+        setRecommendationsLoading(false);
+        setRecommendationData(null);
+        setRecommendationError(null);
+    };
 
     const initializeApp = async () => {
         try {
@@ -113,6 +141,8 @@ function App() {
     };
 
     const handleProfileSelect = async (profile, saveSelection = true) => {
+        abortRecommendationRequest();
+        clearRecommendationState();
         setSelectedProfile(profile);
         setLastSelectedProfile(profile);
         setIsChangingProfile(false);
@@ -132,6 +162,8 @@ function App() {
     };
 
     const handleBackToProfileSelection = () => {
+        abortRecommendationRequest();
+        clearRecommendationState();
         setIsChangingProfile(true);
         setSelectedProfile(null);
         setEntries([]);
@@ -149,6 +181,81 @@ function App() {
 
     const handleImportSuccess = () => {
         loadData(true);
+    };
+
+    const handleRecommendationClose = () => {
+        abortRecommendationRequest();
+        clearRecommendationState();
+    };
+
+    const handleRecommend = async () => {
+        if (!selectedProfile || entries.length === 0) {
+            return;
+        }
+
+        const activeProfileId = selectedProfile.id;
+        const fallbackEntries = entries;
+
+        abortRecommendationRequest();
+        recommendationRequestRef.current.controller = new AbortController();
+        const { controller, requestId } = {
+            controller: recommendationRequestRef.current.controller,
+            requestId: recommendationRequestRef.current.requestId,
+        };
+
+        setShowRecommendations(true);
+        setRecommendationsLoading(true);
+        setRecommendationData(null);
+        setRecommendationError(null);
+
+        try {
+            const response = await fetch(`/api/recommendation?profileId=${activeProfileId}&limit=10`, {
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                throw new Error('Recommendation service unavailable');
+            }
+
+            const data = await response.json();
+
+            if (recommendationRequestRef.current.requestId !== requestId) {
+                return;
+            }
+
+            setRecommendationData(data);
+
+            if (!data?.isConfident) {
+                setRecommendationError('Could not infer a country from the current collection.');
+            }
+        } catch (error) {
+            if (controller.signal.aborted || error?.name === 'AbortError') {
+                return;
+            }
+
+            if (recommendationRequestRef.current.requestId !== requestId) {
+                return;
+            }
+
+            console.error('Error loading remote recommendations:', error);
+            const fallbackData = recommendManga({
+                entries: fallbackEntries,
+                catalog,
+                publisherCountries,
+                limit: 10,
+            });
+
+            setRecommendationData(fallbackData);
+
+            if (!fallbackData.isConfident) {
+                setRecommendationError('Could not infer a country from the current collection.');
+            }
+        } finally {
+            if (recommendationRequestRef.current.requestId === requestId) {
+                recommendationRequestRef.current.controller = null;
+                setRecommendationsLoading(false);
+            }
+        }
     };
 
     if (loading && appPhase === 'loading') {
@@ -205,9 +312,12 @@ function App() {
                     <div className="app-container">
                         <Sidebar 
                             mangas={mangas} 
+                            entries={entries}
                             selectedProfile={selectedProfile}
                             onImportSuccess={handleImportSuccess}
                             onBackToProfiles={handleBackToProfileSelection}
+                            onRecommend={handleRecommend}
+                            recommendationsLoading={recommendationsLoading}
                             refreshing={refreshing}
                         />
                         <main className="main-content">
@@ -219,6 +329,13 @@ function App() {
                                 onRefresh={() => loadData(true)}
                             />
                         </main>
+                        <RecommendationModal
+                            isOpen={showRecommendations}
+                            isLoading={recommendationsLoading}
+                            error={recommendationError}
+                            recommendations={recommendationData}
+                            onClose={handleRecommendationClose}
+                        />
                     </div>
                 </div>
             </LoadBearingCheck>
