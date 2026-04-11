@@ -4,7 +4,8 @@
   "description": "Bot de WhatsApp para consultar y actualizar la colección de MangaCount",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test"
   },
   "dependencies": {
     "axios": "^1.7.2",
