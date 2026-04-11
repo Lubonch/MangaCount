@@ -222,8 +222,9 @@ npm test
 
 Server-side daily text logs are enabled for the backend and the WhatsApp bot.
 
-- current backend log: `logs/backend.txt` in local development and `/home/pihole/mangacount/logs/backend.txt` in production
-- current bot log: `logs/bot.txt` in local development and `/home/pihole/mangacount/logs/bot.txt` in production
+- current backend log: `../logs/backend.txt` relative to the backend working directory
+- current bot log: `../logs/bot.txt` relative to the bot working directory
+- in typical local development from the repository folders, that resolves to the shared `logs/` directory at the repository root
 - when the day changes and the current file has content, it is renamed to `backend.YYYY-MM-DD` or `bot.YYYY-MM-DD`
 - if the current file is empty, it is not rotated
 

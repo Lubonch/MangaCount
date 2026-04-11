@@ -5,7 +5,7 @@ set -e
 SERVER="192.168.0.50"
 USER="pihole"
 BOT_DIR="/home/pihole/mangacount/bot"
-LOG_DIR="/home/pihole/mangacount/logs"
+LOG_DIR="$BOT_DIR/../logs"
 SSH_KEY="$HOME/.ssh/id_mangacount"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BOT_SRC="$REPO_ROOT/WhatsappBot"
