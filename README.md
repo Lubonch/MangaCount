@@ -16,6 +16,7 @@ Una aplicación web para gestionar colecciones de manga con una interfaz moderna
 - **Información Detallada**: Títulos, volúmenes comprados/totales, formato, editorial, estado de completitud
 - **Sistema de Prioridades**: Marca series importantes con badges especiales
 - **Seguimiento de Progreso**: Visualización del porcentaje de completitud con barras de progreso
+- **Recomendaciones Inteligentes**: Sugerencias de hasta 10 mangas que no tenés, priorizando el mercado local inferido por editorial
 
 ### 🖼️ Integración Visual
 - **Imágenes Automáticas**: Obtención automática de portadas desde MyAnimeList (Jikan API)
@@ -70,6 +71,7 @@ Una aplicación web para gestionar colecciones de manga con una interfaz moderna
 - **Repository Pattern** - Abstracción de acceso a datos
 - **RESTful API** - Diseño de API siguiendo principios REST
 - **Frontend embebido** - El build de React se sirve como archivos estáticos desde el propio servidor .NET
+- **Motor híbrido de recomendaciones** - Reglas locales obligatorias + reranking opcional con GitHub Models y OpenRouter desde el backend
 
 ## 🚀 Instalación y Configuración (Desarrollo Local)
 
@@ -187,6 +189,9 @@ npm run dev
 - `DELETE /api/entry/{id}` - Eliminar entrada
 - `GET /api/entry/export/{profileId}` - Exportar colección a TSV
 - `POST /api/entry/import/{profileId}` - Importar colección desde TSV
+
+### Recomendaciones
+- `GET /api/recommendation?profileId={id}&limit=10` - Obtener recomendaciones para un perfil
 
 ### Formatos y Editoriales
 - `GET /api/format` - Listar formatos
@@ -384,9 +389,3 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 - **GitHub Issues**: Para reportar bugs o sugerir features
 - **Pull Requests**: Para contribuir al código
 - **Documentación**: Revisa `PLAN.md` para roadmap detallado
-
----
-
-**¡Disfruta gestionando tu colección de manga! 📚✨**
-
-*"Una colección organizada es una mente en paz." - MangaCount Team*

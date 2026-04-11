@@ -4,10 +4,18 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import TSVLoader from './components/TSVLoader';
 import Sidebar from './components/Sidebar';
 import CollectionView from './components/CollectionView';
+import RecommendationModal from './components/RecommendationModal';
+import catalog from '@shared/recommendations/catalog.json';
+import publisherCountries from '@shared/recommendations/publisher-countries.json';
+import { recommendManga } from '@shared/recommendations/recommendationEngine.js';
 
 function App() {
     const [entries, setEntries] = useState(null);
     const [fileName, setFileName] = useState('');
+    const [showRecommendations, setShowRecommendations] = useState(false);
+    const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+    const [recommendationData, setRecommendationData] = useState(null);
+    const [recommendationError, setRecommendationError] = useState(null);
 
     const handleLoaded = (parsed, name) => {
         setEntries(parsed);
@@ -29,6 +37,34 @@ function App() {
     const handleLoadNew = () => {
         setEntries(null);
         setFileName('');
+        setShowRecommendations(false);
+        setRecommendationData(null);
+        setRecommendationError(null);
+    };
+
+    const handleRecommend = () => {
+        if (!entries || entries.length === 0) {
+            return;
+        }
+
+        setShowRecommendations(true);
+        setRecommendationsLoading(true);
+        setRecommendationError(null);
+
+        const localRecommendations = recommendManga({
+            entries,
+            catalog,
+            publisherCountries,
+            limit: 10,
+        });
+
+        setRecommendationData(localRecommendations);
+
+        if (!localRecommendations.isConfident) {
+            setRecommendationError('Could not infer a country from the current collection.');
+        }
+
+        setRecommendationsLoading(false);
     };
 
     if (!entries) {
@@ -49,6 +85,8 @@ function App() {
                         entries={entries}
                         fileName={fileName}
                         onLoadNew={handleLoadNew}
+                        onRecommend={handleRecommend}
+                        recommendationsLoading={recommendationsLoading}
                     />
                     <main className="main-content">
                         <CollectionView
@@ -56,6 +94,13 @@ function App() {
                             onUpdateEntry={handleUpdateEntry}
                         />
                     </main>
+                    <RecommendationModal
+                        isOpen={showRecommendations}
+                        isLoading={recommendationsLoading}
+                        error={recommendationError}
+                        recommendations={recommendationData}
+                        onClose={() => setShowRecommendations(false)}
+                    />
                 </div>
             </div>
         </ThemeProvider>

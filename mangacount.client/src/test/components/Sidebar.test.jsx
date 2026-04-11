@@ -10,9 +10,12 @@ describe('Sidebar Component', () => {
 
   const defaultProps = {
     mangas: [],
+    entries: [],
     selectedProfile: null,
     onImportSuccess: mockOnImportSuccess,
     onBackToProfiles: mockOnBackToProfiles,
+    onRecommend: vi.fn(),
+    recommendationsLoading: false,
     refreshing: false,
   }
 
@@ -43,9 +46,11 @@ describe('Sidebar Component', () => {
     render(<Sidebar {...defaultProps} />)
 
     const addEntryButton = screen.getByRole('button', { name: '+ Add Entry' })
+    const recommendationButton = screen.getByRole('button', { name: 'Recommendations' })
     const fileInput = screen.getByLabelText('Choose TSV File')
 
     expect(addEntryButton).toBeDisabled()
+    expect(recommendationButton).toBeDisabled()
     expect(fileInput).toBeDisabled()
     expect(screen.getByText('Select a profile first')).toBeInTheDocument()
   })
@@ -53,15 +58,36 @@ describe('Sidebar Component', () => {
   it('enables actions when profile is selected', () => {
     const profile = createMockProfile()
 
-    render(<Sidebar {...defaultProps} selectedProfile={profile} />)
+    render(<Sidebar {...defaultProps} selectedProfile={profile} entries={[{ id: 1 }]} />)
 
     const addEntryButton = screen.getByRole('button', { name: '+ Add Entry' })
     const addMangaButton = screen.getByRole('button', { name: '+ Add Manga' })
+    const recommendationButton = screen.getByRole('button', { name: 'Recommendations' })
     const fileInput = screen.getByLabelText('Choose TSV File')
 
     expect(addEntryButton).not.toBeDisabled()
     expect(addMangaButton).not.toBeDisabled()
+    expect(recommendationButton).not.toBeDisabled()
     expect(fileInput).not.toBeDisabled()
+  })
+
+  it('triggers recommendations when the button is clicked', async () => {
+    const user = userEvent.setup()
+    const profile = createMockProfile()
+    const onRecommend = vi.fn()
+
+    render(
+      <Sidebar
+        {...defaultProps}
+        selectedProfile={profile}
+        entries={[{ id: 1 }]}
+        onRecommend={onRecommend}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Recommendations' }))
+
+    expect(onRecommend).toHaveBeenCalledTimes(1)
   })
 
   it('handles file import successfully', async () => {

@@ -16,6 +16,14 @@ namespace MangaCount.Server.Configs
             services.AddScoped<IPublisherService, PublisherService>();
             services.AddScoped<IFormatService, FormatService>();
             services.AddScoped<IDatabaseService, DatabaseService>();
+            services.AddScoped<ILocalRecommendationEngine, LocalRecommendationEngine>();
+            services.AddScoped<IRecommendationService, RecommendationService>();
+
+            services.AddHttpClient<GitHubModelsRankingProvider>();
+            services.AddTransient<IRecommendationRankingProvider>(serviceProvider => serviceProvider.GetRequiredService<GitHubModelsRankingProvider>());
+
+            services.AddHttpClient<OpenRouterRankingProvider>();
+            services.AddTransient<IRecommendationRankingProvider>(serviceProvider => serviceProvider.GetRequiredService<OpenRouterRankingProvider>());
         }
         
         public static void AddInjectionRepositories(IServiceCollection services)

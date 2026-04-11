@@ -2,7 +2,7 @@ import ThemeToggle from './ThemeToggle';
 import { serializeTSV } from '../utils/tsv';
 import './Sidebar.css';
 
-const Sidebar = ({ entries, fileName, onLoadNew }) => {
+const Sidebar = ({ entries, fileName, onLoadNew, onRecommend = () => {}, recommendationsLoading = false }) => {
     const complete   = entries.filter(e => e.manga.volumes && e.quantity >= e.manga.volumes).length;
     const incomplete = entries.filter(e => !e.manga.volumes || e.quantity < e.manga.volumes).length;
     const priority   = entries.filter(e => e.priority).length;
@@ -58,6 +58,13 @@ const Sidebar = ({ entries, fileName, onLoadNew }) => {
                 <div className="quick-actions">
                     <button className="action-button export-btn" onClick={handleExport}>
                         ⬇ Exportar TSV
+                    </button>
+                    <button
+                        className="action-button recommend-btn"
+                        onClick={onRecommend}
+                        disabled={entries.length === 0 || recommendationsLoading}
+                    >
+                        {recommendationsLoading ? 'Pensando...' : 'Recommendations'}
                     </button>
                     <button className="action-button load-btn" onClick={onLoadNew}>
                         📂 Cargar otro TSV

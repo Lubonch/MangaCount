@@ -1,0 +1,122 @@
+.recommendation-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 14, 24, 0.64);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 1200;
+    backdrop-filter: blur(6px);
+}
+
+.recommendation-modal {
+    width: min(720px, 100%);
+    max-height: min(80vh, 720px);
+    overflow: auto;
+    background: linear-gradient(180deg, var(--bg-secondary), var(--bg-tertiary));
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+    padding: 24px;
+}
+
+.recommendation-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.recommendation-header h2 {
+    margin: 0 0 8px;
+    color: var(--text-primary);
+}
+
+.recommendation-subtitle,
+.recommendation-provider,
+.recommendation-meta,
+.recommendation-reason {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.recommendation-provider {
+    margin-top: 4px;
+    text-transform: lowercase;
+}
+
+.recommendation-close {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: 999px;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.recommendation-close:hover {
+    background: var(--bg-primary);
+}
+
+.recommendation-state {
+    border: 1px dashed var(--border-color);
+    border-radius: 14px;
+    padding: 18px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.recommendation-state.error {
+    border-color: var(--color-incomplete);
+}
+
+.recommendation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 12px;
+}
+
+.recommendation-item {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-color);
+}
+
+.recommendation-rank {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--color-info), #1f7bd6);
+    color: white;
+    font-weight: 700;
+}
+
+.recommendation-content h3 {
+    margin: 0 0 8px;
+}
+
+.recommendation-reason {
+    margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+    .recommendation-overlay {
+        padding: 12px;
+    }
+
+    .recommendation-modal {
+        padding: 18px;
+    }
+
+    .recommendation-header {
+        flex-direction: column;
+    }
+}

@@ -1,21 +1,19 @@
 import { fileURLToPath, URL } from 'node:url';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.js'],
+    css: true,
+    testTimeout: 10000,
+  },
   resolve: {
     alias: {
       '@shared': fileURLToPath(new URL('../shared', import.meta.url)),
     },
-  },
-  server: {
-    fs: {
-      allow: [fileURLToPath(new URL('..', import.meta.url))],
-    },
-  },
-  base: '/MangaCount/',
-  build: {
-    outDir: 'dist',
   },
 });

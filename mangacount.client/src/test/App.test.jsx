@@ -208,4 +208,105 @@ describe('App Component', () => {
       expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
     }, { timeout: 5000 })
   })
+
+  it('shows the inference error when the recommendation API returns an unconfident local fallback', async () => {
+    const user = userEvent.setup()
+    const mockProfile = createMockProfile({ id: 1, name: 'Single Profile' })
+    const mockMangas = [createMockManga()]
+    const mockEntries = [
+      createMockEntry({
+        quantity: 5,
+        manga: {
+          name: 'Unknown Title',
+          format: { id: 1, name: 'Tankoubon' },
+          publisher: { id: 1, name: 'Unknown Publisher' },
+        },
+      }),
+    ]
+
+    mockSequentialFetch(
+      { data: [mockProfile] },
+      { data: mockMangas },
+      { data: mockEntries },
+      {
+        data: {
+          provider: 'local',
+          inferredCountry: null,
+          isConfident: false,
+          blockedByImportCount: 0,
+          availableCount: 0,
+          limit: 10,
+          items: [],
+        },
+      }
+    )
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+    }, { timeout: 5000 })
+
+    await user.click(screen.getByRole('button', { name: 'Recommendations' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Could not infer a country from the current collection.')).toBeInTheDocument()
+    }, { timeout: 5000 })
+  })
+
+  it('aborts an in-flight recommendation request when changing profiles', async () => {
+    const user = userEvent.setup()
+    const mockProfile = createMockProfile({ id: 1, name: 'Single Profile' })
+    const mockMangas = [createMockManga()]
+    const mockEntries = [createMockEntry()]
+    let recommendationSignal = null
+
+    global.fetch.mockImplementation((url, options = {}) => {
+      if (url === '/api/profile') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [mockProfile],
+        })
+      }
+
+      if (url === '/api/manga') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockMangas,
+        })
+      }
+
+      if (url === '/api/entry?profileId=1') {
+        return Promise.resolve({
+          ok: true,
+          json: async () => mockEntries,
+        })
+      }
+
+      if (url === '/api/recommendation?profileId=1&limit=10') {
+        recommendationSignal = options.signal
+        return new Promise(() => {})
+      }
+
+      throw new Error(`Unexpected fetch call: ${url}`)
+    })
+
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+    }, { timeout: 5000 })
+
+    await user.click(screen.getByRole('button', { name: 'Recommendations' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Building your recommendations...')).toBeInTheDocument()
+    }, { timeout: 5000 })
+
+    await user.click(screen.getByTitle('Change profile'))
+
+    await waitFor(() => {
+      expect(recommendationSignal?.aborted).toBe(true)
+    }, { timeout: 5000 })
+  })
 })

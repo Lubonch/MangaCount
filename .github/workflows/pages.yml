@@ -34,6 +34,10 @@ jobs:
         run: npm ci
         working-directory: Pages
 
+      - name: Test
+        run: npm test -- --run
+        working-directory: Pages
+
       - name: Build
         run: npm run build
         working-directory: Pages
