@@ -14,9 +14,16 @@ async function getEntriesByProfile(profileId) {
     return res.data;
 }
 
+async function getRecommendations(profileId, limit = 5) {
+    const res = await api.get('/recommendation', {
+        params: { profileId, limit },
+    });
+    return res.data;
+}
+
 async function updateEntry(entry) {
     const res = await api.post('/entry', entry);
     return res.data;
 }
 
-module.exports = { getProfiles, getEntriesByProfile, updateEntry };
+module.exports = { getProfiles, getEntriesByProfile, getRecommendations, updateEntry };

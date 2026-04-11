@@ -1,391 +1,267 @@
-# 📚 MangaCount - Gestión de Colección de Manga
+# MangaCount
 
-Una aplicación web para gestionar colecciones de manga con una interfaz moderna. Diseñada para coleccionistas que desean llevar un registro detallado de sus series favoritas.
+MangaCount is a manga collection manager with four delivery surfaces: an ASP.NET Core API, a React frontend, a GitHub Pages demo, and a WhatsApp bot. The repository also includes a shared recommendation engine used by both the backend and the static demo.
 
-![MangaCount](https://img.shields.io/badge/Version-2.0.0-blue.svg)
-![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
-![React](https://img.shields.io/badge/React-19-blue.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
-![WhatsApp Bot](https://img.shields.io/badge/WhatsApp-Bot-25D366.svg)
+## Components
 
-## ✨ Características Principales
+- `MangaCount.Server`: ASP.NET Core API, business logic, repositories, and static hosting for the main frontend.
+- `mangacount.client`: React application used by the main web app.
+- `Pages`: static demo used for GitHub Pages.
+- `WhatsappBot`: Node.js bot for collection queries, updates, and recommendations.
+- `shared/recommendations`: shared catalog, normalization rules, country inference, and local recommendation engine.
 
-### 🎯 Gestión Completa
-- **Múltiples Perfiles**: Gestiona colecciones separadas para diferentes personas
-- **Información Detallada**: Títulos, volúmenes comprados/totales, formato, editorial, estado de completitud
-- **Sistema de Prioridades**: Marca series importantes con badges especiales
-- **Seguimiento de Progreso**: Visualización del porcentaje de completitud con barras de progreso
-- **Recomendaciones Inteligentes**: Sugerencias de hasta 10 mangas que no tenés, priorizando el mercado local inferido por editorial
+## Functionality
 
-### 🖼️ Integración Visual
-- **Imágenes Automáticas**: Obtención automática de portadas desde MyAnimeList (Jikan API)
-- **Placeholders Dinámicos**: Generación automática de imágenes placeholder cuando no se encuentra portada
-- **Interfaz Moderna**: Diseño inspirado en manga/anime con gradientes vibrantes y efectos de cristal
+- multiple collection profiles
+- CRUD operations for mangas and profile entries
+- TSV import and export
+- local-market recommendation filtering for unowned manga
+- optional backend reranking through remote providers
+- collection queries and updates over WhatsApp
 
-### 🤖 Bot de WhatsApp
-- **Consulta por chat**: Buscá series, revisá pendientes y actualizá volúmenes desde WhatsApp
-- **Multi-perfil**: Seleccioná tu perfil al iniciar la conversación
-- **Confirmación de cambios**: El bot pide confirmación antes de actualizar datos
-- **Siempre disponible**: Corre como servicio en el servidor LAN
+## Recommendation system
 
-### 📊 Importación y Exportación
-- **Importación TSV**: Carga masiva desde archivos de valores separados por tabulaciones
-- **Exportación TSV**: Respaldo de colecciones en formato estándar
-- **Validación de Datos**: Verificación automática durante la importación
+The recommendation system always builds a local candidate list first.
 
-### 🔍 Búsqueda y Filtrado
-- **Búsqueda por Título**: Encuentra series rápidamente
-- **Filtros Avanzados**: Por estado (completo/incompleto), prioridad
-- **Vista en Cuadrícula**: Diseño responsive con tarjetas atractivas
+Local rules:
 
-## 🛠️ Stack Tecnológico
+- owned titles are excluded after normalization
+- the user market is inferred from owned volumes grouped by publisher country
+- candidates outside the inferred market are excluded
+- the result can contain fewer than 10 items if the local market does not have enough valid titles
 
-### Backend
-- **.NET 8** - Framework principal
-- **ASP.NET Core Web API** - API REST
-- **Dapper** - Micro ORM para acceso a datos (SQL directo, sin EF Core)
-- **Npgsql** - Driver PostgreSQL para .NET
-- **Swagger/OpenAPI** - Documentación de API (solo en desarrollo)
+Optional backend reranking can run after the local filter, but the local engine remains the required fallback.
 
-### Frontend
-- **React 19** - Framework SPA moderno
-- **Vite** - Build tool y dev server
-- **TypeScript** - Lenguaje de programación tipado
-- **CSS Modules** - Estilos modulares y scoped
-- **Vitest** - Framework de testing para React
+Relevant endpoint:
 
-### Base de Datos
-- **PostgreSQL 16** - Sistema de gestión de base de datos
-- **Modelo normalizado** - Estructura `Profile → Entry → Manga → Format / Publisher`
+- `GET /api/recommendation?profileId={id}&limit=10`
 
-### Bot de WhatsApp
-- **Node.js 18** - Runtime del bot
-- **whatsapp-web.js** - Cliente de WhatsApp vía puppeteer
-- **axios** - Cliente HTTP para comunicarse con la API
-- **Google Chrome** - Browser headless requerido por puppeteer
+Optional backend provider environment variables:
 
-### Arquitectura
-- **Arquitectura en Capas** - Separación clara de responsabilidades
-- **Dependency Injection** - Inversión de dependencias nativa de .NET
-- **Repository Pattern** - Abstracción de acceso a datos
-- **RESTful API** - Diseño de API siguiendo principios REST
-- **Frontend embebido** - El build de React se sirve como archivos estáticos desde el propio servidor .NET
-- **Motor híbrido de recomendaciones** - Reglas locales obligatorias + reranking opcional con GitHub Models y OpenRouter desde el backend
+- `MANGACOUNT_GITHUB_MODELS_ENDPOINT`
+- `MANGACOUNT_GITHUB_MODELS_API_KEY`
+- `MANGACOUNT_GITHUB_MODELS_MODEL`
+- `MANGACOUNT_OPENROUTER_API_KEY`
+- `MANGACOUNT_OPENROUTER_MODEL`
+- `MANGACOUNT_OPENROUTER_ENDPOINT`
 
-## 🚀 Instalación y Configuración (Desarrollo Local)
+Do not store provider secrets in tracked frontend files or committed configuration.
 
-### Prerrequisitos
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Node.js 20+](https://nodejs.org/) y npm
-- [PostgreSQL 16+](https://www.postgresql.org/download/)
-- [VS Code](https://code.visualstudio.com/) o cualquier editor
+## Requirements
 
-### 1. Clonar el Repositorio
+- .NET 8 SDK
+- Node.js 20+ and npm
+- PostgreSQL 16+
+- Chrome or Chromium for the WhatsApp bot
+
+## Local setup
+
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/Lubonch/MangaCount.git
 cd MangaCount
 ```
 
-### 2. Configurar PostgreSQL
+### 2. Create the database
 
-Crear la base de datos y el usuario:
+Example PostgreSQL setup:
+
 ```sql
-CREATE USER mangacount WITH PASSWORD 'tu_password';
+CREATE USER mangacount WITH PASSWORD 'change_me';
 CREATE DATABASE "MangaCount" OWNER mangacount;
 ```
 
-Aplicar el esquema:
+Apply the schema:
+
 ```bash
 psql -U mangacount -d MangaCount -f deployment/database-schema.sql
 ```
 
-### 3. Configurar Backend
+### 3. Configure the backend
 
-Editar `MangaCount.Server/appsettings.json`:
+Set a valid connection string in `MangaCount.Server/appsettings.json`, `MangaCount.Server/appsettings.Development.json`, or environment-specific configuration.
+
+Example:
+
 ```json
 {
   "ConnectionStrings": {
-    "MangacountDatabase": "Host=localhost;Database=MangaCount;Username=mangacount;Password=tu_password"
+    "MangacountDatabase": "Host=localhost;Database=MangaCount;Username=mangacount;Password=change_me;Port=5432"
   }
 }
 ```
 
+Restore and run the server:
+
 ```bash
 cd MangaCount.Server
 dotnet restore
-dotnet build
-```
-
-### 4. Configurar Frontend
-```bash
-cd mangacount.client
-npm install
-```
-
-### 5. Ejecutar en Desarrollo
-
-**Terminal 1 - Backend:**
-```bash
-cd MangaCount.Server
 dotnet run
 ```
 
-**Terminal 2 - Frontend (hot reload):**
+The server prints its local URLs on startup.
+
+### 4. Run the main frontend
+
 ```bash
 cd mangacount.client
+npm install
 npm run dev
 ```
 
-## 📋 URLs
+The main frontend runs on `https://localhost:63920` by default and proxies API requests to the backend.
 
-### Desarrollo Local
-- **Aplicación**: http://localhost:5000 (o el puerto que configure Kestrel)
-- **Swagger**: http://localhost:5000/swagger (solo en entorno Development)
-
-### Producción (Servidor LAN)
-- **Aplicación**: http://192.168.0.50:3000
-- Ver [deployment/SSH-DEPLOY.md](deployment/SSH-DEPLOY.md) para instrucciones de despliegue.
-
-## 📋 Uso
-
-### 1. Gestión de Perfiles
-- Crear nuevos perfiles desde el selector en la interfaz
-- Cambiar entre perfiles usando el dropdown
-- Los datos se mantienen separados por perfil
-
-### 2. Agregar Manga
-- Usar el botón "Agregar Manga" en la interfaz
-- Completar el formulario con información detallada
-- El sistema valida automáticamente los datos
-
-### 3. Importar Colección Existente
-- Usar "Importar TSV" para cargar datos masivamente
-- El formato debe incluir: Título, Comprados, Total, Pendiente, Completa, Prioridad, Formato, Editorial
-- Archivo de ejemplo incluido: `Inventario - Lucas.tsv`
-
-### 4. Gestionar Entradas
-- Editar manga existente con el botón "Editar"
-- Eliminar entradas con el botón "Eliminar"
-- Filtrar por estado de completitud o prioridad
-
-## 🔌 API Endpoints
-
-### Perfiles
-- `GET /api/profile` - Listar todos los perfiles
-- `POST /api/profile` - Crear nuevo perfil
-- `GET /api/profile/{id}` - Obtener perfil específico
-
-### Manga
-- `GET /api/manga` - Obtener todos los mangas
-- `POST /api/manga` - Crear nuevo manga
-- `PUT /api/manga/{id}` - Actualizar manga existente
-- `DELETE /api/manga/{id}` - Eliminar manga
-
-### Entradas (colección de perfil)
-- `GET /api/entry` - Obtener entradas
-- `POST /api/entry` - Crear nueva entrada
-- `PUT /api/entry/{id}` - Actualizar entrada
-- `DELETE /api/entry/{id}` - Eliminar entrada
-- `GET /api/entry/export/{profileId}` - Exportar colección a TSV
-- `POST /api/entry/import/{profileId}` - Importar colección desde TSV
-
-### Recomendaciones
-- `GET /api/recommendation?profileId={id}&limit=10` - Obtener recomendaciones para un perfil
-
-### Formatos y Editoriales
-- `GET /api/format` - Listar formatos
-- `GET /api/publisher` - Listar editoriales
-
-### Base de Datos (admin)
-- `GET /api/database/statistics` - Estadísticas generales
-- `POST /api/database/nuke` - Limpiar todos los datos
-
-
-## 📁 Estructura del Proyecto
-
-```
-MangaCount/
-├── MangaCount.Server/           # Backend .NET 8 Web API
-│   ├── Controllers/             # Controladores de API REST
-│   ├── Models/                  # DTOs y modelos
-│   ├── Services/                # Lógica de negocio
-│   └── Data/                    # Acceso a datos con Dapper
-├── mangacount.client/           # Frontend React 19 + Vite
-│   ├── src/
-│   │   ├── components/          # Componentes React
-│   │   ├── hooks/               # Custom hooks
-│   │   ├── services/            # Servicios HTTP
-│   │   └── styles/              # Estilos CSS
-├── MangaCount.Server.Tests/     # Pruebas unitarias (.NET)
-├── deployment/                  # Scripts y guías de despliegue
-│   ├── SSH-DEPLOY.md            # Guía de deploy al servidor SSH
-│   └── database-schema.sql     # Esquema PostgreSQL
-├── WhatsappBot/                 # Bot de WhatsApp (Node.js)
-│   ├── index.js                 # Entrada: cliente WhatsApp + QR
-│   ├── src/
-│   │   ├── api.js               # Wrapper HTTP sobre la API de MangaCount
-│   │   ├── session.js           # Estado en memoria por número de teléfono
-│   │   ├── router.js            # Dispatcher de mensajes y flujos
-│   │   └── commands/
-│   │       ├── buscar.js        # Buscar series por título
-│   │       ├── pendientes.js    # Listar series incompletas
-│   │       └── actualizar.js   # Actualizar volúmenes con confirmación
-│   └── .env                     # MANGA_API_URL (no versionado)
-├── deployment/
-│   ├── SSH-DEPLOY.md            # Guía de deploy al servidor SSH
-│   ├── deploy.sh                # Script de deploy del servidor web
-│   ├── deploy-bot.sh            # Script de deploy del bot
-│   ├── mangacount.service       # Servicio systemd para la API
-│   ├── mangacount-bot.service   # Servicio systemd para el bot
-│   └── database-schema.sql     # Esquema PostgreSQL
-└── Inventario - Lucas.tsv       # Archivo de importación de ejemplo
-```
-
-## � Formato TSV
-
-El formato de importación/exportación TSV incluye estas columnas:
-
-| Campo | Descripción | Ejemplo |
-|-------|-------------|---------|
-| Título | Nombre del manga | "Attack on Titan" |
-| Comprados | Volúmenes adquiridos | 34 |
-| Total | Volúmenes totales de la serie | 34 |
-| Pendiente | Volúmenes faltantes (no consecutivos) | "5,12" |
-| Completa | Estado de completitud | TRUE/FALSE |
-| Prioridad | Marcado como prioritario | TRUE/FALSE |
-| Formato | Tipo de formato | "Tankoubon" |
-| Editorial | Casa editora | "Kodansha" |
-
-## 🤖 Bot de WhatsApp — Setup
-
-### Primer deploy (requiere escanear QR)
-```bash
-# Desde la raíz del proyecto
-bash deployment/deploy-bot.sh
-```
-
-El script copia los archivos al servidor, instala dependencias y registra el servicio systemd. Como es la primera vez, hay que escanear el QR manualmente:
+If the development certificate is missing, generate it with:
 
 ```bash
-ssh -i ~/.ssh/id_mangacount pihole@192.168.0.50
-cd /home/pihole/mangacount/bot
-node index.js
-# Escaneá el QR con WhatsApp desde el teléfono del bot
-# Cuando aparezca "✅ Bot conectado y listo", presioná Ctrl+C
-
-sudo systemctl enable --now mangacount-bot
+dotnet dev-certs https --trust
 ```
 
-A partir del primer scan, el bot arranca automáticamente con el sistema.
+### 5. Run the Pages demo
 
-### Comandos disponibles
-| Comando | Descripción |
-|---------|-------------|
-| `ping` | Test de conexión → responde `pong` |
-| `buscar [título]` | Busca series en la colección del perfil activo |
-| `pendientes` | Lista series incompletas, ordenadas por prioridad |
-| `actualizar [título] [cantidad]` | Actualiza volúmenes con confirmación |
-| `perfil` | Cambia de perfil |
+This demo uses the shared local recommendation engine directly and does not require the backend recommendation endpoint.
 
-### Redeploy (sin re-escanear QR)
 ```bash
-bash deployment/deploy-bot.sh
-```
-La sesión de WhatsApp se preserva en `.wwebjs_auth/` en el servidor.
-
----
-
-## 🛠️ Desarrollo Local
-
-### Backend (.NET)
-```bash
-cd MangaCount.Server
-dotnet watch run
-# API disponible en http://localhost:5000 con hot reload
-```
-
-### Frontend (React)
-```bash
-cd mangacount.client  
+cd Pages
+npm install
 npm run dev
-# Aplicación disponible en http://localhost:5173 con hot reload
 ```
 
-### Ejecutar Pruebas
+### 6. Run the WhatsApp bot
+
+Install dependencies:
+
 ```bash
-# Pruebas backend
-cd MangaCount.Server.Tests
-dotnet test
-
-# Pruebas frontend  
-cd mangacount.client
-npm test
-```
-
-## 🐛 Solución de Problemas
-
-### Problemas de Conexión a Base de Datos
-- Verificar que PostgreSQL esté corriendo: `sudo systemctl status postgresql`
-- Revisar la cadena de conexión en `appsettings.json` o `appsettings.Production.json`
-- Probar conexión directa: `psql -U mangacount -d MangaCount -h localhost`
-
-### Issues de Build del Frontend
-```bash
-cd mangacount.client
-rm -rf node_modules package-lock.json
+cd WhatsappBot
 npm install
 ```
 
-## 🤝 Contribución
+Create `WhatsappBot/.env` with at least:
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+```dotenv
+MANGA_API_URL=http://localhost:3000/api
+WHATSAPP_ALLOWED_NUMBERS=5491112345678,5491123456789
+CHROME_BIN=/usr/bin/google-chrome-stable
+```
 
-## 📝 Roadmap
+Notes:
 
-### ✅ **Completado**
-- [x] **Backend API completo** - .NET 8 con todos los controllers
-- [x] **Frontend React funcional** - UI completa con multi-perfil
-- [x] **PostgreSQL** - Base de datos normalizada y en producción
-- [x] **Sistema CRUD completo** - Operaciones para todas las entidades
-- [x] **Importación TSV** - Carga masiva de datos funcional
-- [x] **Exportación TSV** - Respaldo de colecciones
-- [x] **Deploy en servidor LAN** - Corriendo en http://192.168.0.50:3000
-- [x] **Bot de WhatsApp** - Consulta y actualización de colección via chat
+- set `MANGA_API_URL` to the actual backend URL printed by `dotnet run` in your environment.
+- `WHATSAPP_ALLOWED_NUMBERS` is required for normal operation.
+- numbers are normalized before comparison.
+- senders not listed in the whitelist are ignored.
+- if the whitelist is empty, the bot ignores all incoming messages.
 
-### 🚧 **Pendiente**
-- [ ] **Integración Jikan API** - Imágenes automáticas de portadas (MyAnimeList)
-- [ ] **Búsqueda Avanzada** - Filtros combinados en frontend
-- [ ] **Dashboard de Estadísticas** - Métricas visuales de colección
-- [ ] **Testing Automatizado** - Cobertura >75% en backend y frontend
-- [ ] **Paginación** - Para colecciones grandes
+Start the bot:
 
-## 🐛 Issues Conocidos
+```bash
+cd WhatsappBot
+npm start
+```
 
-- Formato con nombre vacío `""` puede aparecer si el TSV tiene un campo de formato en blanco
-- Las imágenes de Jikan API (portadas) aún no están integradas
+On the first run, scan the QR code with the WhatsApp account assigned to the bot.
 
-## 📄 Licencia
+## WhatsApp bot commands
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+- `ping`
+- `buscar [titulo]`
+- `recomendar`
+- `recomendar [cantidad]`
+- `pendientes`
+- `actualizar [titulo] [cantidad]`
+- `perfil`
 
-## 🙏 Agradecimientos
+`recomendar` uses the backend recommendation endpoint for the currently selected profile.
 
-- [Jikan API](https://jikan.moe/) - Datos de manga desde MyAnimeList (integración pendiente)
-- [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM simple y eficiente
-- [Npgsql](https://www.npgsql.org/) - Driver PostgreSQL para .NET
-- [React](https://react.dev/) - Framework de UI moderno y potente
-- [.NET](https://dotnet.microsoft.com/) - Platform robusta para backend
-- [Dapper](https://github.com/DapperLib/Dapper) - Micro ORM eficiente
-- [Vite](https://vitejs.dev/) - Build tool rápido para desarrollo
-- Comunidad de desarrolladores por las mejores prácticas
+## TSV import format
 
-## 📞 Contacto y Soporte
+The TSV import/export format uses these fields:
 
-- **GitHub Issues**: Para reportar bugs o sugerir features
-- **Pull Requests**: Para contribuir al código
-- **Documentación**: Revisa `PLAN.md` para roadmap detallado
+- `Titulo`
+- `Comprados`
+- `Total`
+- `Pendiente`
+- `Completa`
+- `Prioridad`
+- `Formato`
+- `Editorial`
+
+## Tests and verification
+
+Backend:
+
+```bash
+dotnet test MangaCount.Server.Tests --verbosity minimal
+```
+
+Main frontend:
+
+```bash
+cd mangacount.client
+npm test -- --run
+npm run build
+```
+
+Pages demo:
+
+```bash
+cd Pages
+npm test -- --run
+npm run build
+```
+
+WhatsApp bot:
+
+```bash
+cd WhatsappBot
+npm test
+```
+
+## Logs
+
+Server-side daily text logs are enabled for the backend and the WhatsApp bot.
+
+- current backend log: `../logs/backend.txt` relative to the backend working directory
+- current bot log: `../logs/bot.txt` relative to the bot working directory
+- in typical local development from the repository folders, that resolves to the shared `logs/` directory at the repository root
+- when the day changes and the current file has content, it is renamed to `backend.YYYY-MM-DD` or `bot.YYYY-MM-DD`
+- if the current file is empty, it is not rotated
+
+Frontend file logging is not implemented in this repository.
+
+## Deployment
+
+Main server deployment:
+
+```bash
+bash deployment/deploy.sh
+```
+
+WhatsApp bot deployment:
+
+```bash
+bash deployment/deploy-bot.sh
+```
+
+The bot deploy script preserves the server-side `.env` file if it already exists.
+
+Additional deployment details are in `deployment/SSH-DEPLOY.md`.
+
+## Project layout
+
+```text
+MangaCount/
+├── MangaCount.Server/
+├── MangaCount.Server.Tests/
+├── mangacount.client/
+├── Pages/
+├── WhatsappBot/
+├── shared/recommendations/
+├── deployment/
+└── databasebackup/
+```
+
+## License
+
+This repository is licensed under the MIT License. See `LICENSE`.
