@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import './NukeDataModal.css';
+import { databaseStatistics, databaseNukeLocal } from '../api/localAdapter.js';
 
 const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
     const [step, setStep] = useState(1);
@@ -22,11 +23,8 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
 
     const loadStatistics = async () => {
         try {
-            const response = await fetch('/api/database/statistics');
-            if (response.ok) {
-                const data = await response.json();
-                setStatistics(data);
-            }
+            const data = await databaseStatistics();
+            setStatistics(data);
         } catch (err) {
             console.error('Error loading statistics:', err);
         }
@@ -54,26 +52,11 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
         setError('');
 
         try {
-            const response = await fetch('/api/database/nuke', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    isConfirmed: true,
-                    confirmationText: confirmationText
-                })
-            });
-
-            if (response.ok) {
-                onSuccess();
-                onClose();
-            } else {
-                const error = await response.json();
-                setError(error.message || 'Failed to clear database');
-            }
+            await databaseNukeLocal();
+            onSuccess();
+            onClose();
         } catch (err) {
-            setError('Error clearing database: ' + err.message);
+            setError('Error clearing local data: ' + err.message);
         } finally {
             setIsLoading(false);
         }
@@ -113,22 +96,22 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                         <div className="confirmation-step">
                             <h3>🚨 WARNING: This action cannot be undone!</h3>
                             <div className="warning-content">
-                                <p>You are about to permanently delete ALL data from the database:</p>
+                                <p>You are about to permanently delete ALL local data:</p>
                                 {statistics && (
                                     <div className="data-summary">
-                                        <div className="data-item">📚 <strong>{statistics.totalManga}</strong> manga entries</div>
-                                        <div className="data-item">📖 <strong>{statistics.totalEntries}</strong> reading entries</div>
-                                        <div className="data-item">👤 <strong>{statistics.totalProfiles}</strong> user profiles</div>
-                                        <div className="data-item">📋 <strong>{statistics.totalFormats}</strong> formats</div>
-                                        <div className="data-item">🏢 <strong>{statistics.totalPublishers}</strong> publishers</div>
+                                        <div className="data-item">📚 <strong>{statistics.mangas}</strong> manga entries</div>
+                                        <div className="data-item">📖 <strong>{statistics.entries}</strong> reading entries</div>
+                                        <div className="data-item">👤 <strong>{statistics.profiles}</strong> user profiles</div>
+                                        <div className="data-item">📋 <strong>{statistics.formats}</strong> formats</div>
+                                        <div className="data-item">🏢 <strong>{statistics.publishers}</strong> publishers</div>
                                     </div>
                                 )}
                                 <div className="consequences">
                                     <h4>Consequences:</h4>
                                     <ul>
                                         <li>All manga and reading progress will be lost</li>
-                                        <li>All user profiles will be deactivated</li>
-                                        <li>Custom formats and publishers will be removed (except defaults)</li>
+                                        <li>All user profiles will be removed (a default profile is kept)</li>
+                                        <li>Formats and publishers catalogs are preserved</li>
                                         <li>You will need to re-import or recreate all data</li>
                                     </ul>
                                 </div>

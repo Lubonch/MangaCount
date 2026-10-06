@@ -1,0 +1,74 @@
+name: Release Desktop Builds
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build installers (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            command: npm run dist:linux
+            artifacts: |
+              release/*.deb
+              release/*.AppImage
+          - os: windows-latest
+            command: npm run dist:win
+            artifacts: release/*.exe
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mangacount.client/package-lock.json
+
+      - name: Install main dependencies
+        run: npm ci
+
+      - name: Install renderer dependencies
+        run: npm ci --prefix mangacount.client
+
+      - name: Build installers
+        run: ${{ matrix.command }}
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: ${{ matrix.artifacts }}
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v4
+        with:
+          path: installers
+          merge-multiple: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installers/**
+          draft: true
+          generate_release_notes: true
