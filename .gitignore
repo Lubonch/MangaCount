@@ -353,6 +353,9 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Estado local de herramientas
+.ancleto/working-context.md
+
 # Logs
 logs/
 *.log
