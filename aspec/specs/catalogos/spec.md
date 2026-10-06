@@ -1,9 +1,9 @@
 
 ### Requirement: Catálogos de formato y editorial
 
-The system SHALL exponer CRUD de formatos y editoriales vía `FormatController`/`PublisherController` con sus servicios y repositorios.
+The system SHALL devolver y crear catálogos de formato y editorial con el mismo seed inicial (5 formatos, 5 editoriales) desde SQLite embebida vía canales IPC (`format:list`, `format:create`, `publisher:list`, `publisher:create`), sin `FormatController`/`PublisherController`.
 
-#### Scenario: Listar catálogos para alta de manga
+#### Scenario: Listar catálogos vía IPC local con seed inicial
 
-- **WHEN** el cliente solicita formatos y editoriales
-- **THEN** el sistema devuelve los catálogos persistidos en PostgreSQL para su uso en mangas y entries
+- **WHEN** el renderer invoca los canales IPC de formatos y editoriales
+- **THEN** el proceso main devuelve los catálogos desde SQLite, poblados con el mismo seed (5 formatos, 5 editoriales), sin `FormatController`/`PublisherController`

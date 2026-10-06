@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import plugin from '@vitejs/plugin-react';
 import { env } from 'node:process';
 
-// Configuración local-first: sin certificados dotnet, sin proxy /api (el renderer
+// Configuración local-first: sin certificados ni proxy /api (el renderer
 // habla por IPC en Electron o usa el adaptador con fallback), puerto 5173 estándar.
 // MANGACOUNT_DEV_URL debe apuntar a este puerto (ver electron/main/index.js).
 export default defineConfig({

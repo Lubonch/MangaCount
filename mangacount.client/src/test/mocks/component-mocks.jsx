@@ -15,5 +15,3 @@ export const MockAddMangaModal = ({ isOpen, onClose }) =>
 
 export const MockAddProfileModal = ({ isOpen, onClose }) => 
   isOpen ? <div data-testid="add-profile-modal">Add Profile Modal</div> : null
-
-export const MockLoadBearingCheck = ({ children }) => children

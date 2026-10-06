@@ -1,7 +1,7 @@
 {
   "name": "mangacount",
   "version": "1.0.0",
-  "description": "MangaCount is a manga collection manager with four delivery surfaces: an ASP.NET Core API, a React frontend, a GitHub Pages demo, and a WhatsApp bot. The repository also includes a shared recommendation engine used by both the backend and the static demo.",
+  "description": "MangaCount is a local-first desktop manga collection manager (Electron + SQLite) with a React renderer and a shared recommendation engine.",
   "private": true,
   "type": "module",
   "scripts": {

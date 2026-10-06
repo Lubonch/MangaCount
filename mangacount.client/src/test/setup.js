@@ -16,8 +16,8 @@ global.localStorage = localStorageMock
 // Mock window.location
 Object.defineProperty(window, 'location', {
   value: {
-    origin: 'https://localhost:63920',
-    href: 'https://localhost:63920',
+    origin: 'http://localhost:5173',
+    href: 'http://localhost:5173',
   },
   writable: true,
 })
@@ -30,11 +30,6 @@ global.console = {
   warn: vi.fn(),
   info: vi.fn(),
 }
-
-// Mock LoadBearingCheck component to always pass
-vi.mock('../components/LoadBearingCheck', () => ({
-  default: ({ children }) => children
-}))
 
 // Mock CollectionView component to prevent undefined manga errors
 vi.mock('../components/CollectionView', () => ({

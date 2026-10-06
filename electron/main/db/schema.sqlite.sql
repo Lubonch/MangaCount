@@ -1,6 +1,6 @@
 -- schema.sqlite.sql
 -- Esquema SQLite para MangaCount local (aplicacion desktop Electron).
--- Traducido de deployment/database-schema.sql (PostgreSQL):
+-- Traducido del esquema PostgreSQL original de la version cliente-servidor:
 --   SERIAL PRIMARY KEY        -> INTEGER PRIMARY KEY AUTOINCREMENT
 --   ON CONFLICT (col) DO NOTHING -> INSERT OR IGNORE
 --   \c / \echo (meta-comandos psql) eliminados.

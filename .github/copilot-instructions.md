@@ -1,69 +1,60 @@
 # Instrucciones para Copilot en MangaCount
 
 ## Resumen del proyecto
-MangaCount es un repositorio multi-superficie para gestionar colecciones de manga. Sus piezas principales son:
-- `MangaCount.Server`: backend ASP.NET Core en .NET 8 con controladores, servicios, repositorios, AutoMapper y alojamiento estático del frontend principal.
-- `mangacount.client`: aplicación React + Vite para la interfaz principal.
-- `Pages`: demo estática para GitHub Pages que usa el motor de recomendaciones local sin depender del backend para esa lógica.
-- `WhatsappBot`: bot Node.js para consultas, actualizaciones y recomendaciones vía WhatsApp.
+MangaCount es una aplicación de escritorio para gestionar colecciones de manga. Corre local,
+sin servidor: Electron + SQLite embebida.
+- `electron/`: proceso main (SQLite, repositories, servicios, handlers IPC) y `preload.cjs` que expone `window.mangaCount`.
+- `mangacount.client`: renderer React + Vite. Consume el proceso main por IPC; `src/api/localAdapter.js` incluye el shim de `fetch('/api/*')` → IPC.
 - `shared/recommendations`: motor compartido de recomendaciones, catálogos, normalización y reglas de mercado.
+- `WhatsappBot`: bot Node.js, fuera de alcance de la app de escritorio (no se empaqueta). Código intacto.
 
 ## Stack real y decisiones de arquitectura
-- El acceso a datos del backend usa `Dapper` + `Npgsql` sobre PostgreSQL. No introduzcas Entity Framework ni otro ORM salvo que se pida explícitamente.
-- Mantén la separación actual entre controlador, servicio, repositorio, DTO y mapeo. Si una regla de negocio ya existe en servicios o en `shared/recommendations`, no la dupliques en controladores o componentes.
-- El frontend principal consume el backend; si cambias contratos de API, actualiza de forma coherente endpoint, DTOs, consumidor React y pruebas relevantes.
-- `Pages` debe seguir funcionando sin el endpoint backend de recomendaciones. Si tocas recomendaciones, conserva la capacidad de ejecutar el motor local directamente desde código compartido.
-- `WhatsappBot` depende del backend y de variables de entorno. Evita introducir dependencias de navegador o romper el flujo basado en whitelist de números permitidos.
+- Persistencia: SQLite embebida (`better-sqlite3`) en el proceso main, en `app.getPath('userData')`. No hay base de datos externa, ORM ni servidor HTTP; todo es local.
+- El renderer no habla HTTP: los canales IPC se registran en `electron/main/ipc/handlers.js` y se declaran en `electron/preload.cjs`. Si agregás un endpoint, actualizá handler, preload, adaptador y `parity-matrix.md`.
+- `preload` es CommonJS (`preload.cjs`) porque el `sandbox` de Electron no admite `import`.
+- Las fotos de perfil viven en `<userData>/profiles` y se sirven por el protocolo custom `mangacount://`, no por HTTP.
+- Si una regla de negocio ya existe en servicios o en `shared/recommendations`, no la dupliques.
 - Prefiere cambios localizados y compatibles con la estructura existente antes que reorganizaciones amplias.
 
 ## Invariantes del sistema de recomendaciones
 - La recomendación siempre debe construir primero una lista local de candidatos.
 - Los títulos ya poseídos se excluyen después de normalización.
-- El mercado del usuario se infiere a partir de volúmenes poseídos agrupados por país de editorial.
+- El mercado del usuario se infiere a partir de volúmenes poseídos agrupados por país de editorial (`publisher-countries.json`).
 - Se excluyen candidatos fuera del mercado inferido.
 - Puede haber menos resultados que el límite solicitado si el mercado local no tiene suficientes títulos válidos.
-- El reranking externo es opcional y posterior al filtro local; nunca debe reemplazar al motor local como fallback obligatorio.
-- El endpoint actual del backend es `GET /api/recommendation?profileId={id}&limit=10`, con `limit` acotado al rango `1..10`.
+- El reranking externo está diferido: `electron/main/services/recommendations.js` deja `providers = []` como punto de extensión.
 
 ## Cómo decidir dónde hacer cambios
-- Si el cambio afecta reglas de recomendación, empieza por `shared/recommendations` o por el servicio backend que las consume, no por la UI.
-- Si el cambio es de persistencia o consultas SQL, trabaja en repositorios del backend y conserva el patrón Dapper existente.
-- Si el cambio es visual o de interacción del frontend principal, limítalo a `mangacount.client` salvo que requiera un cambio real de contrato API.
-- Si el cambio afecta a la demo estática, evita introducir dependencias al backend salvo que el usuario lo pida de forma explícita.
-- Si cambias configuración o comportamiento operativo del bot, revisa también `.env.example`, despliegue y normalización de entradas.
+- Si el cambio afecta reglas de recomendación, empieza por `shared/recommendations`, no por la UI.
+- Si el cambio es de persistencia o consultas SQL, trabaja en `electron/main/db/repositories` y conserva el estilo `better-sqlite3` existente.
+- Si el cambio es visual o de interacción, limítalo a `mangacount.client`.
+- Si el cambio afecta el empaquetado, revisá `electron-builder` en `package.json` y `.github/workflows/release.yml`.
 
 ## Convenciones de implementación
-- En C#, usa convenciones de .NET: `PascalCase` para tipos y métodos, `camelCase` para parámetros y variables locales o privadas.
-- Conserva el estilo async/await existente y evita mezclar patrones síncronos nuevos en código ya asíncrono.
-- En React, usa componentes funcionales y hooks. No introduzcas librerías de estado o routing nuevas sin una razón clara.
-- En Node.js, respeta el sistema de módulos y el estilo ya usado en cada carpeta. No mezcles ESM y CommonJS sin necesidad.
-- Los mensajes y documentación pueden estar en español, pero nombres de código, rutas, variables públicas y contratos API deben mantenerse consistentes con el repositorio.
-- No crees documentación paralela o archivos auxiliares persistentes si basta con actualizar la documentación existente.
+- En JS/Node, respeta el ESM del repo (`"type": "module"`); el único CommonJS es `electron/preload.cjs`.
+- En React, usá componentes funcionales y hooks. No introduzcas librerías de estado o routing nuevas sin razón clara.
+- Los mensajes y documentación pueden estar en español, pero nombres de código, rutas y variables públicas deben mantenerse consistentes.
+- No crees documentación paralela si basta con actualizar la existente.
 
 ## Configuración, secretos y despliegue
 - Nunca expongas secretos, claves de proveedores o tokens en archivos rastreados.
-- Las variables de proveedores de reranking deben permanecer del lado servidor. No las muevas al cliente ni a archivos que terminen en bundles frontend.
-- Si cambias la forma de configuración del bot, actualiza también `WhatsappBot/.env.example` cuando corresponda.
-- Si tocas setup, despliegue o variables de entorno, sincroniza `README.md`, scripts en `deployment/` y archivos de configuración afectados.
-- El frontend principal usa proxy al backend local y el backend espera por defecto el origen `https://localhost:63920` para CORS y SpaProxy.
+- La configuración local va en `userData` (`electron-store`/JSON), más localStorage para tema y perfil.
+- Si tocás setup o datos, sincronizá `README.md` y `docs/desktop.md`.
 
 ## Validación esperada
-- Cambios en backend: `dotnet test MangaCount.Server.Tests --verbosity minimal`.
-- Cambios en `mangacount.client`: `npm test -- --run` y `npm run build` dentro de esa carpeta.
-- Cambios en `Pages` o en `shared/recommendations` que afecten la demo: `npm test -- --run` y `npm run build` dentro de `Pages`.
-- Cambios en `WhatsappBot`: `npm test` y, si el cambio es operativo, revisar variables de entorno relevantes.
-- Si tocas recomendaciones compartidas, valida al menos backend y `Pages`, porque ambos consumen esa lógica.
-- Si modificas contratos o setup, verifica también que la documentación principal siga alineada con el código.
+- Proceso main: `npm test` (raíz, `node --test`).
+- Renderer: `npm --prefix mangacount.client test -- --run` (vitest) y `npm run build:renderer`.
+- Empaquetado: `npm run dist:linux` / `npm run dist:win` (requiere reconstruir `better-sqlite3`; ver scripts `rebuild:node`/`rebuild:electron`).
+- Si tocás recomendaciones compartidas, validá el proceso main (y el renderer si aplica) porque ambos consumen esa lógica.
+- Si modificás canales IPC o setup, verificá también que `parity-matrix.md` y la documentación sigan alineadas.
 
 ## No hacer
+- No reintroducir un backend HTTP ni PostgreSQL para la app de escritorio.
 - No reemplazar `shared/recommendations` por una integración externa completa.
-- No duplicar lógica de recomendación en frontend, demo o bot cuando debe vivir en código compartido o servicios del backend.
-- No convertir `Pages` en una superficie dependiente del backend para generar recomendaciones.
-- No introducir cambios globales de base de datos sin actualizar el esquema o script correspondiente y sin tener un motivo claro.
-- No romper compatibilidad con .NET 8, React actual, Node.js 20+ o la estructura de despliegue existente sin petición explícita.
+- No duplicar lógica de recomendación en renderer o bot cuando debe vivir en código compartido o en el proceso main.
+- No romper el contrato de `window.mangaCount` sin actualizar preload, adaptador y pruebas.
 
 ## Notas prácticas
-- El backend sirve archivos estáticos y redirige rutas no API a `index.html`; tenlo en cuenta al tocar hosting o routing.
-- El backend y el bot escriben logs diarios en la carpeta `../logs` relativa a su directorio de trabajo.
-- Si cambias arquitectura, setup o comportamiento visible, actualiza antes la documentación existente que crear nuevas fuentes de verdad.
-- Cuando haya conflicto entre una idea nueva y el diseño actual del repo, prioriza la coherencia con la implementación real salvo que el usuario pida una refactorización deliberada.
+- El proceso main registra el protocolo `mangacount://` para las fotos de perfil.
+- Los logs diarios van a `<userData>/logs/app.txt` con rotación.
+- Cuando haya conflicto entre una idea nueva y el diseño actual del repo, priorizá la coherencia con la implementación real salvo refactorización deliberada.

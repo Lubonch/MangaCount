@@ -1,4 +1,4 @@
-// Port directo de ProfileRepository.cs (Dapper/PostgreSQL -> better-sqlite3).
+// Port directo de ProfileRepository.cs (PostgreSQL -> better-sqlite3).
 // DTOs en camelCase como los serializa ASP.NET Core (los consume el renderer).
 // Diferencia con el original: el UPDATE roto del C# (columnas ProfilePicture/IsActive
 // inexistentes en PG) aquí funciona porque el esquema SQLite sí tiene ProfilePicture.

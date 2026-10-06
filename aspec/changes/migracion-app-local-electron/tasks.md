@@ -39,14 +39,14 @@
 
 ## Fase 4 — Limpieza de código basura
 
-- [ ] Borrar `MangaCount.Server/`, `MangaCount.Server.Tests/`, `.sln`, `Program.cs` y referencias `SpaProxy`/Swagger/CORS una vez la paridad esté `UI verde`
-- [ ] Borrar `deployment/`, `databasebackup/`, `Pages/`, `.angular/` si quedara, `loadbearingimage.jpg` y chequeos load-bearing
-- [ ] Borrar `DatabaseController`/`DatabaseService` (o su equivalente si se reconvirtió) y endpoints `/api/database/*` sin reemplazo
-- [ ] Verificar con `git grep` que no queden referencias a servidor (`localhost:63920`, `ASPNETCORE_`, `Npgsql`, `Dapper`, `192.168.0.50`, `loadbearing`) fuera de docs históricas
+- [x] Borrar `MangaCount.Server/`, `MangaCount.Server.Tests/`, `.sln`, `Program.cs` y referencias `SpaProxy`/Swagger/CORS una vez la paridad esté `UI verde`
+- [x] Borrar `deployment/`, `databasebackup/`, `Pages/`, `.angular/` si quedara, `loadbearingimage.jpg` y chequeos load-bearing
+- [x] Borrar `DatabaseController`/`DatabaseService` (o su equivalente si se reconvirtió) y endpoints `/api/database/*` sin reemplazo
+- [x] Verificar con `git grep` que no queden referencias a servidor (`localhost:63920`, `ASPNETCORE_`, `Npgsql`, `Dapper`, `192.168.0.50`, `loadbearing`) fuera de docs históricas
 
 ## Fase 5 — Documentación actualizada
 
 - [x] Reescribir `README.md` (qué es la app desktop, instalación por exe/deb/AppImage, migración desde PostgreSQL, desarrollo con Electron)
 - [x] Eliminar o archivar `PLAN.md` raíz y `WhatsappBot/PLAN.md`, actualizar `CHANGELOG`s y quitar WhatsApp de la documentación general (código intacto)
 - [x] Documentar ubicación de datos (`userData`), formato del SQLite, protocolo `mangacount://` para fotos, backup manual y troubleshooting por plataforma
-- [ ] Verificación final cruzada contra proposal (qué) y design (cómo) y actualización de `aspec/specs/` vía delta specs de este change
+- [x] Verificación final cruzada contra proposal (qué) y design (cómo) y actualización de `aspec/specs/` vía delta specs de este change

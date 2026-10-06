@@ -4,6 +4,13 @@ This document explains the recommendation system as a reusable architecture firs
 
 The goal is to make the design teachable without requiring the reader to know MangaCount, its UI, or even the manga domain. The same structure can be reused for courses, products, movies, books, jobs, or any other recommendation problem where a system must combine user history, policy constraints, and ranking logic.
 
+> **Nota de estado (2026-10):** desde la migración a la app de escritorio, el motor corre 100%
+> local y ya **no existe** el backend .NET, el endpoint `/api/recommendation` ni la demo
+> `Pages/`. Las secciones que los mencionan son **históricas**. Hoy los consumidores reales son:
+> `electron/main/services/recommendations.js` (proceso main, canal IPC `recommendation:get`) y
+> `mangacount.client/src/App.jsx` (fallback en el renderer). El reranking remoto está diferido
+> (`providers = []` en `recommendations.js`).
+
 ## 1. Problem Statement
 
 At a generic level, this system solves the following problem:
@@ -65,7 +72,7 @@ flowchart LR
 
 ## 5. System Variants In This Repository
 
-### 5.1 Local-only variant: GitHub Pages demo
+### 5.1 (histórico) Local-only variant: GitHub Pages demo
 
 The Pages app uses only the shared JavaScript engine and shared metadata. It does not call the backend for recommendations.
 
@@ -85,7 +92,7 @@ Implementation mapping:
 - Presenter: `Pages/src/components/RecommendationModal.jsx`
 - Shared alias wiring: `Pages/vite.config.js`
 
-### 5.2 Hybrid variant: production app
+### 5.2 (histórico) Hybrid variant: production app
 
 The real app asks the backend for recommendations first. If the API fails, the frontend falls back to the same shared JavaScript engine used by Pages.
 
@@ -421,16 +428,10 @@ Examples of analogous context inference stages in other systems:
 | Shared normalization | `shared/recommendations/normalize.js` |
 | Shared context inference | `shared/recommendations/countryInference.js` |
 | Shared local engine | `shared/recommendations/recommendationEngine.js` |
-| Pages orchestration | `Pages/src/App.jsx` |
-| Pages presentation | `Pages/src/components/RecommendationModal.jsx` |
-| Real frontend orchestration and fallback | `mangacount.client/src/App.jsx` |
-| Real frontend presentation | `mangacount.client/src/components/RecommendationModal.jsx` |
-| API surface | `MangaCount.Server/Controllers/RecommendationController.cs` |
-| Backend orchestration | `MangaCount.Server/Services/RecommendationService.cs` |
-| Backend deterministic engine | `MangaCount.Server/Services/LocalRecommendationEngine.cs` |
-| Provider chain wiring | `MangaCount.Server/Configs/CustomExtensions.cs` |
-| Provider contract | `MangaCount.Server/Services/Contracts/IRecommendationRankingProvider.cs` |
-| Remote reranker base | `MangaCount.Server/Services/OpenAiCompatibleRankingProviderBase.cs` |
+| Main-process orchestration | `electron/main/services/recommendations.js` |
+| IPC channel (`recommendation:get`) | `electron/main/ipc/handlers.js` |
+| Renderer orchestration and fallback | `mangacount.client/src/App.jsx` |
+| Renderer presentation | `mangacount.client/src/components/RecommendationModal.jsx` |
 | Provider implementations | `GitHubModelsRankingProvider.cs`, `OpenRouterRankingProvider.cs` |
 
 ## 12. Teaching Notes
