@@ -2,7 +2,6 @@
 import './App.css';
 import Sidebar from './components/Sidebar';
 import CollectionView from './components/CollectionView';   
-import LoadBearingCheck from './components/LoadBearingCheck';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProfileSelector from './components/ProfileSelector';
 import RecommendationModal from './components/RecommendationModal';
@@ -287,27 +286,24 @@ function App() {
     if (appPhase === 'profile-selection') {
         return (
             <ThemeProvider>
-                <LoadBearingCheck>
-                    <div className="app">
-                        <div className="profile-selection-container">
-                            <ProfileSelector 
-                                onProfileSelect={handleProfileSelect}
-                                selectedProfileId={selectedProfile?.id}
-                                isChangingProfile={isChangingProfile}
-                                showBackButton={isChangingProfile && lastSelectedProfile}
-                                onBackToMain={handleBackToCollection}
-                                lastSelectedProfile={lastSelectedProfile}
-                            />
-                        </div>
+                <div className="app">
+                    <div className="profile-selection-container">
+                        <ProfileSelector 
+                            onProfileSelect={handleProfileSelect}
+                            selectedProfileId={selectedProfile?.id}
+                            isChangingProfile={isChangingProfile}
+                            showBackButton={isChangingProfile && lastSelectedProfile}
+                            onBackToMain={handleBackToCollection}
+                            lastSelectedProfile={lastSelectedProfile}
+                        />
                     </div>
-                </LoadBearingCheck>
+                </div>
             </ThemeProvider>
         );
     }
 
     return (
-        <ThemeProvider>
-            <LoadBearingCheck>
+            <ThemeProvider>
                 <div className="app">
                     <div className="app-container">
                         <Sidebar 
@@ -338,7 +334,6 @@ function App() {
                         />
                     </div>
                 </div>
-            </LoadBearingCheck>
         </ThemeProvider>
     );
 }

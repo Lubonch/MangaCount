@@ -1,0 +1,72 @@
+{
+  "name": "mangacount",
+  "version": "1.0.0",
+  "description": "MangaCount is a manga collection manager with four delivery surfaces: an ASP.NET Core API, a React frontend, a GitHub Pages demo, and a WhatsApp bot. The repository also includes a shared recommendation engine used by both the backend and the static demo.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test electron/main/db/client.test.js electron/main/db/repositories/repositories.test.js electron/main/services/entries.test.js electron/main/services/catalog-base.test.js electron/main/services/recommendations.test.js electron/main/services/platform.test.js electron/main/ipc/roundtrip.test.js",
+    "dev": "npm --prefix mangacount.client run dev",
+    "build:renderer": "npm --prefix mangacount.client run build",
+    "dist": "npm run build:renderer && electron-builder",
+    "dist:linux": "npm run build:renderer && electron-builder --linux deb AppImage",
+    "dist:win": "npm run build:renderer && electron-builder --win nsis",
+    "rebuild:node": "npm rebuild better-sqlite3",
+    "rebuild:electron": "electron-builder install-app-deps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lubonch/MangaCount.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Lubonch/MangaCount/issues"
+  },
+  "homepage": "https://github.com/Lubonch/MangaCount#readme",
+  "author": "MangaCount",
+  "main": "electron/main/index.js",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.0.0",
+    "pg": "^8.16.3"
+  },
+  "build": {
+    "appId": "com.mangacount.app",
+    "productName": "MangaCount",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "shared/recommendations/**/*",
+      "mangacount.client/dist/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/*.node"
+    ],
+    "npmRebuild": true,
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage"
+      ],
+      "icon": "build/icon.png",
+      "category": "Office",
+      "maintainer": "MangaCount"
+    }
+  }
+}

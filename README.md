@@ -1,268 +1,158 @@
 # MangaCount
 
-MangaCount is a manga collection manager with four delivery surfaces: an ASP.NET Core API, a React frontend, a GitHub Pages demo, and a WhatsApp bot. The repository also includes a shared recommendation engine used by both the backend and the static demo.
+MangaCount es un gestor de colección de manga de escritorio. Corre como aplicación local
+autocontenida con **Electron** y **SQLite embebida**: no requiere servidor, ni PostgreSQL,
+ni conexión de red. El frontend React consume los datos por IPC a través de un proceso main
+que porta la lógica de negocio a Node.
 
-## Components
+## Características
 
-- `MangaCount.Server`: ASP.NET Core API, business logic, repositories, and static hosting for the main frontend.
-- `mangacount.client`: React application used by the main web app.
-- `Pages`: static demo used for GitHub Pages.
-- `WhatsappBot`: Node.js bot for collection queries, updates, and recommendations.
-- `shared/recommendations`: shared catalog, normalization rules, country inference, and local recommendation engine.
+- múltiples perfiles de colección (con foto de perfil)
+- CRUD de mangas y de entradas de colección (comprados / pendiente / prioridad)
+- importación y exportación de la colección en TSV
+- filtros por formato y editorial
+- recomendaciones de manga no poseído según el mercado inferido, con motor local (`shared/recommendations`)
+- datos 100% locales en la carpeta de usuario; sin servidor ni base de datos externa
 
-## Functionality
+## Descargar e instalar
 
-- multiple collection profiles
-- CRUD operations for mangas and profile entries
-- TSV import and export
-- local-market recommendation filtering for unowned manga
-- optional backend reranking through remote providers
-- collection queries and updates over WhatsApp
+Los instaladores se publican en **GitHub Releases** (pestaña *Releases* del repositorio) para
+cada tag `v*`:
 
-## Recommendation system
+- **Windows**: `MangaCount Setup <version>.exe` (instalador NSIS)
+- **Debian / Ubuntu**: `mangacount_<version>_amd64.deb`
+- **Arch y otras distros**: `MangaCount-<version>.AppImage`
 
-The recommendation system always builds a local candidate list first.
+> El instalador `.exe` no está firmado con certificado de pago: Windows SmartScreen puede
+> advertir; elegir *Más información → Ejecutar de todas formas*.
 
-Local rules:
-
-- owned titles are excluded after normalization
-- the user market is inferred from owned volumes grouped by publisher country
-- candidates outside the inferred market are excluded
-- the result can contain fewer than 10 items if the local market does not have enough valid titles
-
-Optional backend reranking can run after the local filter, but the local engine remains the required fallback.
-
-Relevant endpoint:
-
-- `GET /api/recommendation?profileId={id}&limit=10`
-
-Optional backend provider environment variables:
-
-- `MANGACOUNT_GITHUB_MODELS_ENDPOINT`
-- `MANGACOUNT_GITHUB_MODELS_API_KEY`
-- `MANGACOUNT_GITHUB_MODELS_MODEL`
-- `MANGACOUNT_OPENROUTER_API_KEY`
-- `MANGACOUNT_OPENROUTER_MODEL`
-- `MANGACOUNT_OPENROUTER_ENDPOINT`
-
-Do not store provider secrets in tracked frontend files or committed configuration.
-
-## Requirements
-
-- .NET 8 SDK
-- Node.js 20+ and npm
-- PostgreSQL 16+
-- Chrome or Chromium for the WhatsApp bot
-
-## Local setup
-
-### 1. Clone the repository
+Instalación:
 
 ```bash
-git clone https://github.com/Lubonch/MangaCount.git
-cd MangaCount
+# Debian / Ubuntu
+sudo apt install ./mangacount_<version>_amd64.deb
+
+# Arch y otras distros (AppImage)
+chmod +x MangaCount-<version>.AppImage
+./MangaCount-<version>.AppImage
 ```
 
-### 2. Create the database
+Si el AppImage no arranca por falta de FUSE: `./MangaCount-<version>.AppImage --appimage-extract-and-run`
+o instalar `libfuse2`.
 
-Example PostgreSQL setup:
+## Migrar desde una instalación con servidor (PostgreSQL)
 
-```sql
-CREATE USER mangacount WITH PASSWORD 'change_me';
-CREATE DATABASE "MangaCount" OWNER mangacount;
-```
+Si venías usando la versión cliente-servidor, hay un script de traspaso único que copia las
+5 tablas (perfiles, mangas, entradas, formatos, editoriales) de PostgreSQL a la SQLite local y
+verifica conteos, la constraint `UNIQUE(ProfileId, MangaId)`, que no se descarten filas y un
+spot-check de 20 entradas.
 
-Apply the schema:
+Requisitos: app **cerrada**, `npm ci` en la raíz (el script usa `pg`), y de ser posible la base
+PostgreSQL en sólo lectura.
 
 ```bash
-psql -U mangacount -d MangaCount -f deployment/database-schema.sql
+PG_CONNECTION_STRING="Host=localhost;Database=MangaCount;Username=mangacount;Password=***;Port=5432" \
+  node electron/main/db/migrate-from-postgres.js "<carpeta-de-datos>"
 ```
 
-### 3. Configure the backend
+`<carpeta-de-datos>` es la de `userData` (ver [Datos de la app](#datos-de-la-app)). El script
+falla con código ≠ 0 ante cualquier diferencia para no dejar una migración a medias.
 
-Set a valid connection string in `MangaCount.Server/appsettings.json`, `MangaCount.Server/appsettings.Development.json`, or environment-specific configuration.
+## Datos de la app
 
-Example:
+Todo vive en la carpeta `userData` del sistema (fuera del bundle):
 
-```json
-{
-  "ConnectionStrings": {
-    "MangacountDatabase": "Host=localhost;Database=MangaCount;Username=mangacount;Password=change_me;Port=5432"
-  }
-}
-```
+- Windows: `%APPDATA%\MangaCount\`
+- Linux: `~/.config/MangaCount/`
 
-Restore and run the server:
+Contenido:
+
+- `mangacount.db` (+ `-wal`, `-shm`): base SQLite con las 5 tablas
+- `profiles/`: fotos de perfil (servidas al renderer por el protocolo `mangacount://profiles/<archivo>`)
+- `logs/`: `app.txt` con rotación diaria (`app.YYYY-MM-DD.txt`)
+
+Detalles de esquema, backup y troubleshooting por plataforma: [`docs/desktop.md`](docs/desktop.md).
+
+## Desarrollo
+
+Requisitos: **Node.js 20+** y npm.
 
 ```bash
-cd MangaCount.Server
-dotnet restore
-dotnet run
+npm ci
+npm ci --prefix mangacount.client
 ```
 
-The server prints its local URLs on startup.
+### Correr en modo desarrollo (Electron + hot-reload)
 
-### 4. Run the main frontend
+En una terminal:
 
 ```bash
-cd mangacount.client
-npm install
-npm run dev
+npm run dev            # inicia el dev server de Vite (http://localhost:5173)
 ```
 
-The main frontend runs on `https://localhost:63920` by default and proxies API requests to the backend.
-
-If the development certificate is missing, generate it with:
+En otra:
 
 ```bash
-dotnet dev-certs https --trust
+MANGACOUNT_DEV_URL=http://localhost:5173 npx electron .
 ```
 
-### 5. Run the Pages demo
+El proceso main abre la ventana apuntando al dev server y expone los canales IPC a través del
+preload. Fuera de Electron el renderer puede usar un `fetch` de respaldo, pero el modo soportado
+es Electron.
 
-This demo uses the shared local recommendation engine directly and does not require the backend recommendation endpoint.
+### Build y empaquetado
 
 ```bash
-cd Pages
-npm install
-npm run dev
+npm run build:renderer   # build del renderer (mangacount.client/dist)
+npm run dist             # build:renderer + electron-builder (según el OS)
+npm run dist:linux       # .deb + .AppImage
+npm run dist:win         # .exe (nsis)
 ```
 
-### 6. Run the WhatsApp bot
-
-Install dependencies:
+`electron-builder` reconstruye el módulo nativo `better-sqlite3` para el ABI de Electron. Si
+después necesitás correr los tests bajo Node, volvé a reconstruirlo para Node:
 
 ```bash
-cd WhatsappBot
-npm install
-cp .env.example .env
+npm run rebuild:node
 ```
 
-Edit `WhatsappBot/.env` and set at least:
-
-```dotenv
-MANGA_API_URL=http://localhost:3000/api
-WHATSAPP_ALLOWED_NUMBERS=5491112345678,5491123456789
-```
-
-Notes:
-
-- set `MANGA_API_URL` to the actual backend URL printed by `dotnet run` in your environment.
-- `WHATSAPP_ALLOWED_NUMBERS` is required for normal operation.
-- numbers are normalized before comparison.
-- senders not listed in the whitelist are ignored.
-- if the whitelist is empty, the bot ignores all incoming messages.
-- `CHROME_BIN` is optional. If it is unset, the bot tries `/usr/bin/chromium-browser`, `/usr/bin/chromium`, then `/usr/bin/google-chrome-stable`.
-
-Start the bot:
+## Tests
 
 ```bash
-cd WhatsappBot
-npm start
+npm test                        # proceso main (node --test)
+npm --prefix mangacount.client test -- --run   # renderer (vitest)
 ```
 
-On the first run, scan the QR code with the WhatsApp account assigned to the bot.
+## Publicar una release
 
-## WhatsApp bot commands
-
-- `ping`
-- `buscar [titulo]`
-- `recomendar`
-- `recomendar [cantidad]`
-- `pendientes`
-- `actualizar [titulo] [cantidad]`
-- `perfil`
-
-`recomendar` uses the backend recommendation endpoint for the currently selected profile.
-
-## TSV import format
-
-The TSV import/export format uses these fields:
-
-- `Titulo`
-- `Comprados`
-- `Total`
-- `Pendiente`
-- `Completa`
-- `Prioridad`
-- `Formato`
-- `Editorial`
-
-## Tests and verification
-
-Backend:
+El workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) compila los
+instaladores en runners Windows y Linux y crea un GitHub Release **draft** con los tres
+artefactos:
 
 ```bash
-dotnet test MangaCount.Server.Tests --verbosity minimal
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
-Main frontend:
+También se puede disparar manualmente desde *Actions* (`workflow_dispatch`) para generar sólo
+los artifacts, sin release. El `.exe` no se cross-compila: se genera en el runner Windows.
 
-```bash
-cd mangacount.client
-npm test -- --run
-npm run build
-```
-
-Pages demo:
-
-```bash
-cd Pages
-npm test -- --run
-npm run build
-```
-
-WhatsApp bot:
-
-```bash
-cd WhatsappBot
-npm test
-```
-
-## Logs
-
-Server-side daily text logs are enabled for the backend and the WhatsApp bot.
-
-- current backend log: `../logs/backend.txt` relative to the backend working directory
-- current bot log: `../logs/bot.txt` relative to the bot working directory
-- in typical local development from the repository folders, that resolves to the shared `logs/` directory at the repository root
-- when the day changes and the current file has content, it is renamed to `backend.YYYY-MM-DD` or `bot.YYYY-MM-DD`
-- if the current file is empty, it is not rotated
-
-Frontend file logging is not implemented in this repository.
-
-## Deployment
-
-Main server deployment:
-
-```bash
-bash deployment/deploy.sh
-```
-
-WhatsApp bot deployment:
-
-```bash
-bash deployment/deploy-bot.sh
-```
-
-The bot deploy script preserves the server-side `.env` file if it already exists. If it does not exist yet, the script creates it from `WhatsappBot/.env.example` so you can fill in the allowed numbers before the first run.
-
-Additional deployment details are in `deployment/SSH-DEPLOY.md`.
-
-## Project layout
+## Estructura
 
 ```text
 MangaCount/
-├── MangaCount.Server/
-├── MangaCount.Server.Tests/
-├── mangacount.client/
-├── Pages/
-├── WhatsappBot/
-├── shared/recommendations/
-├── deployment/
-└── databasebackup/
+├── electron/               # proceso main: SQLite, handlers IPC, servicios, preload
+├── mangacount.client/      # renderer React + Vite (adaptador IPC en src/api)
+├── shared/recommendations/ # motor de recomendaciones compartido (JS)
+├── build/                  # iconos para electron-builder
+├── docs/                   # documentación de la app desktop
+└── aspec/                  # specs y changes (spec-driven)
 ```
 
-## License
+> El bot de WhatsApp y el backend .NET/PostgreSQL quedan fuera del alcance de la app de
+> escritorio: no se empaquetan ni se documentan acá. El bot sigue en el repo pero dejó de
+> apuntar a un servidor de MangaCount.
 
-This repository is licensed under the MIT License. See `LICENSE`.
+## Licencia
+
+MIT. Ver [`LICENSE`](LICENSE).

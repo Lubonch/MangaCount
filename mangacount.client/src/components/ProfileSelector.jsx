@@ -123,6 +123,11 @@ const ProfileSelector = ({
             finalUrl = profilePicture;
             console.log('🌐 Using full URL:', finalUrl);
         }
+        // Desktop: foto servida por el protocolo custom de Electron
+        else if (profilePicture.startsWith('mangacount://')) {
+            finalUrl = profilePicture;
+            console.log('🖼️ Using custom protocol URL:', finalUrl);
+        }
         // If it starts with /, it's a relative path from the server
         else if (profilePicture.startsWith('/')) {
             finalUrl = profilePicture;
