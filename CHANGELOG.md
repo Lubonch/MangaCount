@@ -3,6 +3,17 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.1] - 2026-10-06
+
+### Changed
+
+- Limpieza: se elimina el backend .NET completo (`MangaCount.Server`, tests, `Directory.Build.props`,
+  `Program.cs`), `deployment/`, `databasebackup/` y la demo `Pages/` (con su workflow).
+- `.gitignore`: ignora `*.db-shm`/`*.db-wal`/`*.db-journal`, `.env*` y el working-context local de
+  `.ancleto/`; deja de ignorar `public/` (assets de Vite).
+- Documentación: README y `docs/desktop.md` reflejan la ruta real de datos (`mangacount`);
+  `copilot-instructions.md` y `ARCHITECTURE.md` actualizados al stack desktop.
+
 ## [1.0.0] - 2026-10-06
 
 ### Added
