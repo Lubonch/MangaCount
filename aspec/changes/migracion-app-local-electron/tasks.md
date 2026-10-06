@@ -46,7 +46,7 @@
 
 ## Fase 5 — Documentación actualizada
 
-- [ ] Reescribir `README.md` (qué es la app desktop, instalación por exe/deb/AppImage, migración desde PostgreSQL, desarrollo con Electron)
-- [ ] Eliminar o archivar `PLAN.md` raíz y `WhatsappBot/PLAN.md`, actualizar `CHANGELOG`s y quitar WhatsApp de la documentación general (código intacto)
-- [ ] Documentar ubicación de datos (`userData`), formato del SQLite, protocolo `mangacount://` para fotos, backup manual y troubleshooting por plataforma
+- [x] Reescribir `README.md` (qué es la app desktop, instalación por exe/deb/AppImage, migración desde PostgreSQL, desarrollo con Electron)
+- [x] Eliminar o archivar `PLAN.md` raíz y `WhatsappBot/PLAN.md`, actualizar `CHANGELOG`s y quitar WhatsApp de la documentación general (código intacto)
+- [x] Documentar ubicación de datos (`userData`), formato del SQLite, protocolo `mangacount://` para fotos, backup manual y troubleshooting por plataforma
 - [ ] Verificación final cruzada contra proposal (qué) y design (cómo) y actualización de `aspec/specs/` vía delta specs de este change
