@@ -62,8 +62,8 @@ falla con código ≠ 0 ante cualquier diferencia para no dejar una migración a
 
 Todo vive en la carpeta `userData` del sistema (fuera del bundle):
 
-- Windows: `%APPDATA%\MangaCount\`
-- Linux: `~/.config/MangaCount/`
+- Windows: `%APPDATA%\mangacount\`
+- Linux: `~/.config/mangacount/`
 
 Contenido:
 

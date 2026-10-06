@@ -9,9 +9,12 @@ La app usa `app.getPath('userData')`, fuera del bundle:
 
 | Plataforma | Ruta típica |
 |---|---|
-| Windows | `%APPDATA%\MangaCount\` |
-| Linux | `~/.config/MangaCount/` |
-| macOS (no soportado oficialmente) | `~/Library/Application Support/MangaCount/` |
+| Windows | `%APPDATA%\mangacount\` |
+| Linux | `~/.config/mangacount/` |
+| macOS (no soportado oficialmente) | `~/Library/Application Support/mangacount/` |
+
+> La carpeta usa el `name` del `package.json` (`mangacount`), no el `productName` de
+> electron-builder. Verificado corriendo el AppImage v1.0.0.
 
 Contenido:
 
@@ -61,12 +64,12 @@ Con la app **cerrada** (para que el WAL esté consolidado), copiá la carpeta `u
 
 ```bash
 # Linux
-cp -a ~/.config/MangaCount ~/.config/MangaCount.bak-$(date +%F)
+cp -a ~/.config/mangacount ~/.config/mangacount.bak-$(date +%F)
 ```
 
 ```powershell
 # Windows (PowerShell)
-Copy-Item -Recurse "$env:APPDATA\MangaCount" "$env:APPDATA\MangaCount.bak-$(Get-Date -Format yyyy-MM-dd)"
+Copy-Item -Recurse "$env:APPDATA\mangacount" "$env:APPDATA\mangacount.bak-$(Get-Date -Format yyyy-MM-dd)"
 ```
 
 Alcanza con `mangacount.db` si querés sólo la colección, pero incluí `profiles/` para conservar
