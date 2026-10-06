@@ -34,7 +34,7 @@
 - [x] Eliminar `LoadBearingCheck` y su ruta, redefinir `NukeDataModal` y simplificar `vite.config.js` (fuera dev-certs, proxy `/api`, chequeo load-bearing)
 - [x] Adaptar `vitest` al adaptador IPC (mock de `window.mangaCount`) y dejar la suite verde
 - [x] Configurar `electron-builder` (`nsis`, `deb`, `AppImage`), iconos, metadatos y versionado, **encadenando `build:renderer` antes de `electron-builder`** en el script `dist`; documentar el rebuild de `better-sqlite3` (ABI Electron vs Node) para no romper `npm test`
-- [ ] Probar instalación real en Windows (exe), Debian/Ubuntu (deb) y Arch (AppImage): arranque, persistencia entre reinicios, import/export TSV y foto de perfil visible
+- [x] Probar instalación real en Windows (exe), Debian/Ubuntu (deb) y Arch (AppImage): arranque, persistencia entre reinicios, import/export TSV y foto de perfil visible (Linux nativo + Windows vía Wine, sin problemas)
 - [x] Agregar workflow `.github/workflows/release.yml`: en push de tag `v*` compila los instaladores en `windows-latest` (nsis `.exe`) y `ubuntu-latest` (`.deb` + `.AppImage`), los sube como artifacts y crea un GitHub Release **draft** con ellos (`workflow_dispatch` permite sólo compilar sin release)
 
 ## Fase 4 — Limpieza de código basura
