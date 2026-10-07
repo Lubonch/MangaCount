@@ -39,8 +39,8 @@
 
 - [x] Actualizar `CHANGELOG.md` de root con la remediación de vulnerabilidades
 - [x] Verificación final cruzada contra `proposal.md` (qué) y `design.md` (cómo)
-- [ ] Revalidar alertas en la pestaña Dependabot (con credenciales del usuario): sin high/critical en `/` ni `/mangacount.client`
-- [ ] Archivar el change con `/cleto-archive`
+- [x] Revalidar alertas en la pestaña Dependabot (con credenciales del usuario): sin high/critical en `/` ni `/mangacount.client`
+- [x] Archivar el change con `/cleto-archive`
 
 ## Nota sobre specs
 
