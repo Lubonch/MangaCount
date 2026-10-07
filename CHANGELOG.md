@@ -3,6 +3,19 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [Unreleased]
+
+### Security
+
+- Remediación de las vulnerabilidades `high`/`critical` reportadas por Dependabot en los dos
+  lockfiles activos (`/` y `mangacount.client`), sin cambios de comportamiento:
+  - Root (Electron main): `overrides` de `http-cache-semantics` a `^4.3.0` (transitiva de
+    `electron-builder`).
+  - Renderer: bump de `vite` a `^7.3.5` y `overrides` de `brace-expansion`, `browserslist`,
+    `form-data`, `js-yaml`, `nanoid`, `postcss`, `source-map-js` y `ws`.
+- Prevención: `.github/dependabot.yml` (npm en `/` y `/mangacount.client`, semanal y agrupado) y
+  workflow `Dependency Audit` (`npm audit --audit-level=high`) en push/PR a `main` y semanal.
+
 ## [1.0.1] - 2026-10-06
 
 ### Changed
