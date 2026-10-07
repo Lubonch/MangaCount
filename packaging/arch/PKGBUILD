@@ -1,0 +1,65 @@
+# Maintainer: MangaCount <https://github.com/Lubonch/MangaCount>
+#
+# Empaqueta el AppImage publicado en GitHub Releases. Al subir una release nueva,
+# actualizá pkgver y recalculá sha256sums (`updpkgsums`).
+pkgname=mangacount
+pkgver=1.0.1
+pkgrel=1
+pkgdesc="Gestor de coleccion de manga local-first (Electron + SQLite)"
+arch=('x86_64')
+url="https://github.com/Lubonch/MangaCount"
+license=('MIT')
+depends=('gtk3' 'nss' 'libxss' 'libxtst' 'libnotify' 'alsa-lib' 'xdg-utils')
+provides=('mangacount')
+conflicts=('mangacount')
+options=('!strip')
+source=("MangaCount-${pkgver}.AppImage::${url}/releases/download/v${pkgver}/MangaCount-${pkgver}.AppImage")
+sha256sums=('SKIP')
+
+package() {
+  cd "$srcdir"
+
+  chmod +x "MangaCount-${pkgver}.AppImage"
+  ./"MangaCount-${pkgver}.AppImage" --appimage-extract > /dev/null
+
+  install -d "$pkgdir/opt/${pkgname}"
+  cp -a squashfs-root/. "$pkgdir/opt/${pkgname}/"
+
+  # Sin user namespaces, el sandbox de Electron necesita el helper setuid.
+  if [ -e "$pkgdir/opt/${pkgname}/chrome-sandbox" ]; then
+    chmod 4755 "$pkgdir/opt/${pkgname}/chrome-sandbox"
+  fi
+
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/${pkgname}" <<'EOF'
+#!/bin/sh
+export APPDIR=/opt/mangacount
+exec /opt/mangacount/AppRun "$@"
+EOF
+  chmod 755 "$pkgdir/usr/bin/${pkgname}"
+
+  install -d "$pkgdir/usr/share/applications"
+  cat > "$pkgdir/usr/share/applications/${pkgname}.desktop" <<'EOF'
+[Desktop Entry]
+Name=MangaCount
+Comment=Gestor de coleccion de manga local-first
+Exec=mangacount %U
+Icon=mangacount
+Terminal=false
+Type=Application
+Categories=Office;
+StartupWMClass=MangaCount
+EOF
+
+  if [ -d squashfs-root/usr/share/icons/hicolor ]; then
+    while IFS= read -r icon; do
+      size="$(basename "$(dirname "$(dirname "$icon")")")"
+      install -Dm644 "$icon" "$pkgdir/usr/share/icons/hicolor/${size}/apps/${pkgname}.png"
+    done < <(find squashfs-root/usr/share/icons/hicolor -path '*/apps/*.png')
+  fi
+
+  top_icon="$(find squashfs-root -maxdepth 1 -name '*.png' -print -quit)"
+  if [ -n "$top_icon" ]; then
+    install -Dm644 "$top_icon" "$pkgdir/usr/share/icons/hicolor/512x512/apps/${pkgname}.png"
+  fi
+}

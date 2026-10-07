@@ -21,7 +21,7 @@ cada tag `v*`:
 
 - **Windows**: `MangaCount Setup <version>.exe` (instalador NSIS)
 - **Debian / Ubuntu**: `mangacount_<version>_amd64.deb`
-- **Arch y otras distros**: `MangaCount-<version>.AppImage`
+- **Arch y otras distros**: `MangaCount-<version>.AppImage` (o instalar con `makepkg`, ver abajo)
 
 > El instalador `.exe` no está firmado con certificado de pago: Windows SmartScreen puede
 > advertir; elegir *Más información → Ejecutar de todas formas*.
@@ -39,6 +39,26 @@ chmod +x MangaCount-<version>.AppImage
 
 Si el AppImage no arranca por falta de FUSE: `./MangaCount-<version>.AppImage --appimage-extract-and-run`
 o instalar `libfuse2`.
+
+### Arch Linux y derivadas (makepkg)
+
+Además del AppImage, el repo trae un [`packaging/arch/PKGBUILD`](packaging/arch/PKGBUILD) que
+reempaqueta el AppImage publicado e integra la app en el sistema (binario en `/usr/bin`,
+lanzador de escritorio e iconos), sin depender de FUSE:
+
+```bash
+sudo pacman -S --needed base-devel git   # makepkg no se corre como root
+git clone https://github.com/Lubonch/MangaCount.git
+cd MangaCount/packaging/arch
+makepkg -si
+```
+
+`makepkg` descarga el `MangaCount-<version>.AppImage` del release `v<version>` y lo instala
+como el paquete `mangacount`. Para actualizar a una release nueva, actualizá `pkgver` en el
+`PKGBUILD` (y regenerá checksums con `updpkgsums`). Desinstalar: `sudo pacman -R mangacount`.
+
+> `base-devel` es necesario para construir; el AppImage se extrae en tiempo de build, así que
+> no requiere `fuse2` en el sistema.
 
 ## Migrar desde una instalación con servidor (PostgreSQL)
 

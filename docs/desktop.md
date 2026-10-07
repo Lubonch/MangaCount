@@ -98,6 +98,8 @@ sudo apt install ./mangacount_<version>_amd64.deb
 - Hacer ejecutable: `chmod +x MangaCount-<version>.AppImage`.
 - Si falta FUSE: instalar `fuse2`/`libfuse2` o correr con
   `--appimage-extract-and-run`.
+- En Arch y derivadas se puede instalar como paquete con el `PKGBUILD` del repo
+  (`packaging/arch/`), que reempaqueta el AppImage y no requiere FUSE: ver el README.
 
 ### Base de datos bloqueada
 
