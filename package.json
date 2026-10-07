@@ -1,6 +1,6 @@
 {
   "name": "mangacount",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "MangaCount is a local-first desktop manga collection manager (Electron + SQLite) with a React renderer and a shared recommendation engine.",
   "private": true,
   "type": "module",
@@ -34,7 +34,8 @@
     "pg": "^8.23.1"
   },
   "overrides": {
-    "http-cache-semantics": "^4.3.0"
+    "http-cache-semantics": "^4.3.0",
+    "global-agent": "^4.1.3"
   },
   "build": {
     "appId": "com.mangacount.app",

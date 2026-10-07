@@ -3,6 +3,36 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.3] - 2026-10-07
+
+### Security
+
+- Root: `override` de `global-agent` a `^4.1.3`, que elimina `roarr` y `sprintf-js` de la cadena
+  de `electron-builder` (`@electron/get` → `global-agent`). `sprintf-js` no tiene versión
+  parcheada (alert #133) y era el último moderate de root: `npm audit` en root queda en **0
+  vulnerabilidades**. Se verificó que el empaquetado (`@electron/get.bootstrap`) sigue
+  funcionando.
+
+### Changed
+
+- Dependencias del renderer actualizadas vía Dependabot: `react`/`react-dom` 19.3.0,
+  `@testing-library/jest-dom` 7.0.1, `@testing-library/react` 16.3.3, `globals` 17.13.0.
+- `eslint` 10 + `@eslint/js` 10 + `eslint-plugin-react-hooks` 7: se completan los compañeros que
+  faltaban en el PR de Dependabot (que dejaba `main` sin instalar por conflicto de peer). Las
+  reglas nuevas `react-hooks/immutability` y `react-hooks/set-state-in-effect` quedan en `warn`
+  para no forzar un refactor de los componentes existentes.
+- `vitest` 5 + `@vitest/coverage-v8` 5: bump conjunto del par acoplado.
+- Se quita el `override` de `brace-expansion` (la línea 1.x rompía el `minimatch` de ESLint 10);
+  la resolución pasa a `brace-expansion` 2.x/5.x, no afectada por las advisories.
+- Root: `electron` 44.5.1 y `pg` 8.23.1; se conserva el override `http-cache-semantics ^4.3.0`.
+- `.gitattributes`: `package-lock.json` con `eol=lf` para evitar diffs de fin de línea en PRs
+  futuros.
+
+### Fixed
+
+- `main` quedaba en `ERESOLVE` (no instalaba) por los merges de Dependabot sin sus dependencias
+  acompañantes; ahora `npm install`, `lint`, `test`, `coverage` y `build` pasan en verde.
+
 ## [1.0.2] - 2026-10-07
 
 ### Security
