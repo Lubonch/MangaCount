@@ -29,9 +29,9 @@
     "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
-    "electron": "^44.4.5",
+    "electron": "^44.5.1",
     "electron-builder": "^26.0.0",
-    "pg": "^8.16.3"
+    "pg": "^8.23.1"
   },
   "overrides": {
     "http-cache-semantics": "^4.3.0"
