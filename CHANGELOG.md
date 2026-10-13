@@ -3,6 +3,24 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.4] - 2026-10-12
+
+### Changed
+
+- Se completan los 4 PRs abiertos de Dependabot sobre `main` (merge commits):
+  - Root: `electron` 44.5.1 → 44.7.0; el módulo nativo `better-sqlite3` se recompila con
+    `electron-builder install-app-deps` (`npm run rebuild:electron`).
+  - Renderer: `vite` 7.3.5 → **8.3.4** (bundler Rolldown) y `@vitejs/plugin-react` 4.6.0 → **6.1.2**,
+    mergeados **juntos** porque `plugin-react` 6 exige el peer `vite ^8.0.0` (por separado dejan
+    `main` en `ERESOLVE`/build roto).
+  - Renderer: `jsdom` 25.0.1 → **30.1.2** (5 majors; es el entorno de test de Vitest).
+
+### Fixed
+
+- `mangacount.client/src/test/setup.js`: el mock de `localStorage` pasa a usar
+  `Object.defineProperty` porque jsdom 30 define `window.localStorage` como propiedad getter-only;
+  con la asignación directa fallaban las 7 suites de test.
+
 ## [1.0.3] - 2026-10-07
 
 ### Security
