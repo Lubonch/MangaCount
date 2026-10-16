@@ -9,6 +9,7 @@ import { createProfile } from '../db/repositories/profiles.js';
 import { upsertEntry } from '../db/repositories/entries.js';
 import { publishers } from '../db/repositories/catalogs.js';
 import { clampLimit, getRecommendations } from './recommendations.js';
+import { inferUserCountry } from '../../../shared/recommendations/countryInference.js';
 import { handlers } from '../ipc/handlers.js';
 
 describe('services/recommendations', () => {
@@ -64,5 +65,32 @@ describe('services/recommendations', () => {
 
   it('valida profileId', async () => {
     await assert.rejects(handlers['recommendation:get'](ctx(), { profileId: 0 }), /profileId inválido/);
+  });
+
+  it('la respuesta incluye inference (breakdown) y blockedByImportCount', async () => {
+    const profile = createProfile(db, 'yo');
+    const { default: catalog } = await import('../../../shared/recommendations/catalog.json', {
+      with: { type: 'json' },
+    });
+    const owned = catalog.find((c) => c.publisher === 'Ivrea');
+    const ivrea = publishers.list(db).find((p) => p.name === 'Ivrea');
+    const manga = createManga(db, { name: owned.title, volumes: 5, publisherId: ivrea.id });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 5 });
+
+    const res = await getRecommendations(db, profile.id, 10);
+    assert.ok(res.inference, 'la respuesta debe incluir inference');
+    assert.ok(Array.isArray(res.inference.breakdown));
+    assert.equal(typeof res.blockedByImportCount, 'number');
+  });
+
+  it('alias de editorial: "ovni" cuenta como Argentina', async () => {
+    const { default: publisherCountries } = await import(
+      '../../../shared/recommendations/publisher-countries.json',
+      { with: { type: 'json' } }
+    );
+    const entries = [{ quantity: 3, manga: { publisher: { name: 'ovni' } } }];
+    const inference = inferUserCountry(entries, publisherCountries);
+    assert.equal(inference.country, 'Argentina');
+    assert.equal(inference.isConfident, true);
   });
 });

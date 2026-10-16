@@ -6,9 +6,10 @@
 // (autorización, comandos, despacho, sesión) se testea sin conexión real.
 
 import { listEntries } from '../db/repositories/entries.js';
-import { listProfiles, getProfileById } from './catalog-base.js';
+import { listProfiles, getProfileById, listMangas } from './catalog-base.js';
 import { getRecommendations } from './recommendations.js';
 import { searchResult, pendingSummary, entryStatus } from './search.js';
+import { handlers } from '../ipc/handlers.js';
 
 export const SLASH_COMMANDS = [
   {
@@ -29,7 +30,58 @@ export const SLASH_COMMANDS = [
       { type: 4, name: 'limite', description: 'Cantidad (1-10)', required: false, min_value: 1, max_value: 10 },
     ],
   },
+  {
+    name: 'tomo',
+    description: 'Sumar 1 tomo a una serie',
+    options: [{ type: 3, name: 'titulo', description: 'Título de la serie', required: true }],
+  },
+  {
+    name: 'actualizar',
+    description: 'Fijar la cantidad de tomos de una serie',
+    options: [
+      { type: 3, name: 'titulo', description: 'Título de la serie', required: true },
+      { type: 4, name: 'cantidad', description: 'Cantidad de tomos', required: true, min_value: 0, max_value: 9999 },
+    ],
+  },
+  {
+    name: 'pending',
+    description: 'Fijar los tomos pendientes (no consecutivos)',
+    options: [
+      { type: 3, name: 'titulo', description: 'Título de la serie', required: true },
+      { type: 3, name: 'tomos', description: 'Ej: 5,7 (vacío = limpiar)', required: false },
+    ],
+  },
+  {
+    name: 'prioridad',
+    description: 'Activar/desactivar la prioridad de una serie',
+    options: [{ type: 3, name: 'titulo', description: 'Título de la serie', required: true }],
+  },
+  {
+    name: 'nuevo',
+    description: 'Agregar una serie nueva a la colección',
+    options: [
+      { type: 3, name: 'titulo', description: 'Título', required: true },
+      { type: 4, name: 'total', description: 'Tomos totales (0 = desconocido)', required: false, min_value: 0 },
+      { type: 4, name: 'cantidad', description: 'Tomos que tenés', required: false, min_value: 0 },
+      { type: 3, name: 'formato', description: 'Formato', required: false },
+      { type: 3, name: 'editorial', description: 'Editorial', required: false },
+    ],
+  },
+  { name: 'ayuda', description: 'Lista de comandos disponibles' },
 ];
+
+export const AYUDA_TEXT = [
+  'Comandos de MangaCount:',
+  '• `/perfil [perfil]` — ver o cambiar el perfil activo',
+  '• `/buscar query:<título>` — buscar en la colección',
+  '• `/pendientes` — series en curso y qué falta',
+  '• `/recomendar [limite]` — recomendaciones del mercado local',
+  '• `/tomo titulo:<serie>` — sumar 1 tomo',
+  '• `/actualizar titulo:<serie> cantidad:<n>` — fijar cuántos tomos tenés',
+  '• `/pending titulo:<serie> tomos:<5,7>` — tomos pendientes no consecutivos',
+  '• `/prioridad titulo:<serie>` — activar/desactivar prioridad',
+  '• `/nuevo titulo:<serie> [total] [cantidad] [formato] [editorial]` — agregar una serie',
+].join('\n');
 
 // Autorización por guild/user IDs; allowlist vacía no responde a nadie.
 export function isAuthorized(config, { userId, guildId } = {}) {
@@ -68,13 +120,120 @@ function formatEntryLine(entry) {
   return `${priority}*${entry.manga.name}*\n  ${meta}\n  ${describe}`;
 }
 
-export function createCommands({ db, getDb } = {}) {
+// Perfil de sesión válido: si el id recordado no existe (p. ej. tras una Nuclear
+// Option/restore que re-siembra los perfiles), no se opera; se pide /perfil. Si no
+// hay perfil y existe uno solo, se auto-selecciona.
+export function resolveSessionProfile(session, db) {
+  const profiles = listProfiles(db);
+  const current = profiles.find((p) => p.id === session.profileId);
+  if (current) return current;
+  if (profiles.length === 1) {
+    session.profileId = profiles[0].id;
+    return profiles[0];
+  }
+  throw new Error('Elegí un perfil con /perfil (el perfil guardado ya no está disponible).');
+}
+
+// Crea format/editorial por nombre si no existe (mismo criterio que el import:
+// vacío → 'Unknown'). Devuelve el id.
+function getOrCreateCatalog(kind, db, name) {
+  const clean = String(name ?? '').trim() || 'Unknown';
+  const key = kind === 'format' ? 'format' : 'publisher';
+  const list = handlers[`${key}:list`]({ db });
+  const found = list.find((c) => c.name === clean);
+  return found ? found.id : handlers[`${key}:create`]({ db }, { name: clean }).id;
+}
+
+// Ejecuta una acción de escritura reusando los handlers (validan el perfil).
+export function applyWrite(db, action) {
+  if (!action || typeof action !== 'object') throw new Error('Acción de escritura inválida.');
+  const ctx = { db };
+  if (action.type === 'setQuantity') {
+    const updated = handlers['entry:upsert'](ctx, { ...action.entry, quantity: action.quantity });
+    return {
+      summary: `*${action.entry.manga.name}*: ${action.entry.quantity} → ${action.quantity} tomos`,
+      entry: updated,
+    };
+  }
+  if (action.type === 'setPending') {
+    const updated = handlers['entry:upsert'](ctx, { ...action.entry, pending: action.pending });
+    return {
+      summary: `*${action.entry.manga.name}* · pending: ${action.pending || '—'}`,
+      entry: updated,
+    };
+  }
+  if (action.type === 'togglePriority') {
+    const priority = !action.entry.priority;
+    const updated = handlers['entry:upsert'](ctx, { ...action.entry, priority });
+    return {
+      summary: `*${action.entry.manga.name}* · prioridad: ${priority ? 'activada' : 'desactivada'}`,
+      entry: updated,
+    };
+  }
+  if (action.type === 'createMangaEntry') {
+    const formatId = action.formato ? getOrCreateCatalog('format', db, action.formato) : null;
+    const publisherId = action.editorial ? getOrCreateCatalog('publisher', db, action.editorial) : null;
+    let manga = listMangas(db).find((m) => m.name.toLowerCase() === action.name.toLowerCase());
+    if (!manga) {
+      manga = handlers['manga:upsert'](ctx, {
+        name: action.name,
+        volumes: action.total ?? 0,
+        formatId,
+        publisherId,
+      });
+    }
+    const entry = handlers['entry:upsert'](ctx, {
+      mangaId: manga.id,
+      profileId: action.profileId,
+      quantity: action.quantity ?? 0,
+    });
+    return { summary: `*${manga.name}* agregado (${action.quantity ?? 0} tomos)`, manga, entry };
+  }
+  throw new Error(`Acción de escritura desconocida: ${action.type}`);
+}
+
+// Resuelve un título a una entrada única de la colección. No adivina: 0 o >1 → error.
+export function resolveEntry(entries, title) {
+  const q = String(title ?? '').trim().toLowerCase();
+  if (!q) return { error: 'Falta el título.' };
+  const exact = entries.filter((e) => (e.manga?.name ?? '').toLowerCase() === q);
+  const list = exact.length
+    ? exact
+    : entries.filter((e) => (e.manga?.name ?? '').toLowerCase().includes(q));
+  if (list.length === 0) return { error: `No encontré *${title}* en tu colección.` };
+  if (list.length > 1) {
+    return { error: `Encontré varias: ${list.map((e) => e.manga.name).join(', ')}. Sé más específico.` };
+  }
+  return { entry: list[0] };
+}
+
+function writeProposal(summary, action) {
+  return { kind: 'write', summary, action };
+}
+
+// Escritura pendiente de confirmación por usuario (token + expiración).
+export function beginPendingWrite(session, { summary, action, ttlMs = 300000, now = Date.now, token } = {}) {
+  const t = token ?? Math.random().toString(36).slice(2, 10);
+  session.pending = { token: t, summary, action, expiresAt: now() + ttlMs };
+  return session.pending;
+}
+
+export function consumePendingWrite(session, token, now = Date.now) {
+  const pending = session.pending;
+  if (!pending || String(pending.token) !== String(token)) {
+    return { error: 'La operación no está disponible o ya se usó.' };
+  }
+  session.pending = null;
+  if (now() > pending.expiresAt) return { error: 'La operación expiró. Volvé a intentar.' };
+  return { pending };
+}
+
+export function createCommands({ db, getDb, getRecommendations: recommend = getRecommendations } = {}) {
   const resolveDb = getDb ?? (() => db);
   const entriesFor = (profileId) => listEntries(resolveDb(), profileId);
 
-  function requireProfile(session) {
-    if (session.profileId == null) throw new Error('Elegí un perfil primero con /perfil.');
-    return session.profileId;
+  function activeProfile(session) {
+    return resolveSessionProfile(session, resolveDb());
   }
 
   return {
@@ -94,7 +253,7 @@ export function createCommands({ db, getDb } = {}) {
     },
 
     async buscar({ session, query }) {
-      const profileId = requireProfile(session);
+      const profileId = activeProfile(session).id;
       const { results, suggestions } = searchResult(entriesFor(profileId), query);
       if (results.length === 0) {
         const hint = suggestions.length
@@ -106,21 +265,45 @@ export function createCommands({ db, getDb } = {}) {
     },
 
     async pendientes({ session }) {
-      const profileId = requireProfile(session);
+      const profileId = activeProfile(session).id;
       const summary = pendingSummary(entriesFor(profileId));
       if (summary.count === 0) return '🎉 ¡No tenés nada pendiente! Colección al día.';
-      const lines = summary.entries.map((e) => {
+      const LIMIT = 20;
+      const shown = summary.entries.slice(0, LIMIT);
+      const lines = shown.map((e) => {
         const priority = e.priority ? '⭐ ' : '';
-        return `${priority}*${e.manga.name}*: ${e.quantity}/${e.manga.volumes} (faltan ${e.manga.volumes - e.quantity})`;
+        const parts = [`${e.quantity}/${e.manga.volumes} (faltan ${e.manga.volumes - e.quantity})`];
+        if (e.pending) parts.push(`pending: ${e.pending}`);
+        const meta = [e.manga?.format?.name, e.manga?.publisher?.name].filter(
+          (n) => n && n !== 'Unknown'
+        );
+        if (meta.length) parts.push(meta.join(' · '));
+        return `${priority}*${e.manga.name}*: ${parts.join(' · ')}`;
       });
-      return `📋 Pendientes (${summary.count} series, ${summary.totalPending} vols.):\n\n${lines.join('\n')}`;
+      const rest = summary.count - shown.length;
+      const more = rest > 0 ? `\n\n…y ${rest} series más.` : '';
+      return `📋 Pendientes (${summary.count} series, ${summary.totalPending} vols.):\n\n${lines.join('\n')}${more}`;
     },
 
     async recomendar({ session, limite }) {
-      const profileId = requireProfile(session);
-      const response = getRecommendations(resolveDb(), profileId, limite ?? 5);
+      const profileId = activeProfile(session).id;
+      const response = await recommend(resolveDb(), profileId, limite ?? 5);
       if (!response?.isConfident || !response?.inferredCountry) {
-        return 'No pude inferir tu mercado local con suficiente confianza. Sumá más series con editoriales no ambiguas y volvé a intentar.';
+        const breakdown = response?.inference?.breakdown ?? [];
+        const owned = entriesFor(profileId).filter((e) => (e.quantity ?? 0) > 0).length;
+        const mapped = breakdown.reduce((acc, b) => acc + b.seriesCount, 0);
+        const noCountry = Math.max(owned - mapped, 0);
+        const detected = breakdown.length
+          ? breakdown
+              .map((b) => `   • ${b.country}: ${b.seriesCount} series (${b.volumeCount} vols.)`)
+              .join('\n')
+          : '   (ninguna editorial reconocida)';
+        return (
+          'No pude inferir tu mercado local con suficiente confianza.\n' +
+          `Detecté por editorial:\n${detected}\n` +
+          `Series sin editorial reconocida: ${noCountry}.\n` +
+          'Sumá más series con editoriales conocidas (Ivrea, Ovni, Panini, …) y volvé a intentar.'
+        );
       }
       const items = response.items ?? [];
       if (items.length === 0) {
@@ -144,7 +327,78 @@ export function createCommands({ db, getDb } = {}) {
         `Proveedor: ${response.provider || 'local'}${note}\n\n${lines}`
       );
     },
-    // (futuro) actualizar: ({ session }) => handlers['entry:upsert']({ db }, ...)  ← escritura
+    async tomo({ session, titulo }) {
+      const profile = activeProfile(session);
+      const r = resolveEntry(entriesFor(profile.id), titulo);
+      if (r.error) return r.error;
+      const e = r.entry;
+      return writeProposal(`*${e.manga.name}*: ${e.quantity} → ${e.quantity + 1} tomos`, {
+        type: 'setQuantity',
+        entry: e,
+        quantity: e.quantity + 1,
+      });
+    },
+
+    async actualizar({ session, titulo, cantidad }) {
+      const profile = activeProfile(session);
+      const n = Number.parseInt(cantidad, 10);
+      if (!Number.isInteger(n) || n < 0) return 'Cantidad inválida.';
+      const r = resolveEntry(entriesFor(profile.id), titulo);
+      if (r.error) return r.error;
+      const e = r.entry;
+      return writeProposal(`*${e.manga.name}*: ${e.quantity} → ${n} tomos`, {
+        type: 'setQuantity',
+        entry: e,
+        quantity: n,
+      });
+    },
+
+    async pending({ session, titulo, tomos }) {
+      const profile = activeProfile(session);
+      const r = resolveEntry(entriesFor(profile.id), titulo);
+      if (r.error) return r.error;
+      const e = r.entry;
+      const value = String(tomos ?? '').trim();
+      return writeProposal(`*${e.manga.name}* · pending: ${value || '—'}`, {
+        type: 'setPending',
+        entry: e,
+        pending: value || null,
+      });
+    },
+
+    async prioridad({ session, titulo }) {
+      const profile = activeProfile(session);
+      const r = resolveEntry(entriesFor(profile.id), titulo);
+      if (r.error) return r.error;
+      const e = r.entry;
+      return writeProposal(`*${e.manga.name}* · ${e.priority ? 'quitar' : 'activar'} prioridad`, {
+        type: 'togglePriority',
+        entry: e,
+      });
+    },
+
+    async nuevo({ session, titulo, total, cantidad, formato, editorial }) {
+      const profile = activeProfile(session);
+      const name = String(titulo ?? '').trim();
+      if (!name) return 'Falta el título.';
+      const existing = entriesFor(profile.id).find(
+        (e) => e.manga.name.toLowerCase() === name.toLowerCase()
+      );
+      if (existing) return `Ya tenés *${existing.manga.name}*. Usá /tomo o /actualizar.`;
+      return writeProposal(`Agregar *${name}* (${cantidad ?? 0}/${total ?? '??'} tomos)`, {
+        type: 'createMangaEntry',
+        name,
+        total: total ?? null,
+        quantity: cantidad ?? 0,
+        formato: formato ?? null,
+        editorial: editorial ?? null,
+        profileId: profile.id,
+      });
+    },
+
+    async ayuda() {
+      return AYUDA_TEXT;
+    },
   };
 }
 
@@ -161,13 +415,20 @@ export async function dispatch(commands, name, args) {
 
 // Extrae los argumentos de una interacción como objeto plano (testeable).
 export function readInteraction(interaction) {
+  const opt = interaction.options;
   return {
     name: interaction.commandName,
     userId: interaction.user?.id,
     guildId: interaction.guildId,
-    perfil: interaction.options?.getString?.('perfil') ?? null,
-    query: interaction.options?.getString?.('query') ?? null,
-    limite: interaction.options?.getInteger?.('limite') ?? null,
+    perfil: opt?.getString?.('perfil') ?? null,
+    query: opt?.getString?.('query') ?? null,
+    limite: opt?.getInteger?.('limite') ?? null,
+    titulo: opt?.getString?.('titulo') ?? null,
+    cantidad: opt?.getInteger?.('cantidad') ?? null,
+    tomos: opt?.getString?.('tomos') ?? null,
+    total: opt?.getInteger?.('total') ?? null,
+    formato: opt?.getString?.('formato') ?? null,
+    editorial: opt?.getString?.('editorial') ?? null,
   };
 }
 
@@ -192,6 +453,8 @@ export function createDiscordBot({
   const session = createSessionStore();
   const commands = createCommands({ getDb, db });
   const load = loadDiscord ?? (() => import('discord.js'));
+  const resolveDb = getDb ?? (() => db);
+  let discordMod = null;
   let warmTimer = null;
   let httpAgent = null;
 
@@ -200,18 +463,67 @@ export function createDiscordBot({
     onStatusChange(next);
   };
 
+  const confirmRow = (token) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`mc:confirm:${token}`)
+          .setLabel('Confirmar')
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`mc:cancel:${token}`)
+          .setLabel('Cancelar')
+          .setStyle(ButtonStyle.Secondary)
+      ),
+    ];
+  };
+
   async function handleInteraction(interaction) {
+    if (interaction.isButton?.()) return handleButton(interaction);
     if (!interaction.isChatInputCommand?.()) return;
     const config = getConfig();
     const args = readInteraction(interaction);
     if (!isAuthorized(config, args)) return;
-    const reply = await dispatch(commands, args.name, {
-      session: session.get(args.userId),
-      perfil: args.perfil,
-      query: args.query,
-      limite: args.limite,
-    });
-    await interaction.reply(reply);
+    const userSession = session.get(args.userId);
+    const reply = await dispatch(commands, args.name, { session: userSession, ...args });
+    if (reply && typeof reply === 'object' && reply.kind === 'write') {
+      const pending = beginPendingWrite(userSession, reply);
+      await interaction.reply({
+        content: `¿Confirmás?\n${pending.summary}`,
+        ephemeral: true,
+        components: confirmRow(pending.token),
+      });
+      return;
+    }
+    await interaction.reply(String(reply));
+  }
+
+  async function handleButton(interaction) {
+    const config = getConfig();
+    const args = { userId: interaction.user?.id, guildId: interaction.guildId };
+    if (!isAuthorized(config, args)) return;
+    const match = /^mc:(confirm|cancel):(.+)$/.exec(interaction.customId ?? '');
+    if (!match) return;
+    const [, action, token] = match;
+    const userSession = session.get(args.userId);
+    const consumed = consumePendingWrite(userSession, token);
+    if (consumed.error) {
+      await interaction.update({ content: consumed.error, components: [] });
+      return;
+    }
+    if (action === 'cancel') {
+      await interaction.update({ content: 'Cancelado.', components: [] });
+      return;
+    }
+    try {
+      const result = applyWrite(resolveDb(), consumed.pending.action);
+      logger?.info?.(`bot write: ${result.summary}`);
+      await interaction.update({ content: `✅ ${result.summary}`, components: [] });
+    } catch (err) {
+      await interaction.update({ content: `⚠️ ${err?.message ?? err}`, components: [] });
+    }
   }
 
   function stop() {
@@ -269,7 +581,9 @@ export function createDiscordBot({
     const token = getToken();
     if (!token) return setStatus('sin token');
     try {
-      const { Client, GatewayIntentBits, Events } = await load();
+      const discord = await load();
+      discordMod = discord;
+      const { Client, GatewayIntentBits, Events } = discord;
       httpAgent = await createHttpAgent();
       client = new Client({
         intents: [GatewayIntentBits.Guilds],

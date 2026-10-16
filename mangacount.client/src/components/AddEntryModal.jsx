@@ -147,7 +147,7 @@ const AddEntryModal = ({
                                 max={editEntry?.manga?.volumes || 999}
                                 required
                             />
-                            {isEditing && editEntry.manga.volumes && (
+                            {isEditing && editEntry.manga.volumes > 0 && (
                                 <div className="quick-actions">
                                     <button
                                         type="button"
@@ -174,7 +174,7 @@ const AddEntryModal = ({
                                 </div>
                             )}
                         </div>
-                        {editEntry?.manga?.volumes && (
+                        {editEntry?.manga?.volumes > 0 && (
                             <small>
                                 {formData.quantity}/{editEntry.manga.volumes} volumes 
                                 ({Math.round((formData.quantity / editEntry.manga.volumes) * 100)}% complete)
