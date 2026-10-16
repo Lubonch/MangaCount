@@ -156,13 +156,30 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess }) =>
     }
   };
 
+  // El estado del bot pasa a 'conectando' y luego 'conectado' de forma asíncrona;
+  // reconsultamos unas veces para reflejarlo sin recargar la pantalla.
+  const pollBotStatus = (tries = 4) => {
+    let n = 0;
+    const run = async () => {
+      try {
+        const data = await botConfigGet();
+        setBot((b) => ({ ...b, ...data }));
+      } catch {
+        /* ignore */
+      }
+      n += 1;
+      if (n < tries) setTimeout(run, 1200);
+    };
+    run();
+  };
+
   const saveBotToken = async () => {
     setBotMessage('');
     try {
       await botSetToken(token);
       setToken('');
-      setBot(await botConfigGet());
       setBotMessage('Token guardado.');
+      pollBotStatus();
     } catch (err) {
       setBotMessage(`No se pudo guardar el token: ${err.message}`);
     }
@@ -176,8 +193,8 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess }) =>
         guildId: bot.guildId || null,
         allowedUserIds: bot.allowedUserIds,
       });
-      setBot(await botConfigGet());
       setBotMessage('Configuración del bot guardada.');
+      pollBotStatus();
     } catch (err) {
       setBotMessage(`No se pudo guardar: ${err.message}`);
     }

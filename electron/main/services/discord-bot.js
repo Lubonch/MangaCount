@@ -192,6 +192,8 @@ export function createDiscordBot({
   const session = createSessionStore();
   const commands = createCommands({ getDb, db });
   const load = loadDiscord ?? (() => import('discord.js'));
+  let warmTimer = null;
+  let httpAgent = null;
 
   const setStatus = (next) => {
     status = next;
@@ -213,6 +215,10 @@ export function createDiscordBot({
   }
 
   function stop() {
+    if (warmTimer) {
+      clearInterval(warmTimer);
+      warmTimer = null;
+    }
     if (client) {
       try {
         client.destroy?.();
@@ -221,6 +227,39 @@ export function createDiscordBot({
       }
       client = null;
     }
+    if (httpAgent) {
+      try {
+        httpAgent.close?.();
+      } catch {
+        /* ignore */
+      }
+      httpAgent = null;
+    }
+  }
+
+  // Agent HTTP con keep-alive largo. En redes con DNS/resolución lenta, reconectar
+  // puede tardar >3s y la respuesta a la interacción llegaría tarde (Unknown
+  // interaction); con la conexión caliente se reusa.
+  async function createHttpAgent() {
+    try {
+      const { Agent } = await import('undici');
+      return new Agent({
+        keepAliveTimeout: 120000,
+        keepAliveMaxTimeout: 600000,
+        connect: { timeout: 15000 },
+      });
+    } catch {
+      return undefined;
+    }
+  }
+
+  // Ping liviano para no dejar cerrar la conexión REST entre comandos.
+  function keepWarm() {
+    if (warmTimer) clearInterval(warmTimer);
+    warmTimer = setInterval(() => {
+      client?.rest?.get?.('/gateway')?.catch?.(() => {});
+    }, 90000);
+    warmTimer.unref?.();
   }
 
   async function start() {
@@ -231,10 +270,17 @@ export function createDiscordBot({
     if (!token) return setStatus('sin token');
     try {
       const { Client, GatewayIntentBits, Events } = await load();
-      client = new Client({ intents: [GatewayIntentBits.Guilds] });
+      httpAgent = await createHttpAgent();
+      client = new Client({
+        intents: [GatewayIntentBits.Guilds],
+        rest: httpAgent ? { agent: httpAgent } : undefined,
+      });
       client.on(Events.InteractionCreate, (interaction) => {
+        const started = Date.now();
         handleInteraction(interaction).catch((err) =>
-          logger?.error?.(`interacción de Discord falló: ${err?.message ?? err}`)
+          logger?.error?.(
+            `interacción ${interaction?.commandName ?? '?'} falló tras ${Date.now() - started}ms: ${err?.message ?? err}`
+          )
         );
       });
       client.once(Events.ClientReady, async (ready) => {
@@ -248,7 +294,9 @@ export function createDiscordBot({
         } catch (err) {
           logger?.warn?.(`no se pudieron registrar los comandos: ${err?.message ?? err}`);
         }
+        keepWarm();
       });
+      setStatus('conectando');
       await client.login(token);
     } catch (err) {
       logger?.error?.(`el bot de Discord no arrancó: ${err?.message ?? err}`);

@@ -155,11 +155,15 @@ export const handlers = {
       status: ctx.bot?.status?.() ?? 'apagado',
     };
   },
-  'bot:config-set': (ctx, config = {}) => {
+  'bot:config-set': async (ctx, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(ctx.dataDir));
     const bot = { ...prefs.bot, ...config };
     savePrefs(ctx.dataDir, { ...prefs, bot });
-    ctx.bot?.reload?.(bot);
+    try {
+      await ctx.bot?.restart?.();
+    } catch (err) {
+      ctx.logger?.warn?.(`el bot no pudo reiniciarse: ${err?.message ?? err}`);
+    }
     return bot;
   },
   'bot:set-token': async (ctx, token) => {
