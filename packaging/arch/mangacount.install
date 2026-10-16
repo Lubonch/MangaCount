@@ -1,0 +1,19 @@
+# Scriptlet de pacman para MangaCount.
+#
+# El AppImage extrae su árbol con el directorio raíz en modo 0700; en instalaciones
+# nuevas el PKGBUILD ya lo normaliza, pero al ACTUALIZAR desde una versión vieja
+# pacman deja los directorios preexistentes con su modo anterior (warning
+# "directory permissions differ on /opt/mangacount/"). Reparamos tras instalar o
+# actualizar para que la app sea ejecutable por el usuario.
+
+_repair_perms() {
+  chmod -R a+rX /opt/mangacount 2>/dev/null || true
+}
+
+post_install() {
+  _repair_perms
+}
+
+post_upgrade() {
+  _repair_perms
+}
