@@ -62,6 +62,12 @@ describe('SettingsModal', () => {
     expect(screen.getByLabelText('Choose TSV File')).toBeInTheDocument()
   })
 
+  it('incluye la Danger Zone con la Nuclear Option', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText(/Danger Zone/)).toBeInTheDocument())
+    expect(screen.getByLabelText('Nuclear Option')).toBeInTheDocument()
+  })
+
   it('gate: no guarda backup habilitado sin destino ni disparador', async () => {
     const user = userEvent.setup()
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)

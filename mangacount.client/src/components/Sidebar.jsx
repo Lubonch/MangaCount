@@ -2,7 +2,6 @@
 import './Sidebar.css';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
-import NukeDataModal from './NukeDataModal';
 import ThemeToggle from './ThemeToggle';
 
 const Sidebar = ({
@@ -19,7 +18,6 @@ const Sidebar = ({
     const [showAddEntry, setShowAddEntry] = useState(false);
     const [showAddManga, setShowAddManga] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
-    const [showNukeModal, setShowNukeModal] = useState(false);
     const [editingManga, setEditingManga] = useState(null);
 
     const handleAddSuccess = () => {
@@ -35,24 +33,11 @@ const Sidebar = ({
         setShowEditManga(true);
     };
 
-    const handleNukeSuccess = () => {
-        onImportSuccess(); // This will refresh all data
-        setShowNukeModal(false);
-    };
-
     return (
         <>
             <aside className="sidebar">
                 <div className="sidebar-header">
                     <h2>🏗️ Manga Count</h2>
-                    <button
-                        className="settings-button"
-                        onClick={onOpenSettings}
-                        title="Settings"
-                        aria-label="Settings"
-                    >
-                        ⚙️
-                    </button>
 
                     {/* Profile Info Section */}
                     {selectedProfile && (
@@ -145,21 +130,16 @@ const Sidebar = ({
                     </div>
                 </div>
 
-                {/* Danger Zone section */}
-                <div className="sidebar-section danger-zone">
-                    <h3>⚠️ Danger Zone</h3>
-                    <div className="danger-actions">
-                        <button
-                            className="danger-button nuke-button"
-                            onClick={() => setShowNukeModal(true)}
-                            title="Clear all data from database"
-                        >
-                            💥 Nuclear Option
-                        </button>
-                        <small className="danger-warning">
-                            This will permanently delete ALL data!
-                        </small>
-                    </div>
+                {/* Acceso a Settings (antes acá estaba la Danger Zone, ahora dentro de Settings) */}
+                <div className="sidebar-section sidebar-settings">
+                    <button
+                        className="action-button settings-open-button"
+                        onClick={onOpenSettings}
+                        title="Settings"
+                        aria-label="Settings"
+                    >
+                        ⚙️ Settings
+                    </button>
                 </div>
             </aside>
 
@@ -185,12 +165,6 @@ const Sidebar = ({
                 }}
                 onSuccess={handleAddSuccess}
                 editManga={editingManga}
-            />
-
-            <NukeDataModal
-                isOpen={showNukeModal}
-                onClose={() => setShowNukeModal(false)}
-                onSuccess={handleNukeSuccess}
             />
         </>
     );
