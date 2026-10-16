@@ -13,8 +13,11 @@ import { startAutoBackup } from './services/auto-backup.js';
 import { createDiscordBot } from './services/discord-bot.js';
 import { fetchLatestRelease, compareVersions, resolveUpdateMode } from './services/updates.js';
 import { createUpdateController } from './services/update-controller.js';
-import { autoUpdater } from 'electron-updater';
+import electronUpdater from 'electron-updater';
 import { shouldStartHidden, shouldQuitOnAllWindowsClosed, trayMenuTemplate } from './lifecycle.js';
+
+// electron-updater es CommonJS: `autoUpdater` viene en el default, no como named export.
+const { autoUpdater } = electronUpdater;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
