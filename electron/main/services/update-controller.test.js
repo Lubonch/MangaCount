@@ -26,12 +26,16 @@ describe('services/update-controller: modo auto', () => {
   it('check → available; descarga → downloading → downloaded; install', async () => {
     const autoUpdater = fakeAutoUpdater();
     const states = [];
+    let beforeInstallCalled = false;
     const controller = createUpdateController({
       mode: 'auto',
       autoUpdater,
       getVersion: () => '1.0.11',
       logger: { error() {}, warn() {} },
       onState: (s) => states.push({ ...s }),
+      onBeforeInstall: () => {
+        beforeInstallCalled = true;
+      },
     });
 
     await controller.check();
@@ -51,6 +55,8 @@ describe('services/update-controller: modo auto', () => {
     assert.equal(autoUpdater.wasInstalled(), true);
     // isForceRunAfter=true → en AppImage reabre con la versión nueva.
     assert.deepEqual(autoUpdater.wasInstalledArgs(), [false, true]);
+    // el hook marca isQuitting antes de instalar (para que el tray no bloquee el quit).
+    assert.equal(beforeInstallCalled, true);
     assert.ok(states.length > 0);
   });
 
