@@ -1,0 +1,47 @@
+## ADDED Requirements
+
+### Requirement: Pantalla de Settings unificada
+
+The system SHALL exponer en `mangacount.client` una única pantalla de Settings, separada de la vista
+principal de la colección y abierta desde un acceso (engranaje) en el `Sidebar`, con secciones
+**General** (arranque en bandeja e inicio con el sistema), **Backup** (habilitar automático,
+destino, intervalo, disparadores, indicador de último OK/error, botones "Backup ahora" y
+"Restaurar…"), **Intercambio** (Import TSV y Export TSV) y **Bot** (toggle, token, guild ID,
+allowlist y estado de conexión), consumiendo los nuevos canales IPC vía `localAdapter.js`.
+
+#### Scenario: Guardar configuración de backup válida
+
+- **WHEN** el usuario habilita el backup automático, elige un destino y activa al menos un disparador
+- **THEN** la pantalla guarda la configuración vía IPC y la refleja al reabrir, mostrando el destino y el intervalo elegidos
+
+#### Scenario: Restaurar desde Settings con confirmación
+
+- **WHEN** el usuario elige un archivo de backup y confirma la acción destructiva
+- **THEN** la pantalla invoca el restore y, al finalizar, refleja que el estado fue reemplazado
+
+#### Scenario: Ver el estado del último backup
+
+- **WHEN** el usuario abre Settings con un backup previo fallido
+- **THEN** la pantalla muestra el indicador de fallo con fecha/hora y la app sigue operativa
+
+#### Scenario: Sidebar sin el import de colección
+
+- **WHEN** el usuario abre la app principal
+- **THEN** el Sidebar ya no muestra el bloque "Import Collection" y el acceso a Settings queda disponible para Backup, Intercambio y Bot
+
+### Requirement: Ajustes del bot y arranque en el renderer
+
+The system SHALL permitir desde la pantalla Settings ver y cambiar el toggle del bot, cargar el token
+de Discord, editar la allowlist (guild/user IDs), activar o desactivar el inicio con el sistema y el
+arranque en bandeja, y ver el estado de conexión del bot, consumiendo los nuevos canales IPC a través
+de `localAdapter.js`.
+
+#### Scenario: Configurar el bot desde la UI
+
+- **WHEN** el usuario abre Settings y carga el token y activa el bot
+- **THEN** el token se guarda cifrado y el bot se inicia sin reiniciar la app, reflejando el nuevo estado
+
+#### Scenario: Ver el estado del bot
+
+- **WHEN** el usuario abre Settings con el bot apagado, desconectado o sin token
+- **THEN** la pantalla muestra el estado correspondiente y la app sigue operativa

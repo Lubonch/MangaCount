@@ -39,6 +39,8 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      'react-hooks/immutability': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
       'no-unused-vars': ['error', { 
         varsIgnorePattern: '^[A-Z_]|^profiles$|^handleEditManga$|^error$|^result$|^user$',
         argsIgnorePattern: '^_|onClose|error|user|result|profiles|handleEditManga|isChangingProfile|refreshing',

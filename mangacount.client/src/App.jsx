@@ -2,10 +2,10 @@
 import './App.css';
 import Sidebar from './components/Sidebar';
 import CollectionView from './components/CollectionView';   
-import LoadBearingCheck from './components/LoadBearingCheck';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProfileSelector from './components/ProfileSelector';
 import RecommendationModal from './components/RecommendationModal';
+import SettingsModal from './components/SettingsModal';
 import { ThemeProvider } from './contexts/ThemeContext';
 import catalog from '@shared/recommendations/catalog.json';
 import publisherCountries from '@shared/recommendations/publisher-countries.json';
@@ -23,6 +23,7 @@ function App() {
     const [isChangingProfile, setIsChangingProfile] = useState(false);
     const [lastSelectedProfile, setLastSelectedProfile] = useState(null);
     const [showRecommendations, setShowRecommendations] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [recommendationsLoading, setRecommendationsLoading] = useState(false);
     const [recommendationData, setRecommendationData] = useState(null);
     const [recommendationError, setRecommendationError] = useState(null);
@@ -287,27 +288,24 @@ function App() {
     if (appPhase === 'profile-selection') {
         return (
             <ThemeProvider>
-                <LoadBearingCheck>
-                    <div className="app">
-                        <div className="profile-selection-container">
-                            <ProfileSelector 
-                                onProfileSelect={handleProfileSelect}
-                                selectedProfileId={selectedProfile?.id}
-                                isChangingProfile={isChangingProfile}
-                                showBackButton={isChangingProfile && lastSelectedProfile}
-                                onBackToMain={handleBackToCollection}
-                                lastSelectedProfile={lastSelectedProfile}
-                            />
-                        </div>
+                <div className="app">
+                    <div className="profile-selection-container">
+                        <ProfileSelector 
+                            onProfileSelect={handleProfileSelect}
+                            selectedProfileId={selectedProfile?.id}
+                            isChangingProfile={isChangingProfile}
+                            showBackButton={isChangingProfile && lastSelectedProfile}
+                            onBackToMain={handleBackToCollection}
+                            lastSelectedProfile={lastSelectedProfile}
+                        />
                     </div>
-                </LoadBearingCheck>
+                </div>
             </ThemeProvider>
         );
     }
 
     return (
-        <ThemeProvider>
-            <LoadBearingCheck>
+            <ThemeProvider>
                 <div className="app">
                     <div className="app-container">
                         <Sidebar 
@@ -317,6 +315,7 @@ function App() {
                             onImportSuccess={handleImportSuccess}
                             onBackToProfiles={handleBackToProfileSelection}
                             onRecommend={handleRecommend}
+                            onOpenSettings={() => setShowSettings(true)}
                             recommendationsLoading={recommendationsLoading}
                             refreshing={refreshing}
                         />
@@ -336,9 +335,14 @@ function App() {
                             recommendations={recommendationData}
                             onClose={handleRecommendationClose}
                         />
+                        <SettingsModal
+                            isOpen={showSettings}
+                            onClose={() => setShowSettings(false)}
+                            selectedProfile={selectedProfile}
+                            onImportSuccess={handleImportSuccess}
+                        />
                     </div>
                 </div>
-            </LoadBearingCheck>
         </ThemeProvider>
     );
 }

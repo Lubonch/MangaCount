@@ -2,7 +2,6 @@
 import './Sidebar.css';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
-import NukeDataModal from './NukeDataModal';
 import ThemeToggle from './ThemeToggle';
 
 const Sidebar = ({
@@ -12,55 +11,14 @@ const Sidebar = ({
     onImportSuccess,
     onBackToProfiles,
     onRecommend = () => {},
+    onOpenSettings = () => {},
     recommendationsLoading = false,
     refreshing = false
 }) => {
-    const [isImporting, setIsImporting] = useState(false);
-    const [importMessage, setImportMessage] = useState('');
     const [showAddEntry, setShowAddEntry] = useState(false);
     const [showAddManga, setShowAddManga] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
-    const [showNukeModal, setShowNukeModal] = useState(false);
     const [editingManga, setEditingManga] = useState(null);
-
-    const handleFileImport = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (!file.name.endsWith('.tsv')) {
-            setImportMessage('Please select a TSV file');
-            return;
-        }
-
-        setIsImporting(true);
-        setImportMessage('Importing file...');
-
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            // Import with profile ID
-            const response = await fetch(`/api/entry/import/${selectedProfile.id}`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                setImportMessage('Import successful!');
-                onImportSuccess();
-                event.target.value = '';
-                setTimeout(() => setImportMessage(''), 3000);
-            } else {
-                const error = await response.json();
-                setImportMessage(`Import failed: ${error.message || 'Unknown error'}`);
-            }
-        } catch (error) {
-            setImportMessage('Import failed: ' + error.message);
-        } finally {
-            setIsImporting(false);
-        }
-    };
 
     const handleAddSuccess = () => {
         onImportSuccess();
@@ -73,11 +31,6 @@ const Sidebar = ({
     const handleEditManga = (manga) => {
         setEditingManga(manga);
         setShowEditManga(true);
-    };
-
-    const handleNukeSuccess = () => {
-        onImportSuccess(); // This will refresh all data
-        setShowNukeModal(false);
     };
 
     return (
@@ -151,39 +104,6 @@ const Sidebar = ({
                 </div>
 
                 <div className="sidebar-section">
-                    <h3>Import Collection</h3>
-                    <div className="import-section">
-                        <input
-                            type="file"
-                            accept=".tsv"
-                            onChange={handleFileImport}
-                            disabled={isImporting || !selectedProfile}
-                            className="file-input"
-                            id="tsv-import"
-                        />
-                        <label htmlFor="tsv-import" className="file-input-label">
-                            {isImporting ? 'Importing...' : 'Choose TSV File'}
-                        </label>
-                        {!selectedProfile && (
-                            <small className="import-note">Select a profile first</small>
-                        )}
-                        {importMessage && (
-                            <p className={`import-message ${importMessage.includes('failed') ? 'error' :
-                                    importMessage.includes('successful') ? 'success' : ''
-                                }`}>
-                                {importMessage}
-                            </p>
-                        )}
-                        <div className="import-help">
-                            <small>
-                                Upload a TSV file with columns:<br />
-                                Name | Quantity | Total Volumes | Pending | | Priority
-                            </small>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="sidebar-section">
                     <h3>Manga Library ({mangas.length})</h3>
                     <div className="manga-list">
                         {mangas.length === 0 ? (
@@ -210,21 +130,16 @@ const Sidebar = ({
                     </div>
                 </div>
 
-                {/* Danger Zone section */}
-                <div className="sidebar-section danger-zone">
-                    <h3>⚠️ Danger Zone</h3>
-                    <div className="danger-actions">
-                        <button
-                            className="danger-button nuke-button"
-                            onClick={() => setShowNukeModal(true)}
-                            title="Clear all data from database"
-                        >
-                            💥 Nuclear Option
-                        </button>
-                        <small className="danger-warning">
-                            This will permanently delete ALL data!
-                        </small>
-                    </div>
+                {/* Acceso a Settings (antes acá estaba la Danger Zone, ahora dentro de Settings) */}
+                <div className="sidebar-section sidebar-settings">
+                    <button
+                        className="action-button settings-open-button"
+                        onClick={onOpenSettings}
+                        title="Settings"
+                        aria-label="Settings"
+                    >
+                        ⚙️ Settings
+                    </button>
                 </div>
             </aside>
 
@@ -250,12 +165,6 @@ const Sidebar = ({
                 }}
                 onSuccess={handleAddSuccess}
                 editManga={editingManga}
-            />
-
-            <NukeDataModal
-                isOpen={showNukeModal}
-                onClose={() => setShowNukeModal(false)}
-                onSuccess={handleNukeSuccess}
             />
         </>
     );

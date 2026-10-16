@@ -344,6 +344,17 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Entorno local / secretos
+.env
+.env.*
+!.env.example
+
+# Estado local de herramientas
+.ancleto/working-context.md
 
 # Logs
 logs/
@@ -414,7 +425,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Storybook build outputs
 .out

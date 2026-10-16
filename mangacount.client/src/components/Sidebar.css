@@ -13,6 +13,14 @@
     margin-bottom: 25px;
 }
 
+.sidebar-settings {
+    margin-top: auto;
+}
+
+.settings-open-button {
+    width: 100%;
+}
+
 .sidebar-header h2 {
     color: var(--sidebar-text);
     margin-bottom: 20px;
