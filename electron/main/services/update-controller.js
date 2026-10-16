@@ -11,6 +11,7 @@ export function createUpdateController({
   isPackaged = true,
   logger = console,
   onState = () => {},
+  onBeforeInstall = () => {},
 } = {}) {
   let state = {
     mode,
@@ -82,9 +83,12 @@ export function createUpdateController({
     },
 
     install() {
-      // isSilent=false, isForceRunAfter=true: reabre la app con la versión nueva
-      // (en AppImage, sin isForceRunAfter solo hace la integración y no la relanza).
-      if (mode === 'auto' && autoUpdater) autoUpdater.quitAndInstall(false, true);
+      // isSilent=false, isForceRunAfter=true: reabre la app con la versión nueva.
+      // `onBeforeInstall` marca isQuitting para que el cierre de ventana (tray) no bloquee el quit.
+      if (mode === 'auto' && autoUpdater) {
+        onBeforeInstall();
+        autoUpdater.quitAndInstall(false, true);
+      }
     },
   };
 }

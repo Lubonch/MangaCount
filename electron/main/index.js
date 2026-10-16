@@ -57,10 +57,17 @@ app.isQuitting = false;
 // Instancia única: el autostart + una apertura manual no deben crear dos
 // procesos (dos conexiones de bot y dos escritores de SQLite). Si no somos la
 // instancia primaria, salimos y NO inicializamos el backend.
-const isPrimaryInstance = app.requestSingleInstanceLock();
-if (!isPrimaryInstance) {
-  app.quit();
+// Reintenta el lock unos segundos: al auto-actualizar, electron-updater lanza el
+// proceso nuevo ANTES de que el viejo termine de salir (la app vieja cierra en
+// cuanto `isQuitting` está seteado), y el nuevo debe tomar el lock.
+async function acquireSingleInstanceLock(retries = 12, delayMs = 400) {
+  for (let i = 0; i <= retries; i += 1) {
+    if (app.requestSingleInstanceLock()) return true;
+    if (i < retries) await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return false;
 }
+
 app.on('second-instance', () => showWindow());
 
 // Debe registrarse antes de `app.whenReady()` para que el esquema sea tratado
@@ -139,6 +146,9 @@ function initBackend() {
     isPackaged: app.isPackaged,
     logger: log,
     onState: (state) => win?.webContents.send('update:state', state),
+    onBeforeInstall: () => {
+      app.isQuitting = true;
+    },
   });
 
   log.info(`backend listo en ${dataDir}`);
@@ -247,8 +257,13 @@ function createTray() {
   refreshTrayMenu();
 }
 
-app.whenReady().then(() => {
-  if (!isPrimaryInstance) return;
+async function initialize() {
+  const isPrimaryInstance = await acquireSingleInstanceLock();
+  if (!isPrimaryInstance) {
+    app.quit();
+    return;
+  }
+  await app.whenReady();
   appCtx = initBackend();
   createTray();
   stopAutoBackup = scheduleAutoBackup(appCtx);
@@ -256,9 +271,12 @@ app.whenReady().then(() => {
   const prefs = loadResolvedPrefs(app.getPath('userData'));
   if (!shouldStartHidden(process.argv, prefs)) createWindow();
   app.on('activate', () => showWindow());
-});
+}
+
+initialize();
 
 app.on('before-quit', () => {
+  app.isQuitting = true;
   stopAutoBackup?.();
   bot?.stop();
 });
