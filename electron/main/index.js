@@ -25,6 +25,32 @@ const { autoUpdater } = electronUpdater;
 // bundle (electron/assets) para poder usarlo también en runtime.
 const APP_ICON = path.join(__dirname, '../assets/app-icon.png');
 
+// electron-updater relanza el AppImage nuevo pero deja `APPIMAGE` y `ARGV0`
+// apuntando al viejo (ya borrado). Eso hace fallar el update siguiente con
+// ENOENT y rompe la integración con el escritorio. Re-derivamos la ruta real del
+// AppImage en ejecución: `argv[0]` de /proc/self/cmdline es lo más confiable.
+function resolveAppImagePath() {
+  if (process.platform !== 'linux') return null;
+  let argv0 = null;
+  try {
+    argv0 = fs.readFileSync('/proc/self/cmdline', 'utf8').split('\0')[0] || null;
+  } catch {
+    /* sin /proc: nos quedamos con las env */
+  }
+  for (const candidate of [argv0, process.env.ARGV0, process.env.APPIMAGE]) {
+    if (typeof candidate === 'string' && candidate.endsWith('.AppImage') && fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+const APPIMAGE_PATH = resolveAppImagePath();
+if (process.platform === 'linux') {
+  if (APPIMAGE_PATH) process.env.APPIMAGE = APPIMAGE_PATH;
+  else delete process.env.APPIMAGE; // no dejar una ruta muerta para el updater
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const IMAGE_MIME = {
@@ -111,7 +137,7 @@ function serveLocalImages(dataDir) {
 // instala el sistema, así que no hacemos nada.
 function ensureDesktopIntegration() {
   if (process.platform !== 'linux') return;
-  const appImage = process.env.APPIMAGE;
+  const appImage = APPIMAGE_PATH;
   if (!appImage || !fs.existsSync(appImage)) return;
   try {
     const share = path.join(os.homedir(), '.local', 'share');

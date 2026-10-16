@@ -3,6 +3,15 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.5] - 2026-10-16
+
+### Fixed
+
+- **Auto-update en AppImage**: tras actualizar, electron-updater dejaba `APPIMAGE` (y `ARGV0`) apuntando
+  al AppImage **viejo ya borrado**, así que el **update siguiente fallaba** (ENOENT al reemplazar) y se
+  salteaba la integración del ícono. Ahora la app **re-deriva la ruta real** del AppImage en ejecución
+  (desde `/proc/self/cmdline`) al arrancar.
+
 ## [2.0.4] - 2026-10-16
 
 ### Fixed
