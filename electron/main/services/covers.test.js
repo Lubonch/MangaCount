@@ -538,3 +538,41 @@ describe('services/covers: autoMatchCover', () => {
     }
   });
 });
+
+describe('services/covers: filtro +18 en la búsqueda', () => {
+  const captureQuery = () => {
+    let sent = null;
+    const fetchImpl = async (_url, opts) => {
+      sent = JSON.parse(opts.body).query;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            Page: {
+              media: [
+                { id: 1, title: { romaji: 'X' }, coverImage: { large: 'u' }, isAdult: true },
+                { id: 2, title: { romaji: 'Y' }, coverImage: { large: 'v' } },
+              ],
+            },
+          },
+        }),
+      };
+    };
+    return { fetchImpl, query: () => sent };
+  };
+
+  it('por defecto filtra +18 (isAdult: false) y mapea isAdult', async () => {
+    const { fetchImpl, query } = captureQuery();
+    const results = await searchManga('x', { fetchImpl });
+    assert.match(query(), /isAdult:\s*false/);
+    assert.equal(results[0].isAdult, true);
+    assert.equal(results[1].isAdult, false); // ausente => false
+  });
+
+  it('includeAdult: true consulta sin el filtro', async () => {
+    const { fetchImpl, query } = captureQuery();
+    await searchManga('x', { fetchImpl, includeAdult: true });
+    assert.doesNotMatch(query(), /isAdult:\s*false/);
+  });
+});

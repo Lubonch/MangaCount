@@ -195,4 +195,16 @@ describe('LinkCoverModal', () => {
     resolveStatus({ provider: 'anilist', externalId: '1', coverUrl: 'x' })
     await Promise.resolve()
   })
+
+  it('marca los candidatos +18 con un badge', async () => {
+    api.coverSearch.mockResolvedValue([
+      { id: 1, title: 'Berserk', altTitles: [], coverUrl: 'u', isAdult: true },
+      { id: 2, title: 'Vinland Saga', altTitles: [], coverUrl: 'v', isAdult: false },
+    ])
+
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    expect(await screen.findByText('+18')).toBeInTheDocument()
+    expect(screen.getAllByText('+18')).toHaveLength(1) // solo el candidato adulto
+  })
 })

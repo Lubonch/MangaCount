@@ -127,8 +127,9 @@ export const handlers = {
   'entry:used-publishers': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.publisher),
 
   // Portadas + vínculo externo (AniList, sin key). Guarda solo el vínculo; el
-  // nombre local del manga no se toca.
-  'cover:search': ({ db }, { query } = {}) => searchManga(query),
+  // nombre local del manga no se toca. El contenido +18 sigue la preferencia.
+  'cover:search': ({ db, dataDir }, { query } = {}) =>
+    searchManga(query, { includeAdult: loadResolvedPrefs(dataDir).showAdultCovers }),
   'cover:link': ({ db, dataDir }, { mangaId, candidate } = {}) =>
     linkCover(db, dataDir, { mangaId, candidate }),
   'cover:fetch': ({ db, dataDir }, { mangaId, coverUrl } = {}) =>
@@ -136,7 +137,10 @@ export const handlers = {
   'cover:unlink': ({ db, dataDir }, mangaId) => unlinkCover(db, dataDir, mangaId),
   'cover:status': ({ db }, mangaId) => statusCover(db, mangaId),
   'cover:all': ({ db }) => coverMap(db),
-  'cover:auto': ({ db, dataDir }, mangaId) => autoMatchCover(db, dataDir, mangaId),
+  'cover:auto': ({ db, dataDir }, mangaId) =>
+    autoMatchCover(db, dataDir, mangaId, {
+      includeAdult: loadResolvedPrefs(dataDir).showAdultCovers,
+    }),
 
   // Backup y restore del sistema.
   'backup:config-get': ({ dataDir }) => loadResolvedPrefs(dataDir).backup,
@@ -230,6 +234,7 @@ export const handlers = {
       startInTray: prefs.startInTray,
       updateCheck: prefs.updateCheck,
       diagnosticsCopy: prefs.diagnosticsCopy,
+      showAdultCovers: prefs.showAdultCovers,
     };
   },
   'app:config-set': ({ dataDir, autostart }, config = {}) => {
@@ -239,6 +244,7 @@ export const handlers = {
       startInTray: config.startInTray ?? prefs.startInTray,
       updateCheck: config.updateCheck ?? prefs.updateCheck,
       diagnosticsCopy: config.diagnosticsCopy ?? prefs.diagnosticsCopy,
+      showAdultCovers: config.showAdultCovers ?? prefs.showAdultCovers,
     };
     savePrefs(dataDir, next);
     // Si cambió "Arranque en bandeja" y el autostart está activo, reescribe la
@@ -248,6 +254,7 @@ export const handlers = {
       startInTray: next.startInTray,
       updateCheck: next.updateCheck,
       diagnosticsCopy: next.diagnosticsCopy,
+      showAdultCovers: next.showAdultCovers,
     };
   },
 

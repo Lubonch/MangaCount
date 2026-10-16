@@ -420,14 +420,16 @@ describe('ipc handlers (ctx puro)', () => {
       startInTray: true,
       updateCheck: true,
       diagnosticsCopy: true,
+      showAdultCovers: false,
     });
     assert.deepEqual(
       handlers['app:config-set'](ctx, {
         startInTray: false,
         updateCheck: false,
         diagnosticsCopy: false,
+        showAdultCovers: true,
       }),
-      { startInTray: false, updateCheck: false, diagnosticsCopy: false }
+      { startInTray: false, updateCheck: false, diagnosticsCopy: false, showAdultCovers: true }
     );
     let autostart = false;
     const partial = handlers['app:config-set'](
@@ -443,6 +445,7 @@ describe('ipc handlers (ctx puro)', () => {
       {}
     );
     assert.equal(partial.startInTray, false); // conserva lo guardado
+    assert.equal(partial.showAdultCovers, true); // conserva lo guardado
     assert.equal(autostart, true);
   });
 
