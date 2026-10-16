@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openDb } from '../db/client.js';
+import { createProfile } from '../db/repositories/profiles.js';
 import { parseTsv, importTsv, exportTsv } from './entries.js';
 import { handlers } from '../ipc/handlers.js';
 
@@ -16,11 +17,13 @@ const SAMPLE = [
 describe('services/entries', () => {
   let dir;
   let db;
+  let profile;
   const ctx = () => ({ db });
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcsvc-'));
     db = openDb(dir);
+    profile = createProfile(db, 'yo');
   });
 
   afterEach(() => {

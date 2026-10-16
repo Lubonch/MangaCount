@@ -2,10 +2,12 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrateCatalogV3 } from './migrations.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// v3 = quita los seeds (sólo afecta instalaciones nuevas; no toca datos
+// existentes, así que no hay paso de migración). No retroceder la versión: los
+// usuarios que corrieron 2.0.1 ya están en 3.
 export const SCHEMA_VERSION = 3;
 const SCHEMA_FILE = path.join(__dirname, 'schema.sqlite.sql');
 
@@ -26,12 +28,6 @@ export function openDb(dataDir) {
     if (version < SCHEMA_VERSION) {
       const schema = fs.readFileSync(SCHEMA_FILE, 'utf8');
       db.exec(schema);
-      // Perfil por defecto SOLO en instalaciones nuevas (para que la app sea
-      // usable de entrada). Nunca se re-siembra a usuarios existentes.
-      if (version === 0) {
-        db.prepare("INSERT OR IGNORE INTO Profile (Name) VALUES ('Default Profile')").run();
-      }
-      if (version < 3) migrateCatalogV3(db);
       db.pragma(`user_version = ${SCHEMA_VERSION}`);
     }
   } catch (err) {

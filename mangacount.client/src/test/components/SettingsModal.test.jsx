@@ -25,6 +25,9 @@ vi.mock('../../api/localAdapter.js', () => ({
   pickDirectory: vi.fn(),
   pickFile: vi.fn(),
   entryExport: vi.fn(),
+  mangaList: vi.fn(),
+  coverAll: vi.fn(),
+  coverAuto: vi.fn(),
 }))
 
 vi.mock('../../components/NukeDataModal', () => ({
@@ -268,5 +271,19 @@ describe('SettingsModal', () => {
 
     expect(screen.queryByLabelText('Copiar diagnóstico')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Habilitar diagnóstico')).not.toBeChecked()
+  })
+
+  it('bulk de portadas: recorre sólo los mangas sin portada', async () => {
+    const user = userEvent.setup()
+    api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
+    api.coverAll.mockResolvedValue({ 1: 'mangacount://covers/1.jpg' }) // el 1 ya tiene
+    api.coverAuto.mockResolvedValue('mangacount://covers/2.jpg')
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={vi.fn()} />)
+
+    await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
+
+    await waitFor(() => expect(api.coverAuto).toHaveBeenCalledWith(2))
+    expect(api.coverAuto).toHaveBeenCalledTimes(1) // no toca el que ya tiene
+    expect(await screen.findByText(/1 portadas nuevas/)).toBeInTheDocument()
   })
 })

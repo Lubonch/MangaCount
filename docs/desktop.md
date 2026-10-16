@@ -54,13 +54,12 @@ Detalles:
   que `ON DELETE CASCADE` de `Entry` funciona al borrar `Profile`/`Manga`.
 - La versión del esquema se guarda en `PRAGMA user_version` y las migraciones son versionadas
   (`electron/main/db/client.js`).
-- En una **instalación nueva** se crea sólo el perfil `Default Profile`; los catálogos (`Format`,
-  `Publisher`) **no** se siembran: cada usuario crea los que usa. No se re-siembra nada a usuarios
-  existentes al migrar.
-- Los catálogos son **case-insensitive**: `Format.Name` y `Publisher.Name` tienen un índice único
-  `COLLATE NOCASE`, y el alta reusa una entrada existente que sólo difiera en mayúsculas/espacios
-  (evita "Ivrea" vs "ivrea"). La migración v3 además **fusiona** los duplicados que ya existan
-  (repunta los mangas al nombre más usado) y normaliza espacios.
+- **Estado cero**: una instalación nueva arranca **sin perfiles, sin editoriales y sin formatos**. El
+  usuario crea el perfil (primer paso) y los catálogos que usa. Nada se siembra ni se re-siembra.
+- Los catálogos son **case-insensitive**: el alta reusa una entrada existente que sólo difiera en
+  mayúsculas/espacios (evita "Ivrea" vs "ivrea"). Los duplicados que ya existan se limpian a demanda
+  con el script `npm run dedupe:catalogs` (o `node scripts/dedupe-catalogs.mjs --dry-run` primero):
+  fusiona por nombre normalizado, repunta los mangas al más usado y normaliza espacios. No corre solo.
 - `Profile.ProfilePicture` guarda una URL `mangacount://profiles/<archivo>`, no un path local.
 - `MangaExternalRef` es **aditiva**: vincula un manga con una entrada externa (hoy `anilist`) sin
   tocar `Manga`/`Entry`. `CoverFile` es el nombre del archivo cacheado en `<userData>/covers/`.
@@ -72,6 +71,9 @@ Detalles:
   guarda el vínculo (`AniListId`) en `MangaExternalRef`. El **nombre local del manga no se cambia**.
   Las tarjetas resuelven la URL con `cover:all` (`{ mangaId: url }`) y, si no hay vínculo, muestran
   una **portada generada** (gradiente por hash del título + iniciales).
+- **Bulk**: en Settings, *Traer portadas faltantes* recorre los mangas sin portada de forma
+  **secuencial** con ~2s entre pedidos (respeta el límite de AniList) y se puede **detener**; el
+  vínculo por manga también está en cada entrada del **Manga Library** del sidebar (botón 🖼️).
 - **Design system**: tokens y temas en `mangacount.client/src/styles/` (`tokens.css`, `theme.css`);
   Inter self-hosted; los componentes no usan colores hardcodeados.
 

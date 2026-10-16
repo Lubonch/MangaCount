@@ -44,11 +44,13 @@ describe('repositories', () => {
   });
 
   it('profiles: CRUD + orden + foto', () => {
+    assert.equal(listProfiles(db).length, 0);
     const created = createProfile(db, 'beta');
     assert.equal(created.name, 'beta');
+    createProfile(db, 'zeta');
     assert.deepEqual(
       listProfiles(db).map((p) => p.name),
-      ['beta', 'Default Profile']
+      ['beta', 'zeta']
     );
     assert.equal(renameProfile(db, created.id, 'alfa').name, 'alfa');
     assert.equal(setProfilePicture(db, created.id, 'pic.png').profilePicture, 'pic.png');

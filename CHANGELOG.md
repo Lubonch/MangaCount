@@ -3,6 +3,23 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.2] - 2026-10-16
+
+### Added
+
+- **Traer portadas faltantes** en Settings: recorre los mangas sin portada de forma **secuencial**
+  con ~2s entre pedidos (respeta el límite de AniList ~30/min), muestra progreso y se puede detener.
+- Script **`npm run dedupe:catalogs`** (`scripts/dedupe-catalogs.mjs`, con `--dry-run` y
+  `--data-dir=`) para fusionar editoriales/formatos duplicados a demanda.
+
+### Changed
+
+- **Sin seed de catálogos ni de perfiles**: una instalación nueva arranca en **estado cero** (sin
+  perfiles, sin editoriales ni formatos); el usuario crea el perfil y lo que necesite. La Nuclear
+  Option ya no re-crea el perfil por defecto.
+- El **dedupe de catálogos ya no corre automáticamente** en la migración: la prevención es la
+  búsqueda case-insensitive y la limpieza de datos viejos es a demanda (script).
+
 ## [2.0.1] - 2026-10-16
 
 ### Fixed

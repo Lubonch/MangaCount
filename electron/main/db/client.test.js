@@ -23,7 +23,7 @@ describe('db/client', () => {
     assert.ok(fs.existsSync(path.join(dir, 'mangacount.db')));
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
     assert.deepEqual(getCounts(db), {
-      profiles: 1,
+      profiles: 0,
       mangas: 0,
       entries: 0,
       formats: 0,
@@ -36,24 +36,27 @@ describe('db/client', () => {
     db.prepare('INSERT INTO Profile (Name) VALUES (?)').run('segundo');
     db.close();
     db = openDb(dir);
-    assert.equal(getCounts(db).profiles, 2);
+    assert.equal(getCounts(db).profiles, 1);
     assert.equal(getCounts(db).formats, 0);
   });
 
   it('respeta UNIQUE(ProfileId, MangaId) y FK con CASCADE', () => {
     db = openDb(dir);
+    const profileId = db
+      .prepare('INSERT INTO Profile (Name) VALUES (?) RETURNING Id')
+      .get('yo').Id;
     const manga = db
       .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
       .get('berserk', 41);
     db.prepare(
-      'INSERT INTO Entry (ProfileId, MangaId, PurchasedVolumes) VALUES (1, ?, 0)'
-    ).run(manga.Id);
+      'INSERT INTO Entry (ProfileId, MangaId, PurchasedVolumes) VALUES (?, ?, 0)'
+    ).run(profileId, manga.Id);
     assert.throws(() =>
       db
-        .prepare('INSERT INTO Entry (ProfileId, MangaId, PurchasedVolumes) VALUES (1, ?, 0)')
-        .run(manga.Id)
+        .prepare('INSERT INTO Entry (ProfileId, MangaId, PurchasedVolumes) VALUES (?, ?, 0)')
+        .run(profileId, manga.Id)
     );
-    db.prepare('DELETE FROM Profile WHERE Id = 1').run();
+    db.prepare('DELETE FROM Profile WHERE Id = ?').run(profileId);
     assert.equal(getCounts(db).entries, 0);
   });
 });
