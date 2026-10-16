@@ -38,12 +38,13 @@ let botStatus = 'apagado';
 app.isQuitting = false;
 
 // Instancia única: el autostart + una apertura manual no deben crear dos
-// procesos (dos conexiones de bot y dos escritores de SQLite).
-if (!app.requestSingleInstanceLock()) {
+// procesos (dos conexiones de bot y dos escritores de SQLite). Si no somos la
+// instancia primaria, salimos y NO inicializamos el backend.
+const isPrimaryInstance = app.requestSingleInstanceLock();
+if (!isPrimaryInstance) {
   app.quit();
-} else {
-  app.on('second-instance', () => showWindow());
 }
+app.on('second-instance', () => showWindow());
 
 // Debe registrarse antes de `app.whenReady()` para que el esquema sea tratado
 // como estándar/seguro y el renderer pueda cargar las fotos de perfil.
@@ -207,6 +208,7 @@ function createTray() {
 }
 
 app.whenReady().then(() => {
+  if (!isPrimaryInstance) return;
   appCtx = initBackend();
   createTray();
   stopAutoBackup = scheduleAutoBackup(appCtx);
