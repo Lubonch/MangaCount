@@ -121,4 +121,16 @@ describe('services/backup', () => {
     assert.ok(!names.includes('dos'));
     assert.ok(fs.existsSync(path.join(dataDir, 'profiles', fileName)));
   });
+
+  it('restore rechaza entradas con path traversal (zip-slip)', async () => {
+    const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
+    const entries = unzipSync(new Uint8Array(fs.readFileSync(backup.path)));
+    entries['profiles/../evil.txt'] = strToU8('pwned');
+    const evil = path.join(destDir, 'evil.zip');
+    fs.writeFileSync(evil, zipSync(entries));
+
+    const result = await restoreBackup(db, dataDir, evil, { now: at(60), logger: { warn() {} } });
+    db = result.db;
+    assert.equal(fs.existsSync(path.join(dataDir, 'evil.txt')), false);
+  });
 });

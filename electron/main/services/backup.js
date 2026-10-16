@@ -180,7 +180,10 @@ export async function restoreBackup(
   for (const [name, bytes] of Object.entries(entries)) {
     if (!name.startsWith(`${PROFILES_DIR}/`)) continue;
     const rel = name.slice(PROFILES_DIR.length + 1);
-    const target = path.join(profilesPath, ...rel.split('/'));
+    // Anti zip-slip: descartar rutas con `..` o segmentos vacíos (absolutas).
+    if (!rel || rel.split('/').some((seg) => seg === '..' || seg === '')) continue;
+    const target = path.resolve(profilesPath, rel);
+    if (target !== profilesPath && !target.startsWith(profilesPath + path.sep)) continue;
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, bytes);
   }
