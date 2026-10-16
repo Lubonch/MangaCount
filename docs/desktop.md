@@ -129,6 +129,12 @@ excluyen drafts/prereleases → solo se ofrecen releases **publicadas**.
 > En Windows el instalador **no está firmado**: SmartScreen puede advertir (el auto-update igual
 > funciona).
 
+> **Nombrá el AppImage sin la versión** (p. ej. `MangaCount.AppImage`). Así el updater lo reemplaza
+> **in place** al actualizar; si el nombre incluye la versión (`MangaCount-1.0.14.AppImage`), el
+> updater crea un archivo **nuevo** con la versión nueva y borra el viejo, y los accesos directos
+> dejan de apuntar a un archivo válido. Al reiniciar para aplicar la actualización, la app **reabre
+> con la versión nueva**.
+
 ## Diagnóstico
 
 Los errores del proceso main (excepciones no capturadas, promesas rechazadas, caída de procesos) y del

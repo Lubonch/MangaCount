@@ -12,10 +12,13 @@ function fakeAutoUpdater() {
   };
   emitter.downloadUpdate = async () => {};
   let installed = false;
-  emitter.quitAndInstall = () => {
+  let installedArgs = null;
+  emitter.quitAndInstall = (...args) => {
     installed = true;
+    installedArgs = args;
   };
   emitter.wasInstalled = () => installed;
+  emitter.wasInstalledArgs = () => installedArgs;
   return emitter;
 }
 
@@ -46,6 +49,8 @@ describe('services/update-controller: modo auto', () => {
 
     controller.install();
     assert.equal(autoUpdater.wasInstalled(), true);
+    // isForceRunAfter=true → en AppImage reabre con la versión nueva.
+    assert.deepEqual(autoUpdater.wasInstalledArgs(), [false, true]);
     assert.ok(states.length > 0);
   });
 
