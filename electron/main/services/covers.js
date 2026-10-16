@@ -20,20 +20,29 @@ export const ANILIST_URL = 'https://graphql.anilist.co';
 export const PROVIDER = 'anilist';
 export const MAX_COVER_BYTES = 8 * 1024 * 1024;
 
-const SEARCH_QUERY = `
-  query ($search: String) {
-    Page(page: 1, perPage: 10) {
-      media(search: $search, type: MANGA, sort: SEARCH_MATCH) {
-        id
-        title { romaji english native }
-        coverImage { large medium }
-        format
-        volumes
-        startDate { year }
-      }
-    }
-  }
+// Campos comunes. `isAdult` viaja para poder marcar candidatos +18 en la UI.
+const MEDIA_FIELDS = `
+  id
+  title { romaji english native }
+  coverImage { large medium }
+  format
+  volumes
+  startDate { year }
+  isAdult
 `;
+
+// Dos variantes de query: con `isAdult: false` (oculta +18; default) y sin el
+// argumento (devuelve todo). Evita depender de la semántica de `isAdult: null`.
+const SEARCH_QUERY_SAFE = `query ($search: String) {
+  Page(page: 1, perPage: 10) {
+    media(search: $search, type: MANGA, sort: SEARCH_MATCH, isAdult: false) { ${MEDIA_FIELDS} }
+  }
+}`;
+const SEARCH_QUERY_ALL = `query ($search: String) {
+  Page(page: 1, perPage: 10) {
+    media(search: $search, type: MANGA, sort: SEARCH_MATCH) { ${MEDIA_FIELDS} }
+  }
+}`;
 
 export function normalizeTitle(title) {
   return String(title ?? '')
@@ -64,7 +73,7 @@ function rateLimitError(res) {
   return error;
 }
 
-export async function searchMangaOnce(query, { fetchImpl = fetch, timeoutMs = 8000 } = {}) {
+export async function searchMangaOnce(query, { fetchImpl = fetch, timeoutMs = 8000, includeAdult = false } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -75,7 +84,10 @@ export async function searchMangaOnce(query, { fetchImpl = fetch, timeoutMs = 80
         Accept: 'application/json',
         'User-Agent': 'MangaCount',
       },
-      body: JSON.stringify({ query: SEARCH_QUERY, variables: { search: String(query ?? '') } }),
+      body: JSON.stringify({
+        query: includeAdult ? SEARCH_QUERY_ALL : SEARCH_QUERY_SAFE,
+        variables: { search: String(query ?? '') },
+      }),
       signal: controller.signal,
     });
     if (res.status === 429) throw rateLimitError(res);
@@ -90,6 +102,7 @@ export async function searchMangaOnce(query, { fetchImpl = fetch, timeoutMs = 80
       format: m.format ?? null,
       volumes: m.volumes ?? null,
       year: m.startDate?.year ?? null,
+      isAdult: m.isAdult === true,
     }));
   } finally {
     clearTimeout(timer);
@@ -100,12 +113,18 @@ export async function searchMangaOnce(query, { fetchImpl = fetch, timeoutMs = 80
 // inyectable para testearla sin demoras reales.
 export async function searchManga(
   query,
-  { fetchImpl = fetch, timeoutMs = 8000, retries = 1, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}
+  {
+    fetchImpl = fetch,
+    timeoutMs = 8000,
+    retries = 1,
+    includeAdult = false,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+  } = {}
 ) {
   let attempt = 0;
   for (;;) {
     try {
-      return await searchMangaOnce(query, { fetchImpl, timeoutMs });
+      return await searchMangaOnce(query, { fetchImpl, timeoutMs, includeAdult });
     } catch (err) {
       if (err?.code === 'RATE_LIMIT' && attempt < retries) {
         attempt += 1;
@@ -262,13 +281,13 @@ export function coverMap(db) {
 // Auto-match best-effort al agregar un manga: busca por el título local y
 // vincula SOLO si hay un único candidato idéntico (normalizado). Si es ambiguo
 // o no hay match, no hace nada. Nunca pisa un vínculo existente.
-export async function autoMatchCover(db, dataDir, mangaId, { fetchImpl } = {}) {
+export async function autoMatchCover(db, dataDir, mangaId, { fetchImpl, includeAdult = false } = {}) {
   const id = requireMangaId(mangaId);
   const existing = getRef(db, id, PROVIDER);
   if (existing?.coverFile) return coverUrl(existing.coverFile);
   const manga = getMangaById(db, id);
   if (!manga?.name) return null;
-  const candidates = await searchManga(manga.name, { fetchImpl });
+  const candidates = await searchManga(manga.name, { fetchImpl, includeAdult });
   const match = pickAutoMatch(manga.name, candidates);
   if (!match?.coverUrl) return null;
   const linked = await linkCover(db, dataDir, { mangaId: id, candidate: match, fetchImpl });

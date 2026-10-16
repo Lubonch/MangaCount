@@ -14,6 +14,7 @@ export const DEFAULT_PREFS = {
   startInTray: true,
   updateCheck: true,
   diagnosticsCopy: true,
+  showAdultCovers: false,
   backup: {
     enabled: false,
     destinationDir: null,

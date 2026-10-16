@@ -159,4 +159,22 @@ describe('ipc roundtrip por canal', () => {
       delete globalThis.fetch;
     }
   });
+
+  it('covers: showAdultCovers controla el filtro +18', async () => {
+    let sentQuery = null;
+    globalThis.fetch = async (_url, opts) => {
+      sentQuery = JSON.parse(opts.body).query;
+      return { ok: true, status: 200, json: async () => ({ data: { Page: { media: [] } } }) };
+    };
+    try {
+      await api.coverSearch('x');
+      assert.match(sentQuery, /isAdult:\s*false/); // default: filtra
+
+      await api.appConfigSet({ showAdultCovers: true });
+      await api.coverSearch('x');
+      assert.doesNotMatch(sentQuery, /isAdult:\s*false/); // habilitado: sin filtro
+    } finally {
+      delete globalThis.fetch;
+    }
+  });
 });

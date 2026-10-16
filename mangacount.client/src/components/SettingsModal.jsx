@@ -53,7 +53,7 @@ function downloadTsv(text, filename) {  if (typeof URL?.createObjectURL !== 'fun
 }
 
 const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDataReset }) => {
-  const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true, diagnosticsCopy: true });
+  const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true, diagnosticsCopy: true, showAdultCovers: false });
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
   const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], status: 'apagado', hasToken: false });
@@ -96,6 +96,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           autostart: !!autostart?.enabled,
           updateCheck: appConfig?.updateCheck !== false,
           diagnosticsCopy: appConfig?.diagnosticsCopy !== false,
+          showAdultCovers: !!appConfig?.showAdultCovers,
         });
         setBackup({
           ...EMPTY_BACKUP,
@@ -133,6 +134,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       if (key === 'startInTray') await appConfigSet({ startInTray: value });
       else if (key === 'updateCheck') await appConfigSet({ updateCheck: value });
       else if (key === 'diagnosticsCopy') await appConfigSet({ diagnosticsCopy: value });
+      else if (key === 'showAdultCovers') await appConfigSet({ showAdultCovers: value });
       else await botAutostartSet(value);
       setGeneralMessage('Guardado.');
     } catch (err) {
@@ -561,6 +563,14 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
               Busca y vincula las portadas de los mangas que todavía no tienen. Va de a **lotes** (por
               defecto 20) y **pausa** entre lotes, para no acercarse al límite de AniList (~30/min).
             </p>
+            <label className="settings-check">
+              <input
+                type="checkbox"
+                checked={general.showAdultCovers}
+                onChange={(e) => toggleGeneral('showAdultCovers', e.target.checked)}
+              />
+              Incluir resultados +18 (por defecto ocultos)
+            </label>
             <div className="settings-field settings-inline">
               <label>
                 Tamaño de lote

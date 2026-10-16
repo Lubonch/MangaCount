@@ -109,6 +109,7 @@ export default function LinkCoverModal({ manga, onClose, onLinked }) {
               ) : (
                 <span className="cover-candidate-placeholder">Sin portada</span>
               )}
+              {candidate.isAdult && <span className="cover-candidate-adult">+18</span>}
               <span className="cover-candidate-title">{candidate.title}</span>
               <span className="cover-candidate-meta">
                 {[candidate.format, candidate.year, candidate.volumes ? `${candidate.volumes} vol.` : null]

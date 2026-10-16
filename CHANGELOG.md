@@ -3,6 +3,14 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.1.0] - 2026-10-16
+
+### Added
+
+- **Filtro de contenido +18 en la búsqueda de portadas (AniList)**: por defecto se **excluye** el
+  contenido adulto (`isAdult: false`); un **toggle en Settings ▸ Portadas (AniList)** permite incluirlo,
+  y en ese caso cada candidato +18 se marca con un **badge `+18`**. Aplica a buscar, auto-match y bulk.
+
 ## [2.0.9] - 2026-10-16
 
 ### Changed

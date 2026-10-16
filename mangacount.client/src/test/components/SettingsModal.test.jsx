@@ -943,4 +943,21 @@ describe('SettingsModal', () => {
       vi.useRealTimers()
     }
   })
+
+  it('toggle de contenido +18 persiste showAdultCovers', async () => {
+    const user = userEvent.setup()
+    api.appConfigGet.mockResolvedValue({
+      startInTray: true,
+      updateCheck: true,
+      diagnosticsCopy: true,
+      showAdultCovers: false,
+    })
+    api.appConfigSet.mockResolvedValue({ showAdultCovers: true })
+
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    await user.click(await screen.findByLabelText(/Incluir resultados \+18/))
+
+    await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ showAdultCovers: true }))
+  })
 })
