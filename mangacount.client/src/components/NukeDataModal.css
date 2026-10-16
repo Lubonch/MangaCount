@@ -4,11 +4,11 @@
 
 .nuke-modal-content {
     max-width: 600px;
-    border: 2px solid #e74c3c;
+    border: 2px solid var(--color-incomplete);
 }
 
 .nuke-modal-header {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    background: linear-gradient(135deg, var(--color-incomplete), var(--color-incomplete));
     color: white;
 }
 
@@ -45,14 +45,14 @@
 }
 
 .progress-step.active {
-    background: #e74c3c;
+    background: var(--color-incomplete);
     color: white;
-    border-color: #e74c3c;
+    border-color: var(--color-incomplete);
 }
 
 .progress-step.completed {
-    background: #27ae60;
-    border-color: #27ae60;
+    background: var(--color-complete);
+    border-color: var(--color-complete);
 }
 
 .progress-bar {
@@ -64,12 +64,12 @@
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #e74c3c, #c0392b);
+    background: linear-gradient(90deg, var(--color-incomplete), var(--color-incomplete));
     transition: width 0.3s ease;
 }
 
 .confirmation-step h3 {
-    color: #e74c3c;
+    color: var(--color-incomplete);
     margin-bottom: 16px;
     text-align: center;
 }
@@ -83,7 +83,7 @@
     border-radius: 8px;
     padding: 16px;
     margin: 16px 0;
-    border-left: 4px solid #e74c3c;
+    border-left: 4px solid var(--color-incomplete);
 }
 
 .data-item {
@@ -100,11 +100,11 @@
     background: var(--bg-tertiary);
     padding: 16px;
     border-radius: 8px;
-    border: 1px solid #e74c3c;
+    border: 1px solid var(--color-incomplete);
 }
 
 .consequences h4 {
-    color: #e74c3c;
+    color: var(--color-incomplete);
     margin-bottom: 8px;
 }
 
@@ -118,12 +118,12 @@
 }
 
 .final-warning {
-    background: #fff5f5;
-    border: 2px solid #e74c3c;
+    background: var(--bg-incomplete);
+    border: 2px solid var(--color-incomplete);
     border-radius: 8px;
     padding: 16px;
     margin: 16px 0;
-    color: #c0392b;
+    color: var(--color-incomplete);
 }
 
 .confirmation-input {
@@ -131,7 +131,7 @@
     padding: 12px 16px;
     font-size: 16px;
     font-family: 'Courier New', monospace;
-    border: 2px solid #e74c3c;
+    border: 2px solid var(--color-incomplete);
     border-radius: 6px;
     background: var(--bg-secondary);
     color: var(--text-primary);
@@ -141,8 +141,8 @@
 }
 
 .confirmation-input.valid {
-    border-color: #27ae60;
-    background: #f8fff8;
+    border-color: var(--color-complete);
+    background: var(--bg-complete);
 }
 
 .type-hint {
@@ -159,7 +159,7 @@
 }
 
 .nuke-modal-actions {
-    border-top: 2px solid #e74c3c;
+    border-top: 2px solid var(--color-incomplete);
 }
 
 .back-button,
@@ -184,16 +184,16 @@
 }
 
 .next-button {
-    background: #f39c12;
+    background: var(--color-priority);
     color: white;
 }
 
 .next-button:hover {
-    background: #e67e22;
+    background: var(--color-priority);
 }
 
 .nuke-button {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    background: linear-gradient(135deg, var(--color-incomplete), var(--color-incomplete));
     color: white;
     padding: 12px 24px;
     border: none;
@@ -206,7 +206,7 @@
 }
 
 .nuke-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #c0392b, #a93226);
+    background: linear-gradient(135deg, var(--color-incomplete), var(--color-incomplete));
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
 }
@@ -228,7 +228,7 @@
 @media (prefers-color-scheme: dark) {
     .final-warning {
         background: rgba(231, 76, 60, 0.1);
-        color: #ff6b6b;
+        color: var(--color-incomplete);
     }
     
     .confirmation-input.valid {

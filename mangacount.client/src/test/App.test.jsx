@@ -67,7 +67,7 @@ describe('App Component', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+      expect(screen.getByText('MangaCount')).toBeInTheDocument()
     }, { timeout: 5000 })
 
     expect(localStorage.setItem).toHaveBeenCalledWith('selectedProfileId', '1')
@@ -205,7 +205,7 @@ describe('App Component', () => {
     await user.click(screen.getByText('Profile 1'))
 
     await waitFor(() => {
-      expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+      expect(screen.getByText('MangaCount')).toBeInTheDocument()
     }, { timeout: 5000 })
   })
 
@@ -244,7 +244,7 @@ describe('App Component', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+      expect(screen.getByText('MangaCount')).toBeInTheDocument()
     }, { timeout: 5000 })
 
     await user.click(screen.getByRole('button', { name: 'Recommendations' }))
@@ -294,7 +294,7 @@ describe('App Component', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+      expect(screen.getByText('MangaCount')).toBeInTheDocument()
     }, { timeout: 5000 })
 
     await user.click(screen.getByRole('button', { name: 'Recommendations' }))

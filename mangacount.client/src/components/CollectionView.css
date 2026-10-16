@@ -592,7 +592,7 @@
 }
 
 .reset-filter:hover {
-    background-color: #2980b9;
+    background-color: var(--accent);
     transform: translateY(-1px);
 }
 
@@ -655,7 +655,7 @@
 }
 
 .clear-filters-btn:hover {
-    background: #c0392b;
+    background: var(--color-incomplete);
     transform: translateY(-1px);
 }
 
@@ -664,4 +664,24 @@
     gap: 16px;
     align-items: center;
     flex-wrap: wrap;
+}
+
+/* Hover-lift de tarjetas (cards y compactas) */
+.entry-card,
+.compact-card {
+    transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) ease;
+}
+
+.entry-card:hover,
+.compact-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-3);
+}
+
+/* Barra de progreso animada */
+.progress-fill,
+.compact-fill,
+.table-progress-fill {
+    transition: width var(--dur-normal) var(--ease-out);
 }

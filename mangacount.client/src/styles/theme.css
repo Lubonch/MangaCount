@@ -1,0 +1,73 @@
+/* Tokens de color por tema. `:root` = dark (default; evita FOUC antes de que
+   ThemeContext setee data-theme). */
+
+:root,
+:root[data-theme="dark"] {
+  --bg-primary: #0b1622;
+  --bg-secondary: #141f2e;
+  --bg-tertiary: #1e2a3a;
+  --text-primary: #e8eef5;
+  --text-secondary: #9fadbd;
+  --text-muted: #6b7a8d;
+  --border-color: #26344a;
+  --border-light: #1b2637;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --shadow-hover: rgba(0, 0, 0, 0.55);
+
+  --sidebar-bg: #0e1927;
+  --sidebar-text: #e8eef5;
+  --sidebar-text-muted: #9fadbd;
+  --sidebar-accent: #16233a;
+  --sidebar-accent-hover: #1e2d47;
+  --sidebar-border: #1b2637;
+
+  --accent: #3db4f2;
+  --accent-hover: #5cc4f7;
+  --accent-soft: rgba(61, 180, 242, 0.14);
+  --accent-contrast: #06121f;
+  --focus-ring: rgba(61, 180, 242, 0.55);
+
+  --color-complete: #3ddc84;
+  --color-priority: #f5c542;
+  --color-incomplete: #ff6b6b;
+  --color-info: #3db4f2;
+  --bg-complete: rgba(61, 220, 132, 0.1);
+  --bg-priority: rgba(245, 197, 66, 0.1);
+  --bg-incomplete: rgba(255, 107, 107, 0.1);
+  --bg-pending: rgba(245, 197, 66, 0.14);
+}
+
+:root[data-theme="light"] {
+  --bg-primary: #f6f8fb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef2f7;
+  --text-primary: #16202b;
+  --text-secondary: #55657a;
+  --text-muted: #8593a5;
+  --border-color: #dfe6ee;
+  --border-light: #eef2f7;
+  --shadow: rgba(16, 32, 50, 0.08);
+  --shadow-hover: rgba(16, 32, 50, 0.16);
+
+  --sidebar-bg: #12202f;
+  --sidebar-text: #e8eef5;
+  --sidebar-text-muted: #9fadbd;
+  --sidebar-accent: #1b2b40;
+  --sidebar-accent-hover: #24374f;
+  --sidebar-border: #1b2637;
+
+  --accent: #2b9be0;
+  --accent-hover: #1f8ad0;
+  --accent-soft: rgba(43, 155, 224, 0.12);
+  --accent-contrast: #ffffff;
+  --focus-ring: rgba(43, 155, 224, 0.45);
+
+  --color-complete: #17a75c;
+  --color-priority: #d99a06;
+  --color-incomplete: #e2483d;
+  --color-info: #2b9be0;
+  --bg-complete: #f0fbf5;
+  --bg-priority: #fffaf0;
+  --bg-incomplete: #fef4f3;
+  --bg-pending: #fef9e7;
+}

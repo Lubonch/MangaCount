@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MangaCount">
+  <defs>
+    <linearGradient id="mc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3db4f2"/>
+      <stop offset="1" stop-color="#2f7fd6"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#mc)"/>
+  <path d="M360 128 h80 v80 z" fill="#ffffff" opacity="0.18"/>
+  <text x="256" y="332" text-anchor="middle"
+        font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-weight="700" font-size="232" letter-spacing="-12" fill="#ffffff">MC</text>
+</svg>

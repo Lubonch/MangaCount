@@ -35,7 +35,7 @@ describe('Sidebar Component', () => {
       />
     )
 
-    expect(screen.getByText('🏗️ Manga Count')).toBeInTheDocument()
+    expect(screen.getByText('MangaCount')).toBeInTheDocument()
     expect(screen.getByText('Test User')).toBeInTheDocument()
     expect(screen.getByText('Collection')).toBeInTheDocument()
     expect(screen.getByText('Manga Library (1)')).toBeInTheDocument()

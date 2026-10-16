@@ -94,7 +94,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--color-info), #1f7bd6);
+    background: linear-gradient(135deg, var(--color-info), var(--accent-hover));
     color: white;
     font-weight: 700;
 }

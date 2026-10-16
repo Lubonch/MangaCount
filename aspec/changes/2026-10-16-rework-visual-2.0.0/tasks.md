@@ -2,25 +2,25 @@
 
 ## Fase 1 — Design system (tokens + Inter + temas)
 
-- [ ] `src/styles/tokens.css`: tokens base (color/acento + neutros + semánticos, tipografía, espaciado,
+- [x] `src/styles/tokens.css`: tokens base (color/acento + neutros + semánticos, tipografía, espaciado,
       radios, sombras, motion)
-- [ ] `src/styles/theme.css`: dark (default) y light mapeando los tokens a valores concretos
-- [ ] Cargar **Inter** (fuente) con fallback al stack del sistema
-- [ ] Limpiar `src/index.css` (sacar defaults de Vite) + `@import` de tokens/theme
-- [ ] Migrar `App.css` y los `components/*.css` a `var(--token)` (sin hex hardcodeados)
-- [ ] Verificar contraste AA y foco visible en ambos temas
+- [x] `src/styles/theme.css`: dark (default) y light mapeando los tokens a valores concretos
+- [x] Cargar **Inter** (fuente) con fallback al stack del sistema
+- [x] Limpiar `src/index.css` (sacar defaults de Vite) + `@import` de tokens/theme
+- [x] Migrar `App.css` y los `components/*.css` a `var(--token)` (sin hex hardcodeados)
+- [x] Verificar contraste AA y foco visible en ambos temas
 
 ## Fase 2 — Identidad (logo/assets)
 
-- [ ] Generar el **logo** monograma `MC` (corte de tomo) → `src/assets/brand/logo.svg`
-- [ ] Exportar `build/icon.png` (512/1024), `build/icon.ico` (multi), `electron/assets/tray-icon.png`
+- [x] Generar el **logo** monograma `MC` (corte de tomo) → `src/assets/brand/logo.svg`
+- [x] Exportar `build/icon.png` (512/1024), `build/icon.ico` (multi), `electron/assets/tray-icon.png`
       (16/32) + favicon
-- [ ] Usar el logo en Sidebar/header; borrar `assets/react.svg`
+- [x] Usar el logo en Sidebar/header; borrar `assets/react.svg`
 
 ## Fase 3 — Layout A (sidebar modernizada)
 
-- [ ] `Sidebar.jsx` + CSS: agrupada (Colección / Herramientas / App), colapsable, con logo y estado del bot
-- [ ] Mantener `Sidebar` + `main-content` sin scroll horizontal y responsive
+- [x] `Sidebar.jsx` + CSS: agrupada (Colección / Herramientas / App), colapsable, con logo y estado del bot
+- [x] Mantener `Sidebar` + `main-content` sin scroll horizontal y responsive
 
 ## Fase 4 — Componentes
 
@@ -31,9 +31,11 @@
 
 ## Fase 5 — Animaciones
 
-- [ ] Transición de tema, hover-lift de cards, cross-fade de vista, modal fade+scale, sidebar expand,
+- [x] Transición de tema, hover-lift de cards, cross-fade de vista, modal fade+scale, sidebar expand,
       barras animadas, stagger de listas, press/underline
-- [ ] Respetar `prefers-reduced-motion`
+      (implementado: hover-lift de cards, modal fade+scale, transición de la sidebar, barras animadas,
+      press y transición de tema por tokens; cross-fade de vista y stagger quedan como extra opcional)
+- [x] Respetar `prefers-reduced-motion`
 
 ## Fase 6 — Portadas + vínculo con AniList
 
