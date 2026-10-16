@@ -23,6 +23,9 @@ Contenido:
 ├── mangacount.db          # base SQLite
 ├── mangacount.db-wal      # write-ahead log (temporal)
 ├── mangacount.db-shm      # shared memory (temporal)
+├── preferences.json       # arranque en bandeja, backup y config del bot
+├── discord-token.bin      # token del bot (cifrado con safeStorage, o plano si no hay soporte)
+├── backups-restore/       # backups de seguridad previos a un restore
 ├── profiles/              # fotos de perfil subidas
 │   └── profile_<id>_<uuid>.<ext>
 └── logs/
@@ -58,7 +61,55 @@ Las fotos de perfil no se sirven por HTTP: el proceso main registra un esquema c
 (`protocol.handle('mangacount', …)`) que lee `<userData>/profiles/<archivo>` y lo responde con
 el `content-type` correcto. El renderer lo usa directo en `<img src="mangacount://profiles/…">`.
 
-## Backup manual
+## Backup y restore integrados
+
+La app trae backup/restore del **sistema completo** desde **Settings → Backup**:
+
+- **Formato**: un `.zip` (`mangacount-backup-<YYYY-MM-DD-HHmm>.zip`) con `manifest.json`,
+  `mangacount.db` (snapshot consistente con `db.backup()`, nunca copiando el `.db` vivo con WAL)
+  y `profiles/`. **No** incluye `preferences.json` ni `logs/`: la config es de la máquina, no del
+  dato.
+- **Retención**: se conservan los últimos **5** backups (se podan solo archivos con el patrón
+  propio).
+- **Automático (opcional, apagado por defecto)**: al habilitarlo exige un **destino** y al menos un
+  **disparador** — *al iniciar* (si pasó más del intervalo desde el último backup) y/o *mientras la
+  app corre* (cada X minutos). El destino debería estar en **otro disco** o carpeta sincronizada.
+- **Restore**: valida el `.zip` (`manifest.json` + `PRAGMA integrity_check`), genera un backup de
+  seguridad del estado actual en `backups-restore/`, cierra la base, limpia `-wal`/`-shm` y
+  reemplaza `mangacount.db` + `profiles/`. Un backup con `app`/`schemaVersion` incompatible se
+  rechaza sin tocar datos.
+- **Indicador**: Settings muestra la fecha del último OK y, si falló, el error (que también queda
+  en `logs/`).
+
+## Modo residente en bandeja y autostart
+
+La app queda **residente en la bandeja del sistema**: cerrar la ventana la **oculta** en vez de
+salir. El menú del tray ofrece *Abrir*, *Estado del bot*, *Iniciar con el sistema* y *Salir* (único
+camino para terminar el proceso). El arranque por defecto es en tray (`startInTray`), incluido el
+autostart con `--hidden`.
+
+- **Instancia única**: un segundo lanzamiento enfoca la instancia existente (evita dos conexiones
+  de bot y dos escritores de SQLite).
+- **Autostart** (opcional, en Settings → General): Windows/macOS con `app.setLoginItemSettings`;
+  Linux escribiendo o borrando `~/.config/autostart/mangacount.desktop` con la ruta real del
+  ejecutable (`$APPIMAGE` o el binario del `.deb`). El toggle refleja el estado real del sistema.
+
+## Bot de Discord (solo consulta)
+
+Bot **embebido en el proceso main**: arranca y se detiene con la app, sobre la **misma conexión
+SQLite**, y expone slash commands guild-scoped de solo lectura: `/perfil`, `/buscar`, `/pendientes`
+y `/recomendar`. **Cada usuario usa su propio bot** (su aplicación, su token, su servidor); no se
+comparte nada entre instalaciones, y la app es **mono-guild** (un `guildId` por vez).
+
+La configuración vive en **Settings → Bot**: toggle, **token** (cifrado con `safeStorage`; nunca en
+texto plano ni en el repo), **Guild ID** y **allowlist de usuarios** (las User IDs, coma-separadas;
+con la lista vacía no responde a nadie). El **Application ID** no se carga en la app: se usa solo
+para armar la URL de invitación (ver el README).
+
+Sin token o sin red el bot queda *apagado* y la app funciona normal. Los fallos se registran en
+`logs/`. El comando de escritura `actualizar` no está expuesto (queda como punto de extensión).
+
+## Backup manual (alternativo)
 
 Con la app **cerrada** (para que el WAL esté consolidado), copiá la carpeta `userData` completa:
 

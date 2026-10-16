@@ -1,6 +1,5 @@
-// Logger con la misma política que WhatsappBot/src/logger.js y DailyTextFileWriter:
-// archivo actual app.txt; al cambiar el día se renombra a app.YYYY-MM-DD solo
-// si tiene contenido (si está vacío no se rota).
+// Logger con rotación diaria: archivo actual app.txt; al cambiar el día se
+// renombra a app.YYYY-MM-DD solo si tiene contenido (si está vacío no se rota).
 
 import fs from 'node:fs';
 import path from 'node:path';

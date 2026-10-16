@@ -81,6 +81,37 @@ export const recommendationGet = (profileId, limit = 10) =>
 export const databaseStatistics = () => apiCall('database:statistics', '/api/database/statistics');
 export const databaseNukeLocal = () => apiCall('database:nuke-local', '/api/database/nuke', json({}));
 
+// Backup y restore del sistema (Settings)
+export const backupConfigGet = () => apiCall('backup:config-get', '/api/backup/config');
+export const backupConfigSet = (config) =>
+  apiCall('backup:config-set', '/api/backup/config', json(config), config);
+export const backupList = () => apiCall('backup:list', '/api/backup');
+export const backupCreate = (destinationDir) =>
+  apiCall('backup:create', '/api/backup', json({}), destinationDir);
+export const backupRestore = (zipPath) =>
+  apiCall('backup:restore', '/api/backup/restore', json({ zipPath }), zipPath);
+
+// Bot de Discord (Settings)
+export const botConfigGet = () => apiCall('bot:config-get', '/api/bot/config');
+export const botConfigSet = (config) =>
+  apiCall('bot:config-set', '/api/bot/config', json(config), config);
+export const botSetToken = (token) =>
+  apiCall('bot:set-token', '/api/bot/token', json({ token }), token);
+export const botStatus = () => apiCall('bot:status', '/api/bot/status');
+export const botAutostartGet = () => apiCall('bot:autostart-get', '/api/bot/autostart');
+export const botAutostartSet = (enabled) =>
+  apiCall('bot:autostart-set', '/api/bot/autostart', json({ enabled }), enabled);
+
+// Config general de la app
+export const appConfigGet = () => apiCall('app:config-get', '/api/app/config');
+export const appConfigSet = (config) =>
+  apiCall('app:config-set', '/api/app/config', json(config), config);
+
+// Diálogos nativos de archivo
+export const pickDirectory = () => apiCall('dialog:pick-directory', '/api/dialog/directory');
+export const pickFile = (filters) =>
+  apiCall('dialog:pick-file', '/api/dialog/file', json(filters ?? {}), filters);
+
 // ---------------------------------------------------------------------------
 // Shim de `window.fetch` para rutas /api/* (Electron)
 // ---------------------------------------------------------------------------

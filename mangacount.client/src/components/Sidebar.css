@@ -11,6 +11,24 @@
 
 .sidebar-header {
     margin-bottom: 25px;
+    position: relative;
+}
+
+.settings-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: transparent;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: var(--sidebar-text);
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.settings-button:hover {
+    background-color: var(--sidebar-border);
 }
 
 .sidebar-header h2 {

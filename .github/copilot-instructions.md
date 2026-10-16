@@ -6,7 +6,7 @@ sin servidor: Electron + SQLite embebida.
 - `electron/`: proceso main (SQLite, repositories, servicios, handlers IPC) y `preload.cjs` que expone `window.mangaCount`.
 - `mangacount.client`: renderer React + Vite. Consume el proceso main por IPC; `src/api/localAdapter.js` incluye el shim de `fetch('/api/*')` → IPC.
 - `shared/recommendations`: motor compartido de recomendaciones, catálogos, normalización y reglas de mercado.
-- `WhatsappBot`: bot Node.js, fuera de alcance de la app de escritorio (no se empaqueta). Código intacto.
+- `WhatsappBot`: eliminado del repo. Lo reemplaza el bot de Discord embebido en el proceso main (`electron/main/services/discord-bot.js`, solo consulta).
 
 ## Stack real y decisiones de arquitectura
 - Persistencia: SQLite embebida (`better-sqlite3`) en el proceso main, en `app.getPath('userData')`. No hay base de datos externa, ORM ni servidor HTTP; todo es local.

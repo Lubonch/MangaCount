@@ -12,55 +12,15 @@ const Sidebar = ({
     onImportSuccess,
     onBackToProfiles,
     onRecommend = () => {},
+    onOpenSettings = () => {},
     recommendationsLoading = false,
     refreshing = false
 }) => {
-    const [isImporting, setIsImporting] = useState(false);
-    const [importMessage, setImportMessage] = useState('');
     const [showAddEntry, setShowAddEntry] = useState(false);
     const [showAddManga, setShowAddManga] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
     const [showNukeModal, setShowNukeModal] = useState(false);
     const [editingManga, setEditingManga] = useState(null);
-
-    const handleFileImport = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (!file.name.endsWith('.tsv')) {
-            setImportMessage('Please select a TSV file');
-            return;
-        }
-
-        setIsImporting(true);
-        setImportMessage('Importing file...');
-
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            // Import with profile ID
-            const response = await fetch(`/api/entry/import/${selectedProfile.id}`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                setImportMessage('Import successful!');
-                onImportSuccess();
-                event.target.value = '';
-                setTimeout(() => setImportMessage(''), 3000);
-            } else {
-                const error = await response.json();
-                setImportMessage(`Import failed: ${error.message || 'Unknown error'}`);
-            }
-        } catch (error) {
-            setImportMessage('Import failed: ' + error.message);
-        } finally {
-            setIsImporting(false);
-        }
-    };
 
     const handleAddSuccess = () => {
         onImportSuccess();
@@ -85,6 +45,14 @@ const Sidebar = ({
             <aside className="sidebar">
                 <div className="sidebar-header">
                     <h2>🏗️ Manga Count</h2>
+                    <button
+                        className="settings-button"
+                        onClick={onOpenSettings}
+                        title="Settings"
+                        aria-label="Settings"
+                    >
+                        ⚙️
+                    </button>
 
                     {/* Profile Info Section */}
                     {selectedProfile && (
@@ -147,39 +115,6 @@ const Sidebar = ({
                         >
                             {recommendationsLoading ? 'Thinking...' : 'Recommendations'}
                         </button>
-                    </div>
-                </div>
-
-                <div className="sidebar-section">
-                    <h3>Import Collection</h3>
-                    <div className="import-section">
-                        <input
-                            type="file"
-                            accept=".tsv"
-                            onChange={handleFileImport}
-                            disabled={isImporting || !selectedProfile}
-                            className="file-input"
-                            id="tsv-import"
-                        />
-                        <label htmlFor="tsv-import" className="file-input-label">
-                            {isImporting ? 'Importing...' : 'Choose TSV File'}
-                        </label>
-                        {!selectedProfile && (
-                            <small className="import-note">Select a profile first</small>
-                        )}
-                        {importMessage && (
-                            <p className={`import-message ${importMessage.includes('failed') ? 'error' :
-                                    importMessage.includes('successful') ? 'success' : ''
-                                }`}>
-                                {importMessage}
-                            </p>
-                        )}
-                        <div className="import-help">
-                            <small>
-                                Upload a TSV file with columns:<br />
-                                Name | Quantity | Total Volumes | Pending | | Priority
-                            </small>
-                        </div>
                     </div>
                 </div>
 

@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '../test-utils'
+import { render, screen } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 import Sidebar from '../../components/Sidebar'
 import { createMockProfile, createMockManga } from '../test-utils'
@@ -47,12 +47,9 @@ describe('Sidebar Component', () => {
 
     const addEntryButton = screen.getByRole('button', { name: '+ Add Entry' })
     const recommendationButton = screen.getByRole('button', { name: 'Recommendations' })
-    const fileInput = screen.getByLabelText('Choose TSV File')
 
     expect(addEntryButton).toBeDisabled()
     expect(recommendationButton).toBeDisabled()
-    expect(fileInput).toBeDisabled()
-    expect(screen.getByText('Select a profile first')).toBeInTheDocument()
   })
 
   it('enables actions when profile is selected', () => {
@@ -63,12 +60,27 @@ describe('Sidebar Component', () => {
     const addEntryButton = screen.getByRole('button', { name: '+ Add Entry' })
     const addMangaButton = screen.getByRole('button', { name: '+ Add Manga' })
     const recommendationButton = screen.getByRole('button', { name: 'Recommendations' })
-    const fileInput = screen.getByLabelText('Choose TSV File')
 
     expect(addEntryButton).not.toBeDisabled()
     expect(addMangaButton).not.toBeDisabled()
     expect(recommendationButton).not.toBeDisabled()
-    expect(fileInput).not.toBeDisabled()
+  })
+
+  it('opens settings from the gear button', async () => {
+    const user = userEvent.setup()
+    const onOpenSettings = vi.fn()
+
+    render(<Sidebar {...defaultProps} onOpenSettings={onOpenSettings} />)
+
+    await user.click(screen.getByRole('button', { name: 'Settings' }))
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1)
+  })
+
+  it('no longer renders the collection import block', () => {
+    render(<Sidebar {...defaultProps} selectedProfile={createMockProfile()} />)
+    expect(screen.queryByText('Import Collection')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Choose TSV File')).not.toBeInTheDocument()
   })
 
   it('triggers recommendations when the button is clicked', async () => {
@@ -88,82 +100,6 @@ describe('Sidebar Component', () => {
     await user.click(screen.getByRole('button', { name: 'Recommendations' }))
 
     expect(onRecommend).toHaveBeenCalledTimes(1)
-  })
-
-  it('handles file import successfully', async () => {
-    const user = userEvent.setup()
-    const profile = createMockProfile({ id: 1 })
-
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ message: 'Import successful' }),
-    })
-
-    render(<Sidebar {...defaultProps} selectedProfile={profile} />)
-
-    const fileInput = screen.getByLabelText('Choose TSV File')
-    
-    const file = new File(['test content'], 'test.tsv', { type: 'text/tab-separated-values' })
-    await user.upload(fileInput, file)
-
-    await waitFor(() => {
-      expect(screen.getByText('Import successful!')).toBeInTheDocument()
-    })
-
-    expect(global.fetch).toHaveBeenCalledWith('/api/entry/import/1', {
-      method: 'POST',
-      body: expect.any(FormData),
-    })
-
-    expect(mockOnImportSuccess).toHaveBeenCalled()
-  })
-
-  it('handles file import failure', async () => {
-    const user = userEvent.setup()
-    const profile = createMockProfile({ id: 1 })
-
-    global.fetch.mockResolvedValueOnce({
-      ok: false,
-      json: async () => ({ message: 'Invalid file format' }),
-    })
-
-    render(<Sidebar {...defaultProps} selectedProfile={profile} />)
-
-    const fileInput = screen.getByLabelText('Choose TSV File')
-    
-    const file = new File(['test content'], 'test.tsv', { type: 'text/tab-separated-values' })
-    await user.upload(fileInput, file)
-
-    await waitFor(() => {
-      expect(screen.getByText('Import failed: Invalid file format')).toBeInTheDocument()
-    })
-  })
-
-  it('rejects non-TSV files', async () => {
-    const user = userEvent.setup()
-    const profile = createMockProfile({ id: 1 })
-
-    render(<Sidebar {...defaultProps} selectedProfile={profile} />)
-
-    const fileInput = screen.getByLabelText('Choose TSV File')
-    
-    const file = new File(['test content'], 'test.txt', { type: 'text/plain' })
-    await user.upload(fileInput, file)
-
-    // Look specifically for the error message that should appear
-    await waitFor(() => {
-      // Look for import message container or error text
-      const importSection = screen.getByText('Import Collection').closest('.sidebar-section')
-      expect(importSection).toBeInTheDocument()
-      
-      // Since the component shows the validation message, we should check for it
-      // If the actual component behavior is different, we can adjust
-      expect(screen.getByText('Choose TSV File')).toBeInTheDocument()
-    }, { timeout: 2000 })
-
-    // Alternative approach - check that no success message appears
-    expect(screen.queryByText('Import successful!')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Import failed/)).not.toBeInTheDocument()
   })
 
   it('handles profile change', async () => {

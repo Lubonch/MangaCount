@@ -12,6 +12,10 @@ que porta la lógica de negocio a Node.
 - importación y exportación de la colección en TSV
 - filtros por formato y editorial
 - recomendaciones de manga no poseído según el mercado inferido, con motor local (`shared/recommendations`)
+- **pantalla de Settings** que reúne configuración, intercambio TSV y bot en un solo lugar
+- **backup y restore del sistema** completo a `.zip` (base + fotos), con backup automático opcional
+- **app residente en la bandeja (tray)** con autostart opcional, sin cerrar la app al cerrar la ventana
+- **bot de Discord embebido** (solo consulta: `/perfil`, `/buscar`, `/pendientes`, `/recomendar`)
 - datos 100% locales en la carpeta de usuario; sin servidor ni base de datos externa
 
 ## Descargar e instalar
@@ -90,8 +94,42 @@ Contenido:
 - `mangacount.db` (+ `-wal`, `-shm`): base SQLite con las 5 tablas
 - `profiles/`: fotos de perfil (servidas al renderer por el protocolo `mangacount://profiles/<archivo>`)
 - `logs/`: `app.txt` con rotación diaria (`app.YYYY-MM-DD.txt`)
+- `preferences.json`: preferencias (arranque en bandeja, config de backup y del bot)
+- `discord-token.bin`: token del bot cifrado con `safeStorage` (o texto plano si el SO no lo soporta)
+- `backups-restore/`: backups de seguridad previos a un restore
 
-Detalles de esquema, backup y troubleshooting por plataforma: [`docs/desktop.md`](docs/desktop.md).
+Detalles de esquema, backup, tray/autostart, bot y troubleshooting por plataforma:
+[`docs/desktop.md`](docs/desktop.md).
+
+## Bot de Discord (opcional)
+
+MangaCount puede exponer la colección por un bot de Discord **embebido** en la app (arranca y se
+detiene con ella, sobre la misma base local). Es **solo consulta**: `/perfil`, `/buscar`,
+`/pendientes` y `/recomendar`.
+
+**Cada usuario usa su propio bot**: su propia aplicación de Discord, su token y su servidor. No se
+comparte token ni bot entre usuarios, y la configuración vive en la instalación de cada uno.
+
+La app **no usa el Application ID**: solo lo usás vos, una vez, para armar la **URL de invitación**
+de Discord. El resto de los datos (token, Guild ID y User IDs) se cargan en la app.
+
+Pasos (una vez por usuario):
+
+1. **Crear la aplicación**: en el [Discord Developer Portal](https://discord.com/developers/applications)
+   → *New Application*. Copiá el **Application ID** de *General Information*.
+2. **Token**: pestaña *Bot* → *Reset Token* → copiar. Guardalo en un gestor de secretos
+   (nunca en el repo ni en el chat).
+3. **Invitar el bot** a tu servidor con el Application ID:
+   `https://discord.com/api/oauth2/authorize?client_id=<APPLICATION_ID>&permissions=83968&scope=bot%20applications.commands`
+   (83968 = *Send Messages* + *Embed Links* + *Read Message History*).
+4. **Guild ID y User ID**: activá *Modo desarrollador* en Discord (Configuración → Avanzado) y
+   copiá el ID del servidor y el de tu usuario.
+5. **Configurar en la app**: ⚙️ **Settings → Bot**: Token, Guild ID y *Usuarios permitidos* (los
+   User IDs, separados por coma) → *Habilitar bot* → *Guardar*. El estado debe quedar **conectado**.
+
+El token se guarda cifrado con `safeStorage` (o texto plano si el SO no lo soporta) en
+`<userData>/discord-token.bin`; el Guild ID y la allowlist, en `preferences.json`. El bot funciona
+un `guildId` por vez (multi-guild queda fuera de alcance). Ver [`docs/desktop.md`](docs/desktop.md).
 
 ## Desarrollo
 
@@ -169,9 +207,9 @@ MangaCount/
 └── aspec/                  # specs y changes (spec-driven)
 ```
 
-> El bot de WhatsApp y el backend .NET/PostgreSQL quedan fuera del alcance de la app de
-> escritorio: no se empaquetan ni se documentan acá. El bot sigue en el repo pero dejó de
-> apuntar a un servidor de MangaCount.
+> El backend .NET/PostgreSQL queda fuera del alcance de la app de escritorio. El antiguo bot de
+> WhatsApp (`WhatsappBot/`) se eliminó del repo: lo reemplaza el **bot de Discord embebido** en el
+> proceso main (solo consulta).
 
 ## Licencia
 

@@ -5,6 +5,7 @@ import CollectionView from './components/CollectionView';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProfileSelector from './components/ProfileSelector';
 import RecommendationModal from './components/RecommendationModal';
+import SettingsModal from './components/SettingsModal';
 import { ThemeProvider } from './contexts/ThemeContext';
 import catalog from '@shared/recommendations/catalog.json';
 import publisherCountries from '@shared/recommendations/publisher-countries.json';
@@ -22,6 +23,7 @@ function App() {
     const [isChangingProfile, setIsChangingProfile] = useState(false);
     const [lastSelectedProfile, setLastSelectedProfile] = useState(null);
     const [showRecommendations, setShowRecommendations] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
     const [recommendationsLoading, setRecommendationsLoading] = useState(false);
     const [recommendationData, setRecommendationData] = useState(null);
     const [recommendationError, setRecommendationError] = useState(null);
@@ -313,6 +315,7 @@ function App() {
                             onImportSuccess={handleImportSuccess}
                             onBackToProfiles={handleBackToProfileSelection}
                             onRecommend={handleRecommend}
+                            onOpenSettings={() => setShowSettings(true)}
                             recommendationsLoading={recommendationsLoading}
                             refreshing={refreshing}
                         />
@@ -331,6 +334,12 @@ function App() {
                             error={recommendationError}
                             recommendations={recommendationData}
                             onClose={handleRecommendationClose}
+                        />
+                        <SettingsModal
+                            isOpen={showSettings}
+                            onClose={() => setShowSettings(false)}
+                            selectedProfile={selectedProfile}
+                            onImportSuccess={handleImportSuccess}
                         />
                     </div>
                 </div>
