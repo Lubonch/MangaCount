@@ -40,7 +40,7 @@ function downloadTsv(text, filename) {
   URL.revokeObjectURL(url);
 }
 
-const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess }) => {
+const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDataReset }) => {
   const [general, setGeneral] = useState({ startInTray: true, autostart: false });
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
@@ -438,8 +438,8 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess }) =>
         isOpen={showNuke}
         onClose={() => setShowNuke(false)}
         onSuccess={() => {
-          onImportSuccess?.();
           setShowNuke(false);
+          (onDataReset ?? onImportSuccess)?.();
         }}
       />
     </div>

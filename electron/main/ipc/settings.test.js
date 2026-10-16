@@ -80,6 +80,14 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     await assert.rejects(() => handlers['backup:create'](ctx), /destino/);
   });
 
+  it('entry:import con perfil inexistente da un mensaje claro (no FK crudo)', () => {
+    const tsv = 'Titulo\tComprados\tTotal\nBerserk\t1\t41';
+    assert.throws(
+      () => handlers['entry:import'](ctx, { profileId: 9999, tsv }),
+      /Perfil no encontrado/
+    );
+  });
+
   it('diálogo de directorio devuelve la ruta elegida', async () => {
     assert.equal(await handlers['dialog:pick-directory'](ctx), destDir);
     assert.equal(await handlers['dialog:pick-file'](ctx), null);

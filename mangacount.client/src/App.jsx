@@ -184,6 +184,13 @@ function App() {
         loadData(true);
     };
 
+    // Tras la "Nuclear Option" los perfiles se re-siembran con un id nuevo: hay
+    // que recargar los perfiles y re-seleccionar para no quedar con un id viejo.
+    const handleDataReset = () => {
+        setShowSettings(false);
+        initializeApp();
+    };
+
     const handleRecommendationClose = () => {
         abortRecommendationRequest();
         clearRecommendationState();
@@ -340,6 +347,7 @@ function App() {
                             onClose={() => setShowSettings(false)}
                             selectedProfile={selectedProfile}
                             onImportSuccess={handleImportSuccess}
+                            onDataReset={handleDataReset}
                         />
                     </div>
                 </div>

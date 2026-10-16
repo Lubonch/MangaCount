@@ -39,6 +39,15 @@ function requireProfileId(profileId) {
   }
 }
 
+// Un perfil borrado (p. ej. tras la "Nuclear Option", que re-siembra el perfil
+// por defecto con un id nuevo) deja la UI con un id viejo; validamos para dar un
+// mensaje claro en vez de un FOREIGN KEY constraint failed.
+function requireProfileExists(db, profileId) {
+  if (!getProfileById(db, profileId)) {
+    throw new Error('Perfil no encontrado. Volvé a elegir un perfil (la base pudo reiniciarse).');
+  }
+}
+
 // Agrupa formatos/editoriales usados por la colección como {id, name, count}[],
 // ordenados por nombre: misma forma que EntryController.GetUsedFormats/Publishers.
 function usedCatalog(entries, pick) {
@@ -84,10 +93,12 @@ export const handlers = {
   'entry:get-by-id': ({ db }, id) => getEntryById(db, id),
   'entry:upsert': ({ db }, entry) => {
     requireProfileId(entry?.profileId);
+    requireProfileExists(db, entry.profileId);
     return entry?.id ? updateEntry(db, entry) : upsertEntry(db, entry);
   },
   'entry:import': ({ db }, { profileId, tsv }) => {
     requireProfileId(profileId);
+    requireProfileExists(db, profileId);
     if (typeof tsv !== 'string' || tsv.length === 0) throw new Error('TSV vacío');
     return importTsv(db, tsv, profileId);
   },
@@ -205,6 +216,13 @@ export function channelNames() {
 
 export function registerHandlers(ipcMain, ctx) {
   for (const [channel, fn] of Object.entries(handlers)) {
-    ipcMain.handle(channel, (_event, ...args) => fn(ctx, ...args));
+    ipcMain.handle(channel, async (_event, ...args) => {
+      try {
+        return await fn(ctx, ...args);
+      } catch (err) {
+        ctx.logger?.error?.(`IPC ${channel} falló: ${err?.message ?? err}`);
+        throw err;
+      }
+    });
   }
 }

@@ -20,6 +20,11 @@ vi.mock('../../api/localAdapter.js', () => ({
   entryExport: vi.fn(),
 }))
 
+vi.mock('../../components/NukeDataModal', () => ({
+  default: ({ isOpen, onSuccess }) =>
+    isOpen ? <button onClick={onSuccess}>nuke-mock</button> : null,
+}))
+
 import * as api from '../../api/localAdapter.js'
 import SettingsModal from '../../components/SettingsModal'
 
@@ -66,6 +71,18 @@ describe('SettingsModal', () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText(/Danger Zone/)).toBeInTheDocument())
     expect(screen.getByLabelText('Nuclear Option')).toBeInTheDocument()
+  })
+
+  it('la Nuclear Option llama a onDataReset (recargar perfiles tras re-sembrar)', async () => {
+    const user = userEvent.setup()
+    const onDataReset = vi.fn()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onDataReset={onDataReset} />)
+    await waitFor(() => expect(screen.getByLabelText('Nuclear Option')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Nuclear Option'))
+    await user.click(screen.getByText('nuke-mock'))
+
+    expect(onDataReset).toHaveBeenCalledTimes(1)
   })
 
   it('gate: no guarda backup habilitado sin destino ni disparador', async () => {
