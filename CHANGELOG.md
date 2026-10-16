@@ -15,10 +15,9 @@ y versionado semántico.
 
 ### Added
 
-- **Traer portadas faltantes** en Settings: recorre los mangas sin portada de forma **secuencial**
-  con ~2s entre pedidos (respeta el límite de AniList ~30/min), muestra progreso y se puede detener.
-- Script **`npm run dedupe:catalogs`** (`scripts/dedupe-catalogs.mjs`, con `--dry-run` y
-  `--data-dir=`) para fusionar editoriales/formatos duplicados a demanda.
+- **Traer portadas faltantes** en Settings: recorre los mangas sin portada **de a lotes**
+  (configurable, por defecto 20) con una pausa entre lotes (por defecto 5 min), respetando el límite
+  de AniList ~30/min; muestra progreso y se puede detener.
 
 ### Changed
 
