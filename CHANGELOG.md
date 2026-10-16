@@ -3,6 +3,13 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.17] - 2026-10-16
+
+### Changed
+
+- Release de **validación del relaunch** del auto-update: permite comprobar que la 1.0.16
+  (ya con el fix `isForceRunAfter`) reabre sola en la versión nueva.
+
 ## [1.0.16] - 2026-10-16
 
 ### Fixed
