@@ -82,7 +82,9 @@ export function createUpdateController({
     },
 
     install() {
-      if (mode === 'auto' && autoUpdater) autoUpdater.quitAndInstall();
+      // isSilent=false, isForceRunAfter=true: reabre la app con la versión nueva
+      // (en AppImage, sin isForceRunAfter solo hace la integración y no la relanza).
+      if (mode === 'auto' && autoUpdater) autoUpdater.quitAndInstall(false, true);
     },
   };
 }
