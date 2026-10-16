@@ -54,7 +54,13 @@ Detalles:
   que `ON DELETE CASCADE` de `Entry` funciona al borrar `Profile`/`Manga`.
 - La versión del esquema se guarda en `PRAGMA user_version` y las migraciones son versionadas
   (`electron/main/db/client.js`).
-- En el primer arranque se hace *seed* de 5 formatos, 5 editoriales y el perfil `Default Profile`.
+- En una **instalación nueva** se crea sólo el perfil `Default Profile`; los catálogos (`Format`,
+  `Publisher`) **no** se siembran: cada usuario crea los que usa. No se re-siembra nada a usuarios
+  existentes al migrar.
+- Los catálogos son **case-insensitive**: `Format.Name` y `Publisher.Name` tienen un índice único
+  `COLLATE NOCASE`, y el alta reusa una entrada existente que sólo difiera en mayúsculas/espacios
+  (evita "Ivrea" vs "ivrea"). La migración v3 además **fusiona** los duplicados que ya existan
+  (repunta los mangas al nombre más usado) y normaliza espacios.
 - `Profile.ProfilePicture` guarda una URL `mangacount://profiles/<archivo>`, no un path local.
 - `MangaExternalRef` es **aditiva**: vincula un manga con una entrada externa (hoy `anilist`) sin
   tocar `Manga`/`Entry`. `CoverFile` es el nombre del archivo cacheado en `<userData>/covers/`.

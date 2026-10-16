@@ -1,11 +1,11 @@
 {
   "name": "mangacount",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "MangaCount is a local-first desktop manga collection manager (Electron + SQLite) with a React renderer and a shared recommendation engine.",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test electron/main/db/client.test.js electron/main/db/repositories/repositories.test.js electron/main/services/entries.test.js electron/main/services/catalog-base.test.js electron/main/services/recommendations.test.js electron/main/services/platform.test.js electron/main/ipc/roundtrip.test.js electron/main/ipc/settings.test.js electron/main/lifecycle.test.js electron/main/services/backup.test.js electron/main/services/auto-backup.test.js electron/main/services/search.test.js electron/main/services/discord-bot.test.js electron/main/services/autostart.test.js electron/main/services/secrets.test.js electron/main/services/updates.test.js electron/main/services/diagnostics.test.js electron/main/services/covers.test.js electron/main/services/update-controller.test.js",
+    "test": "node --test electron/main/db/client.test.js electron/main/db/migrations.test.js electron/main/db/repositories/repositories.test.js electron/main/services/entries.test.js electron/main/services/catalog-base.test.js electron/main/services/recommendations.test.js electron/main/services/platform.test.js electron/main/ipc/roundtrip.test.js electron/main/ipc/settings.test.js electron/main/lifecycle.test.js electron/main/services/backup.test.js electron/main/services/auto-backup.test.js electron/main/services/search.test.js electron/main/services/discord-bot.test.js electron/main/services/autostart.test.js electron/main/services/secrets.test.js electron/main/services/updates.test.js electron/main/services/diagnostics.test.js electron/main/services/covers.test.js electron/main/services/update-controller.test.js",
     "dev": "npm --prefix mangacount.client run dev",
     "build:renderer": "npm --prefix mangacount.client run build",
     "dist": "npm run build:renderer && electron-builder --publish never",

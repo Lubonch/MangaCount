@@ -58,14 +58,9 @@ CREATE TABLE IF NOT EXISTS MangaExternalRef (
     UNIQUE(MangaId, Provider)
 );
 
--- Datos iniciales (mismo seed que PostgreSQL)
-INSERT OR IGNORE INTO Format (Name) VALUES
-('Tankoubon'), ('Kanzenban'), ('Bunkoban'), ('Aizouban'), ('Digital');
-
-INSERT OR IGNORE INTO Publisher (Name) VALUES
-('Panini'), ('Ivrea'), ('Ovni Press'), ('ECC Ediciones'), ('Norma Editorial');
-
-INSERT OR IGNORE INTO Profile (Name) VALUES ('Default Profile');
+-- Sin seeds de catálogos: Format y Publisher se crean según lo que use cada
+-- usuario (evita editoriales/formas regionales impuestas). El perfil por
+-- defecto lo siembra `client.js` SOLO en instalaciones nuevas (version 0).
 
 -- Índices para performance (mismos que PostgreSQL)
 CREATE INDEX IF NOT EXISTS IX_Entry_ProfileId ON Entry(ProfileId);

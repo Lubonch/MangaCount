@@ -96,8 +96,8 @@ describe('discord-bot: comandos', () => {
   });
 
   it('/pendientes detalla pending, formato y editorial', async () => {
-    const format = formats.list(db).find((f) => f.name !== 'Unknown');
-    const publisher = publishers.list(db).find((p) => p.name !== 'Unknown');
+    const format = formats.create(db, 'Tankoubon');
+    const publisher = publishers.create(db, 'Ivrea');
     const manga = createManga(db, { name: 'Vagabond', volumes: 37, formatId: format.id, publisherId: publisher.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 10, pending: '5,7' });
 

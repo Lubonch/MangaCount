@@ -50,7 +50,7 @@ describe('services/recommendations', () => {
     });
     const owned = catalog.find((c) => c.publisher === 'Ivrea');
     assert.ok(owned, 'el catálogo necesita un título Ivrea');
-    const ivrea = publishers.list(db).find((p) => p.name === 'Ivrea');
+    const ivrea = publishers.create(db, 'Ivrea');
     const manga = createManga(db, { name: owned.title, volumes: 5, publisherId: ivrea.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 5 });
     const res = await getRecommendations(db, profile.id, 10);
@@ -73,7 +73,7 @@ describe('services/recommendations', () => {
       with: { type: 'json' },
     });
     const owned = catalog.find((c) => c.publisher === 'Ivrea');
-    const ivrea = publishers.list(db).find((p) => p.name === 'Ivrea');
+    const ivrea = publishers.create(db, 'Ivrea');
     const manga = createManga(db, { name: owned.title, volumes: 5, publisherId: ivrea.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 5 });
 

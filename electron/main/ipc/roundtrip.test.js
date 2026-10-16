@@ -73,9 +73,9 @@ describe('ipc roundtrip por canal', () => {
     const manga = await api.mangaUpsert({ name: 'dorohedoro', volumes: 23 });
     assert.equal((await api.mangaGet(manga.id)).volumes, 23);
     assert.equal((await api.mangaList()).length, 1);
-    assert.equal((await api.formatList()).length, 5);
+    assert.equal((await api.formatList()).length, 0);
     assert.ok((await api.formatCreate('Wideban')).id > 0);
-    assert.equal((await api.publisherList()).length, 5);
+    assert.equal((await api.publisherList()).length, 0);
     assert.ok((await api.publisherCreate('Kemuri')).id > 0);
   });
 

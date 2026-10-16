@@ -64,8 +64,15 @@ describe('repositories', () => {
     assert.equal(listMangas(db).length, 1);
   });
 
-  it('catalogs: seed + CRUD', () => {
-    assert.equal(formats.list(db).length, 5);
+  it('catalogs: CRUD + alta case-insensitive', () => {
+    assert.equal(formats.list(db).length, 0);
+    // "ivrea" reusa "Ivrea": no crea duplicado.
+    const first = publishers.create(db, 'Ivrea');
+    const again = publishers.create(db, '  ivrea ');
+    assert.equal(again.id, first.id);
+    assert.equal(publishers.list(db).length, 1);
+    assert.equal(publishers.findByName(db, 'IVREA').id, first.id);
+
     const created = publishers.create(db, 'Kemuri');
     assert.ok(created.id > 0);
     assert.equal(publishers.update(db, created.id, 'Kemuri Ed.').name, 'Kemuri Ed.');
@@ -74,7 +81,14 @@ describe('repositories', () => {
   });
 
   it('entries: upsert con JOIN anidado y conflicto', () => {
-    const manga = createManga(db, { name: 'berserk', volumes: 41, formatId: 1, publisherId: 1 });
+    const format = formats.create(db, 'Tankoubon');
+    const publisher = publishers.create(db, 'Panini');
+    const manga = createManga(db, {
+      name: 'berserk',
+      volumes: 41,
+      formatId: format.id,
+      publisherId: publisher.id,
+    });
     const profile = createProfile(db, 'yo');
     const first = upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 3 });
     assert.equal(first.quantity, 3);
