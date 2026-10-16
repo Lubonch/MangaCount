@@ -3,6 +3,32 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.6] - 2026-10-15
+
+### Added
+
+- **Settings**: sección **Danger Zone** con la **Nuclear Option** (movida desde el `Sidebar`); en el
+  lugar que ocupaba, el `Sidebar` ahora muestra el acceso **⚙️ Settings**.
+- Script `npm run release:sync` que sincroniza el `pkgver` de `packaging/arch/PKGBUILD` con
+  `package.json` y resetea `pkgrel=1`.
+
+### Fixed
+
+- **Bot**: habilitarlo en Settings ahora lo **arranca sin reiniciar** la app. `bot:config-set`
+  llamaba a un `reload` inexistente en el controlador (solo hay `start`/`stop`/`restart`); el
+  optional chaining lo ignoraba y el estado quedaba en *apagado*. Ahora hace `restart` y el estado
+  pasa por *conectando* → *conectado*.
+- **Bot**: respuestas a las interacciones en redes con **DNS lento**. La conexión REST de Discord se
+  cerraba por keep-alive (~4 s) y **reconectar tardaba ~3 s**, así que la respuesta llegaba fuera de
+  la ventana de 3 s y Discord devolvía `Unknown interaction` (`/perfil`, `/buscar`, `/pendientes`).
+  Se configura un agent HTTP con **keep-alive largo** (120 s) + ping periódico para mantener la
+  conexión caliente. El log de fallos de interacción ahora incluye comando y duración.
+- **App**: si no se obtiene el `requestSingleInstanceLock`, ya no inicializa el backend ni el bot
+  (antes podía abrir una segunda base y crear sesiones de bot duplicadas).
+- **Empaquetado Arch**: `packaging/arch/PKGBUILD` dejaba `/opt/mangacount` inaccesible (el
+  `squashfs-root` del AppImage viene en `0700` y `cp -a` copiaba ese modo) y no reparaba los permisos
+  al actualizar (`mangacount.install` con `post_install`/`post_upgrade`). `pkgver` 1.0.1 → actual.
+
 ## [1.0.5] - 2026-10-15
 
 ### Added
