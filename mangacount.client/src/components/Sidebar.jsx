@@ -3,6 +3,7 @@ import './Sidebar.css';
 import logo from '../assets/brand/logo.svg';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
+import LinkCoverModal from './LinkCoverModal';
 import ThemeToggle from './ThemeToggle';
 import { botStatus as fetchBotStatus, isElectron } from '../api/localAdapter.js';
 
@@ -23,6 +24,7 @@ const Sidebar = ({
     const [editingManga, setEditingManga] = useState(null);
     const [collapsed, setCollapsed] = useState(false);
     const [botStatus, setBotStatus] = useState('apagado');
+    const [coverTarget, setCoverTarget] = useState(null);
 
     useEffect(() => {
         if (!isElectron()) return undefined;
@@ -141,13 +143,23 @@ const Sidebar = ({
                                                 <div className="manga-volumes">{manga.volumes} volumes</div>
                                             )}
                                         </div>
-                                        <button
-                                            className="edit-manga-btn-sidebar"
-                                            onClick={() => handleEditManga(manga)}
-                                            title="Edit manga info"
-                                        >
-                                            ✏️
-                                        </button>
+                                        <div className="manga-actions">
+                                            <button
+                                                className="edit-manga-btn-sidebar"
+                                                onClick={() => setCoverTarget(manga)}
+                                                title="Buscar portada (AniList)"
+                                                aria-label={`Buscar portada de ${manga.name}`}
+                                            >
+                                                🖼️
+                                            </button>
+                                            <button
+                                                className="edit-manga-btn-sidebar"
+                                                onClick={() => handleEditManga(manga)}
+                                                title="Edit manga info"
+                                            >
+                                                ✏️
+                                            </button>
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -196,6 +208,14 @@ const Sidebar = ({
                 onSuccess={handleAddSuccess}
                 editManga={editingManga}
             />
+
+            {coverTarget && (
+                <LinkCoverModal
+                    manga={coverTarget}
+                    onClose={() => setCoverTarget(null)}
+                    onLinked={() => onImportSuccess?.()}
+                />
+            )}
         </>
     );
 };

@@ -275,6 +275,13 @@
     flex: 1;
 }
 
+.manga-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .manga-name {
     font-weight: 500;
     margin-bottom: 4px;

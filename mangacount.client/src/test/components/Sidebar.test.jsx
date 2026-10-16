@@ -151,4 +151,15 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('10 volumes')).toBeInTheDocument()
     expect(screen.getByText('Manga 2')).toBeInTheDocument()
   })
+
+  it('abre la búsqueda de portada desde el Manga Library', async () => {
+    const user = userEvent.setup()
+    const mangas = [createMockManga({ id: 1, name: 'Berserk' })]
+
+    render(<Sidebar {...defaultProps} mangas={mangas} />)
+
+    await user.click(screen.getByRole('button', { name: 'Buscar portada de Berserk' }))
+
+    expect(await screen.findByText(/Portada — Berserk/)).toBeInTheDocument()
+  })
 })

@@ -2,7 +2,6 @@
 import LoadingSpinner from './LoadingSpinner';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
-import LinkCoverModal from './LinkCoverModal';
 import { coverAll, coverAuto } from '../api/localAdapter';
 import './CollectionView.css';
 
@@ -24,9 +23,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
     const [editingEntry, setEditingEntry] = useState(null);
     const [editingManga, setEditingManga] = useState(null);
 
-    // Portadas: mapa { mangaId: url } + manga que se está vinculando.
+    // Portadas: mapa { mangaId: url } (se pintan en las cards).
     const [coverMap, setCoverMap] = useState({});
-    const [coverTarget, setCoverTarget] = useState(null);
 
     useEffect(() => {
         let active = true;
@@ -555,13 +553,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                 >
                                     ✏️ Edit Entry
                                 </button>
-                                <button
-                                    className="edit-btn cover-btn"
-                                    onClick={() => setCoverTarget(entry.manga)}
-                                    title="Vincular portada (AniList)"
-                                >
-                                    🖼️ Portada
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -734,14 +725,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     onSuccess={handleEditSuccess}
                     editManga={editingManga}
             />
-
-            {coverTarget && (
-                <LinkCoverModal
-                    manga={coverTarget}
-                    onClose={() => setCoverTarget(null)}
-                    onLinked={handleCoverLinked}
-                />
-            )}
         </div>
     );
 };
