@@ -57,9 +57,7 @@ Detalles:
 - **Estado cero**: una instalación nueva arranca **sin perfiles, sin editoriales y sin formatos**. El
   usuario crea el perfil (primer paso) y los catálogos que usa. Nada se siembra ni se re-siembra.
 - Los catálogos son **case-insensitive**: el alta reusa una entrada existente que sólo difiera en
-  mayúsculas/espacios (evita "Ivrea" vs "ivrea"). Los duplicados que ya existan se limpian a demanda
-  con el script `npm run dedupe:catalogs` (o `node scripts/dedupe-catalogs.mjs --dry-run` primero):
-  fusiona por nombre normalizado, repunta los mangas al más usado y normaliza espacios. No corre solo.
+  mayúsculas/espacios (evita "Ivrea" vs "ivrea").
 - `Profile.ProfilePicture` guarda una URL `mangacount://profiles/<archivo>`, no un path local.
 - `MangaExternalRef` es **aditiva**: vincula un manga con una entrada externa (hoy `anilist`) sin
   tocar `Manga`/`Entry`. `CoverFile` es el nombre del archivo cacheado en `<userData>/covers/`.
