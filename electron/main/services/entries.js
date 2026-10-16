@@ -22,7 +22,8 @@ const parseBool = (value) => /^\s*true\s*$/i.test(value ?? '');
 
 function getOrCreate(catalog, db, name) {
   const clean = (name ?? '').trim() || 'Unknown';
-  const found = catalog.list(db).find((c) => c.name === clean);
+  // Case-insensitive: "ivrea" reusa "Ivrea" en vez de crear un duplicado.
+  const found = catalog.findByName(db, clean);
   return (found ?? catalog.create(db, clean)).id;
 }
 

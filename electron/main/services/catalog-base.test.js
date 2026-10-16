@@ -39,9 +39,9 @@ describe('services/catalog-base + canales', () => {
     assert.equal(handlers['manga:get'](ctx(), manga.id).volumes, 100);
     assert.equal(handlers['manga:list'](ctx()).length, 1);
     const fmt = handlers['format:create'](ctx(), { name: 'Wideban' });
-    assert.ok(fmt.id > 5);
+    assert.ok(fmt.id > 0);
     const pub = handlers['publisher:create'](ctx(), { name: 'Kemuri' });
-    assert.ok(pub.id > 5);
+    assert.ok(pub.id > 0);
     const relinked = handlers['manga:upsert'](ctx(), {
       id: manga.id, name: 'one piece', volumes: 101, formatId: fmt.id, publisherId: pub.id,
     });

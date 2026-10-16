@@ -3,6 +3,23 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.1] - 2026-10-16
+
+### Fixed
+
+- **Footer y sidebar fijos**: con muchas entries la página entera crecía y el footer y el acceso a
+  Settings quedaban al final del scroll. Ahora la app ocupa el alto de la ventana con **scroll interno**.
+- **Editoriales/formatos duplicados** (`Ivrea` vs `ivrea`): el alta de catálogos es **case-insensitive**
+  (reusa la entrada existente), con índice único `COLLATE NOCASE`. Una **migración** fusiona los
+  duplicados ya existentes (repunta los mangas al nombre más usado).
+
+### Changed
+
+- **Búsqueda de portada desde el Manga Library**: el botón 🖼️ ahora está por manga en el *Manga Library*
+  del sidebar (junto al de editar); se quitó de las tarjetas de la colección.
+- **Sin seed de catálogos**: una instalación nueva **no** trae editoriales ni formatos (sólo el perfil
+  por defecto); cada usuario crea lo que necesita.
+
 ## [2.0.0] - 2026-10-16
 
 **Rework visual.** Actualización mayor (major) por la nueva identidad, el design system y las

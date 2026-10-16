@@ -18,7 +18,7 @@ describe('db/client', () => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
 
-  it('crea la BD con esquema y seed en un directorio nuevo', () => {
+  it('crea la BD con esquema en un directorio nuevo (sin seed de catálogos)', () => {
     db = openDb(dir);
     assert.ok(fs.existsSync(path.join(dir, 'mangacount.db')));
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
@@ -26,8 +26,8 @@ describe('db/client', () => {
       profiles: 1,
       mangas: 0,
       entries: 0,
-      formats: 5,
-      publishers: 5,
+      formats: 0,
+      publishers: 0,
     });
   });
 
@@ -37,7 +37,7 @@ describe('db/client', () => {
     db.close();
     db = openDb(dir);
     assert.equal(getCounts(db).profiles, 2);
-    assert.equal(getCounts(db).formats, 5);
+    assert.equal(getCounts(db).formats, 0);
   });
 
   it('respeta UNIQUE(ProfileId, MangaId) y FK con CASCADE', () => {

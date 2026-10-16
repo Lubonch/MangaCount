@@ -87,6 +87,6 @@ describe('services/files+logger+prefs+database', () => {
     assert.equal(nuked.entries, 0);
     assert.equal(nuked.mangas, 0);
     assert.equal(nuked.profiles, 1); // Default Profile reasegurado
-    assert.equal(nuked.formats, 5); // catálogos conservados (divergencia documentada)
+    assert.equal(nuked.formats, 0); // sin seed de catálogos
   });
 });
