@@ -130,4 +130,30 @@ describe('ipc roundtrip por canal', () => {
       delete globalThis.fetch;
     }
   });
+
+  it('covers: link, status, all y unlink (fetch stubeado)', async () => {
+    const manga = await api.mangaUpsert({ name: 'berserk', volumes: 41 });
+    globalThis.fetch = async () => ({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'image/png' },
+      arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+    });
+    try {
+      const linked = await api.coverLink(manga.id, { id: 30013, coverUrl: 'https://img/x.png' });
+      assert.equal(linked.ref.externalId, '30013');
+      assert.equal(linked.coverUrl, `mangacount://covers/${manga.id}.png`);
+      assert.ok(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)));
+
+      const status = await api.coverStatus(manga.id);
+      assert.equal(status.coverUrl, linked.coverUrl);
+      assert.equal((await api.coverAll())[manga.id], linked.coverUrl);
+
+      await api.coverUnlink(manga.id);
+      assert.equal(await api.coverStatus(manga.id), null);
+      assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
+    } finally {
+      delete globalThis.fetch;
+    }
+  });
 });

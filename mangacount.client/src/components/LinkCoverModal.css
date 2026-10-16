@@ -1,0 +1,99 @@
+.link-cover-modal {
+    max-width: 720px;
+}
+
+.link-cover-hint {
+    margin: 0 0 var(--space-3);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+}
+
+.link-cover-search {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.link-cover-search input {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.link-cover-error {
+    color: var(--color-incomplete);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-2);
+}
+
+.link-cover-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
+    max-height: 52vh;
+    overflow-y: auto;
+}
+
+.cover-candidate {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    color: var(--text-primary);
+    transition: transform var(--dur-fast) var(--ease-out), border-color var(--dur-fast) ease;
+}
+
+.cover-candidate:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+}
+
+.cover-candidate:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.cover-candidate img,
+.cover-candidate-placeholder {
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+}
+
+.cover-candidate-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+}
+
+.cover-candidate-title {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.cover-candidate-meta {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.cover-candidate-busy {
+    font-size: var(--text-xs);
+    color: var(--accent);
+}
+
+.link-cover-unlink {
+    margin-right: auto;
+}

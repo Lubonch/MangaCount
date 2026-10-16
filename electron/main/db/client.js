@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 const SCHEMA_FILE = path.join(__dirname, 'schema.sqlite.sql');
 
 function applyPragmas(db) {

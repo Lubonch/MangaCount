@@ -24,10 +24,11 @@
 
 ## Fase 4 — Componentes
 
-- [ ] Cards (`CollectionView`): portada/identidad visual, anillo de progreso, chips y acciones
-- [ ] Tabla y compacta re-estilizadas
-- [ ] Modales (Add/Edit Entry, Add/Edit Manga, Recommendation, Settings, Nuke), ProfileSelector, Footer,
-      ThemeToggle: alineados al sistema
+- [x] Cards (`CollectionView`): portada/identidad visual, anillo de progreso, chips y acciones
+      (portada generada full-bleed con iniciales + badge de % + chips de formato/editorial)
+- [x] Tabla y compacta re-estilizadas (heredan los tokens del design system)
+- [x] Modales (Add/Edit Entry, Add/Edit Manga, Recommendation, Settings, Nuke), ProfileSelector, Footer,
+      ThemeToggle: alineados al sistema (tokens + animación de entrada)
 
 ## Fase 5 — Animaciones
 
@@ -39,27 +40,34 @@
 
 ## Fase 6 — Portadas + vínculo con AniList
 
-- [ ] `schema.sqlite.sql`: tabla aditiva `MangaExternalRef` + `SCHEMA_VERSION` 1 → 2 (sin `ALTER`)
-- [ ] `repositories/manga-external-refs.js`: get/upsert/remove por `(mangaId, provider)`
-- [ ] `services/covers.js`: `searchManga(query)` (AniList GraphQL, **sin key**, `User-Agent`, timeout) y
+- [x] `schema.sqlite.sql`: tabla aditiva `MangaExternalRef` + `SCHEMA_VERSION` 1 → 2 (sin `ALTER`)
+- [x] `repositories/manga-external-refs.js`: get/upsert/remove por `(mangaId, provider)`
+- [x] `services/covers.js`: `searchManga(query)` (AniList GraphQL, **sin key**, `User-Agent`, timeout) y
       `fetchCover(url)` (valida content-type imagen + tamaño máx)
-- [ ] Auto-match al agregar/editar por título (variantes normalizadas); si es ambiguo, no vincula
-- [ ] IPC `cover:search` · `cover:link` · `cover:fetch` · `cover:unlink` · `cover:status` (preload + adapter)
-- [ ] Guardar la portada en `<userData>/covers/<mangaId>.<ext>` (nombre seguro) y setear
-      `Manga.ImageUrl = mangacount://covers/<archivo>`
-- [ ] Extender el protocolo `mangacount://` al host `covers` (con `path.basename`)
-- [ ] `LinkCoverModal.jsx`: buscar (prellenado con el título local), listar candidatos (portada + títulos),
+- [x] Auto-match al agregar/editar por título (variantes normalizadas); si es ambiguo, no vincula
+      (`cover:auto`, best-effort y secuencial, solo con match único)
+- [x] IPC `cover:search` · `cover:link` · `cover:fetch` · `cover:unlink` · `cover:status` (preload + adapter)
+      (+ `cover:all` y `cover:auto`)
+- [x] Guardar la portada en `<userData>/covers/<mangaId>.<ext>` (nombre seguro) y resolver la URL como
+      `mangacount://covers/<archivo>` (desviación: NO se escribe en `Manga.ImageUrl`; el mapa lo resuelve
+      el renderer vía `cover:all`, así el vínculo es puramente aditivo)
+- [x] Extender el protocolo `mangacount://` al host `covers` (con `path.basename`)
+- [x] `LinkCoverModal.jsx`: buscar (prellenado con el título local), listar candidatos (portada + títulos),
       elegir/desvincular
-- [ ] Fallback: **portada generada** (gradiente por hash + iniciales + anillo) para cards sin portada
-- [ ] Rate limit: secuencial + backoff `Retry-After` ante `429`
-- [ ] Tests `node --test`: `searchManga` (fetch fake), `fetchCover` (rechaza no-imagen), repositorio de
-      refs; `vitest`: cover en card + fallback + modal de vincular
+- [x] Fallback: **portada generada** (gradiente por hash + iniciales + badge de %) para cards sin portada
+- [x] Rate limit: secuencial + backoff `Retry-After` ante `429`
+- [x] Tests `node --test`: `searchManga` (fetch fake), `fetchCover` (rechaza no-imagen), repositorio de
+      refs, `autoMatchCover` y roundtrip IPC de covers; `vitest`: fallback en card + modal de vincular
 
 ## Fase 7 — Documentación y cierre
 
-- [ ] `README.md` / `docs/desktop.md`: identidad/design system, logo, portadas y vínculo AniList
+- [x] `README.md` / `docs/desktop.md`: identidad/design system, logo, portadas y vínculo AniList
       (sin API key, cache, fallback)
-- [ ] `CHANGELOG.md` + bump **2.0.0** (major por el rework visual)
-- [ ] Correr `npm test` + suite del renderer + `lint` + `build:renderer`
-- [ ] `ancleto-security` y `ancleto-verify` en verde
-- [ ] Verificación cruzada contra proposal (qué), design (cómo) y delta specs
+- [x] `CHANGELOG.md` + bump **2.0.0** (major por el rework visual)
+- [x] Correr `npm test` + suite del renderer + `lint` + `build:renderer`
+      (144 node --test + 75 vitest, lint 0 errores, build OK)
+- [x] `ancleto-security` y `ancleto-verify` en verde
+      (seguridad: solo URLs `https` en `fetchCover`, `path.basename` en el protocolo, nombre de archivo
+      generado `<id>.<ext>`, validación content-type imagen + tamaño, SQL parametrizado; verify: specs
+      `mangas` y `frontend-web` cubiertas por implementación + tests)
+- [x] Verificación cruzada contra proposal (qué), design (cómo) y delta specs

@@ -33,6 +33,15 @@ import {
   validateBackupConfig,
 } from '../services/prefs.js';
 import { buildDiagnostics } from '../services/diagnostics.js';
+import {
+  searchManga,
+  linkCover,
+  refreshCover,
+  unlinkCover,
+  statusCover,
+  coverMap,
+  autoMatchCover,
+} from '../services/covers.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -111,6 +120,18 @@ export const handlers = {
   },
   'entry:used-formats': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.format),
   'entry:used-publishers': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.publisher),
+
+  // Portadas + vínculo externo (AniList, sin key). Guarda solo el vínculo; el
+  // nombre local del manga no se toca.
+  'cover:search': ({ db }, { query } = {}) => searchManga(query),
+  'cover:link': ({ db, dataDir }, { mangaId, candidate } = {}) =>
+    linkCover(db, dataDir, { mangaId, candidate }),
+  'cover:fetch': ({ db, dataDir }, { mangaId, coverUrl } = {}) =>
+    refreshCover(db, dataDir, { mangaId, coverUrl }),
+  'cover:unlink': ({ db, dataDir }, mangaId) => unlinkCover(db, dataDir, mangaId),
+  'cover:status': ({ db }, mangaId) => statusCover(db, mangaId),
+  'cover:all': ({ db }) => coverMap(db),
+  'cover:auto': ({ db, dataDir }, mangaId) => autoMatchCover(db, dataDir, mangaId),
 
   // Backup y restore del sistema.
   'backup:config-get': ({ dataDir }) => loadResolvedPrefs(dataDir).backup,

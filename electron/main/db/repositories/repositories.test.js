@@ -21,6 +21,13 @@ import {
   listEntriesByProfiles,
 } from './entries.js';
 import { formats, publishers } from './catalogs.js';
+import {
+  getRef,
+  upsertRef,
+  setCoverFile,
+  removeRef,
+  listRefsByManga,
+} from './manga-external-refs.js';
 
 describe('repositories', () => {
   let dir;
@@ -97,5 +104,25 @@ describe('repositories', () => {
     upsertEntry(db, { mangaId: manga.id, profileId: a.id, quantity: 1 });
     upsertEntry(db, { mangaId: manga.id, profileId: b.id, quantity: 2 });
     assert.equal(listEntriesByProfiles(db, a.id, b.id).length, 2);
+  });
+
+  it('manga-external-refs: upsert, cover y remove por (manga, provider)', () => {
+    const manga = createManga(db, { name: 'berserk', volumes: 41 });
+    assert.equal(getRef(db, manga.id, 'anilist'), null);
+
+    const created = upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 30013 });
+    assert.equal(created.externalId, '30013');
+    assert.equal(created.coverFile, null);
+
+    const withCover = setCoverFile(db, manga.id, 'anilist', '3.jpg');
+    assert.equal(withCover.coverFile, '3.jpg');
+
+    // Upsert del mismo par actualiza, no duplica.
+    upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 30014, coverFile: 'x.png' });
+    assert.equal(listRefsByManga(db, manga.id).length, 1);
+    assert.equal(getRef(db, manga.id, 'anilist').externalId, '30014');
+
+    assert.equal(removeRef(db, manga.id, 'anilist'), true);
+    assert.equal(removeRef(db, manga.id, 'anilist'), false);
   });
 });
