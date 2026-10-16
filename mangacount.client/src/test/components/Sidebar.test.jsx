@@ -77,10 +77,14 @@ describe('Sidebar Component', () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1)
   })
 
-  it('no longer renders the collection import block', () => {
+  it('no longer renders the collection import block ni la Danger Zone', () => {
     render(<Sidebar {...defaultProps} selectedProfile={createMockProfile()} />)
     expect(screen.queryByText('Import Collection')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Choose TSV File')).not.toBeInTheDocument()
+    // La Nuclear Option se movió a Settings; el sidebar ahora expone el acceso a Settings.
+    expect(screen.queryByText('Nuclear Option')).not.toBeInTheDocument()
+    expect(screen.queryByText('Danger Zone')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
   })
 
   it('triggers recommendations when the button is clicked', async () => {

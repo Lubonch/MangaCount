@@ -11,24 +11,14 @@
 
 .sidebar-header {
     margin-bottom: 25px;
-    position: relative;
 }
 
-.settings-button {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: transparent;
-    border: none;
-    font-size: 1.1rem;
-    cursor: pointer;
-    color: var(--sidebar-text);
-    padding: 4px;
-    border-radius: 6px;
+.sidebar-settings {
+    margin-top: auto;
 }
 
-.settings-button:hover {
-    background-color: var(--sidebar-border);
+.settings-open-button {
+    width: 100%;
 }
 
 .sidebar-header h2 {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import './SettingsModal.css';
+import NukeDataModal from './NukeDataModal';
 import {
   backupConfigGet,
   backupConfigSet,
@@ -52,6 +53,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess }) =>
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showNuke, setShowNuke] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -393,12 +395,36 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess }) =>
             </div>
             {botMessage && <p className="settings-message">{botMessage}</p>}
           </section>
+
+          <section className="settings-section danger-zone">
+            <h3>⚠️ Danger Zone</h3>
+            <div className="danger-actions">
+              <button
+                type="button"
+                className="danger-button nuke-button"
+                aria-label="Nuclear Option"
+                onClick={() => setShowNuke(true)}
+              >
+                💥 Nuclear Option
+              </button>
+              <small className="danger-warning">This will permanently delete ALL data!</small>
+            </div>
+          </section>
         </div>
 
         <div className="modal-actions">
           <button type="button" className="cancel-button" onClick={onClose}>Cerrar</button>
         </div>
       </div>
+
+      <NukeDataModal
+        isOpen={showNuke}
+        onClose={() => setShowNuke(false)}
+        onSuccess={() => {
+          onImportSuccess?.();
+          setShowNuke(false);
+        }}
+      />
     </div>
   );
 };
