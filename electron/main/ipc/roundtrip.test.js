@@ -40,7 +40,7 @@ describe('ipc roundtrip por canal', () => {
   it('filas 1-4: perfiles + foto', async () => {
     const created = await api.profileUpsert({ name: 'cole' });
     assert.ok(created.id > 0);
-    assert.equal((await api.profileList()).length, 2);
+    assert.equal((await api.profileList()).length, 1);
     assert.equal((await api.profileGet(created.id)).name, 'cole');
     const { fileName } = await api.profileUploadPicture(created.id, 'a.png', new Uint8Array([9]));
     assert.match(fileName, /\.png$/);
@@ -85,7 +85,7 @@ describe('ipc roundtrip por canal', () => {
     assert.equal(rec.isConfident, false);
     assert.equal(rec.limit, 5);
     const stats = await api.databaseStatistics();
-    assert.ok(stats.profiles >= 2);
+    assert.ok(stats.profiles >= 1);
     const nuked = await api.databaseNukeLocal();
     assert.equal(nuked.entries, 0);
   });

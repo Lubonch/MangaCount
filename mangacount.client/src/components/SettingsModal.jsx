@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './SettingsModal.css';
 import NukeDataModal from './NukeDataModal';
 import {
@@ -24,6 +24,9 @@ import {
   pickDirectory,
   pickFile,
   entryExport,
+  mangaList,
+  coverAll,
+  coverAuto,
 } from '../api/localAdapter.js';
 
 const EMPTY_BACKUP = {
@@ -316,6 +319,69 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
 
   const lastStatus = backup.lastBackupStatus;
 
+  // Bulk de portadas faltantes: secuencial y con espera entre pedidos para no
+  // pasarse del rate limit de AniList (~30 req/min). Se detiene ante un error
+  // (incluido 429) sugiriendo reintentar.
+  const COVER_BULK_DELAY_MS = 2200;
+  const [coverBulk, setCoverBulk] = useState({ running: false, done: 0, total: 0, message: '' });
+  const coverBulkCancelRef = useRef(false);
+
+  const runCoverBulk = async () => {
+    setCoverBulk({ running: true, done: 0, total: 0, message: 'Buscando mangas…' });
+    let mangas;
+    let covers;
+    try {
+      [mangas, covers] = await Promise.all([mangaList(), coverAll()]);
+    } catch {
+      setCoverBulk({ running: false, done: 0, total: 0, message: 'No se pudo leer la colección.' });
+      return;
+    }
+    const missing = mangas.filter((manga) => !covers[manga.id]);
+    if (missing.length === 0) {
+      setCoverBulk({ running: false, done: 0, total: 0, message: 'Todas las portadas ya están vinculadas.' });
+      return;
+    }
+
+    coverBulkCancelRef.current = false;
+    setCoverBulk({ running: true, done: 0, total: missing.length, message: '' });
+    let done = 0;
+    let linked = 0;
+    for (const manga of missing) {
+      if (coverBulkCancelRef.current) break;
+      try {
+        const url = await coverAuto(manga.id);
+        if (url) linked += 1;
+      } catch {
+        setCoverBulk({
+          running: false,
+          done,
+          total: missing.length,
+          message: `AniList limitó las peticiones (o error de red). Nuevas: ${linked}. Reintentá en un minuto.`,
+        });
+        onImportSuccess?.();
+        return;
+      }
+      done += 1;
+      setCoverBulk({
+        running: true,
+        done,
+        total: missing.length,
+        message: `${linked} portadas nuevas hasta ahora`,
+      });
+      // Espacia sólo si quedan más (no espera de más al terminar).
+      if (done < missing.length && !coverBulkCancelRef.current) {
+        await new Promise((resolve) => setTimeout(resolve, COVER_BULK_DELAY_MS));
+      }
+    }
+    setCoverBulk({
+      running: false,
+      done,
+      total: missing.length,
+      message: `Listo: ${linked} portadas nuevas${coverBulkCancelRef.current ? ' (detenido)' : ''}.`,
+    });
+    onImportSuccess?.();
+  };
+
   return (
     <div className="modal-overlay settings-modal-overlay">
       <div className="modal-content settings-modal-content">
@@ -467,6 +533,31 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
               </button>
               {importMessage && <p className="settings-message">{importMessage}</p>}
             </div>
+          </section>
+
+          <section className="settings-section">
+            <h3>Portadas (AniList)</h3>
+            <p className="settings-hint">
+              Busca y vincula las portadas de los mangas que todavía no tienen. Es **secuencial** y
+              espera ~2s entre pedidos para respetar el límite de AniList (~30/min).
+            </p>
+            <div className="settings-actions">
+              <button type="button" className="action-button" onClick={runCoverBulk} disabled={coverBulk.running}>
+                {coverBulk.running ? `Buscando… ${coverBulk.done}/${coverBulk.total}` : 'Traer portadas faltantes'}
+              </button>
+              {coverBulk.running && (
+                <button
+                  type="button"
+                  className="danger-button"
+                  onClick={() => {
+                    coverBulkCancelRef.current = true;
+                  }}
+                >
+                  Detener
+                </button>
+              )}
+            </div>
+            {coverBulk.message && <p className="settings-message">{coverBulk.message}</p>}
           </section>
 
           <section className="settings-section">

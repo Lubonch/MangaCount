@@ -74,6 +74,7 @@ describe('discord-bot: comandos', () => {
   });
 
   it('exige perfil activo', async () => {
+    createProfile(db, 'Otro'); // con ≥2 perfiles no auto-selecciona
     const reply = await dispatch(commands, 'pendientes', { session: { profileId: null } });
     assert.match(reply, /perfil/i);
   });
@@ -237,6 +238,7 @@ describe('discord-bot: sesión de perfil válida', () => {
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcsess-'));
     db = openDb(dir);
+    createProfile(db, 'Lucas');
   });
 
   afterEach(() => {
@@ -246,9 +248,9 @@ describe('discord-bot: sesión de perfil válida', () => {
 
   it('auto-selecciona si hay un único perfil', () => {
     const session = { profileId: null };
-    const profile = resolveSessionProfile(session, db);
-    assert.equal(profile.name, 'Default Profile');
-    assert.equal(session.profileId, profile.id);
+    const resolved = resolveSessionProfile(session, db);
+    assert.equal(resolved.name, 'Lucas');
+    assert.equal(session.profileId, resolved.id);
   });
 
   it('rechaza un perfil inexistente cuando hay varios', () => {

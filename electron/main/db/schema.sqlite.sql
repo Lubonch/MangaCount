@@ -58,9 +58,8 @@ CREATE TABLE IF NOT EXISTS MangaExternalRef (
     UNIQUE(MangaId, Provider)
 );
 
--- Sin seeds de catálogos: Format y Publisher se crean según lo que use cada
--- usuario (evita editoriales/formas regionales impuestas). El perfil por
--- defecto lo siembra `client.js` SOLO en instalaciones nuevas (version 0).
+-- Sin seeds: una instalación nueva arranca en estado cero (sin perfiles, sin
+-- editoriales ni formatos). El usuario crea el perfil y los catálogos que usa.
 
 -- Índices para performance (mismos que PostgreSQL)
 CREATE INDEX IF NOT EXISTS IX_Entry_ProfileId ON Entry(ProfileId);

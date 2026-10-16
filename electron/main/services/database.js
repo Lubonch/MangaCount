@@ -1,7 +1,7 @@
 // Reconversión de NukeDataModal: "borrar todos los datos locales" contra SQLite.
-// Divergencia documentada vs DatabaseService.NukeAllDataAsync (borraba TODO
-// incluido el seed): aquí se conservan los catálogos y se reasegura el perfil
-// por defecto para que la app siga utilizable tras el borrado.
+// Borra entries, mangas y perfiles, pero conserva los catálogos. Deja la base en
+// **estado cero de perfiles** (sin re-sembrar): el usuario crea uno al volver a
+// la selección de perfiles.
 
 import { getCounts } from '../db/client.js';
 
@@ -14,7 +14,6 @@ export function nukeLocalData(db) {
     db.prepare('DELETE FROM Entry').run();
     db.prepare('DELETE FROM Manga').run();
     db.prepare('DELETE FROM Profile').run();
-    db.prepare("INSERT OR IGNORE INTO Profile (Name) VALUES ('Default Profile')").run();
   });
   tx();
   return { ok: true, ...getCounts(db) };
