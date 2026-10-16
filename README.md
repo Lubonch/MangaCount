@@ -16,9 +16,11 @@ que porta la lógica de negocio a Node.
 - **backup y restore del sistema** completo a `.zip` (base + fotos), con backup automático opcional
 - **app residente en la bandeja (tray)** con autostart opcional, sin cerrar la app al cerrar la ventana
 - **bot de Discord embebido** (solo consulta: `/perfil`, `/buscar`, `/pendientes`, `/recomendar`)
-- **chequeo de actualizaciones**: el footer muestra la versión y, si hay una nueva, un enlace al release;
-  en **Settings** hay un botón *Buscar actualización* (el chequeo automático al abrir la app se puede
-  desactivar)
+- **chequeo de actualizaciones**: el footer muestra la versión y, si hay una nueva, avisa. En **Windows
+  y en el AppImage (corrido directo)** la app **descarga e instala** la actualización sola (y pide
+  reiniciar); en `.deb` y en la instalación de `makepkg` (Arch) solo **linkea** a la release de GitHub
+  (los maneja el gestor de paquetes). En **Settings** hay un botón *Buscar actualización* y el toggle
+  del chequeo automático al abrir.
 - **diagnóstico**: los errores del proceso main y del renderer quedan en `logs/app.txt`, con la versión
   y el SO al inicio de cada sesión; en Settings (toggleable) hay **Copiar diagnóstico** (versión + SO +
   últimas líneas del log al portapapeles) y **Abrir carpeta de logs**

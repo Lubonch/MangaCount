@@ -7,7 +7,7 @@ import ProfileSelector from './components/ProfileSelector';
 import RecommendationModal from './components/RecommendationModal';
 import SettingsModal from './components/SettingsModal';
 import Footer from './components/Footer';
-import { appInfo, updateCheck, appConfigGet, isElectron } from './api/localAdapter.js';
+import { appInfo, updateCheck, updateDownload, updateInstall, onUpdateState, appConfigGet, isElectron } from './api/localAdapter.js';
 import { ThemeProvider } from './contexts/ThemeContext';
 import catalog from '@shared/recommendations/catalog.json';
 import publisherCountries from '@shared/recommendations/publisher-countries.json';
@@ -37,10 +37,14 @@ function App() {
     }, []);
 
     // Versión + chequeo de actualizaciones (una vez al abrir la app, si está habilitado).
-    // Solo dentro de Electron (fuera no hay IPC ni update real).
+    // Solo dentro de Electron (fuera no hay IPC ni update real). El estado llega en vivo por
+    // `onUpdateState` (modo auto: descarga/progreso/reiniciar).
     useEffect(() => {
         if (!isElectron()) return undefined;
         let cancelled = false;
+        const off = onUpdateState((state) => {
+            if (!cancelled) setUpdateInfo(state);
+        });
         (async () => {
             try {
                 const info = await appInfo();
@@ -56,8 +60,17 @@ function App() {
         })();
         return () => {
             cancelled = true;
+            off?.();
         };
     }, []);
+
+    const handleDownloadUpdate = () => {
+        updateDownload().catch(() => {});
+    };
+
+    const handleInstallUpdate = () => {
+        updateInstall().catch(() => {});
+    };
 
     useEffect(() => {
         return () => {
@@ -376,7 +389,12 @@ function App() {
                             onDataReset={handleDataReset}
                         />
                     </div>
-                    <Footer version={appVersion} update={updateInfo} />
+                    <Footer
+                        version={appVersion}
+                        update={updateInfo}
+                        onDownload={handleDownloadUpdate}
+                        onInstall={handleInstallUpdate}
+                    />
                 </div>
         </ThemeProvider>
     );

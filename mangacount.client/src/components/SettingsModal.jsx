@@ -16,6 +16,9 @@ import {
   appConfigSet,
   appInfo,
   updateCheck as checkUpdatesRequest,
+  updateDownload as downloadUpdateRequest,
+  updateInstall as installUpdateRequest,
+  onUpdateState,
   diagnosticsCopy as copyDiagnosticsRequest,
   openLogs as openLogsRequest,
   pickDirectory,
@@ -99,6 +102,13 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     return () => {
       cancelled = true;
     };
+  }, [isOpen]);
+
+  // Estado de update en vivo (push del main) mientras el modal está abierto.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const off = onUpdateState((state) => setUpdate(state));
+    return () => off?.();
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -234,6 +244,19 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     }
   };
 
+  const downloadUpdate = async () => {
+    setUpdateMessage('');
+    try {
+      await downloadUpdateRequest();
+    } catch (err) {
+      setUpdateMessage(`No se pudo descargar: ${err.message}`);
+    }
+  };
+
+  const installUpdate = () => {
+    installUpdateRequest().catch(() => {});
+  };
+
   const copyDiagnostics = async () => {
     setDiagnosticsMessage('');
     try {
@@ -330,15 +353,27 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
             </label>
             <p className="settings-hint">Versión actual: {version ?? '—'}</p>
             <div className="settings-actions">
-              <button
-                type="button"
-                aria-label="Buscar actualización"
-                onClick={runUpdateCheck}
-                disabled={checkingUpdate}
-              >
-                {checkingUpdate ? 'Buscando…' : 'Buscar actualización'}
-              </button>
-              {update?.hasUpdate && update?.url && (
+              {update?.status === 'downloaded' ? (
+                <button type="button" aria-label="Reiniciar para actualizar" onClick={installUpdate}>
+                  Reiniciar para actualizar
+                </button>
+              ) : update?.status === 'downloading' ? (
+                <button type="button" disabled>Descargando… {update.percent}%</button>
+              ) : update?.hasUpdate && update?.mode === 'auto' ? (
+                <button type="button" aria-label="Descargar actualización" onClick={downloadUpdate}>
+                  Descargar v{update.latest}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  aria-label="Buscar actualización"
+                  onClick={runUpdateCheck}
+                  disabled={checkingUpdate}
+                >
+                  {checkingUpdate ? 'Buscando…' : 'Buscar actualización'}
+                </button>
+              )}
+              {update?.hasUpdate && update?.mode !== 'auto' && update?.url && (
                 <a className="settings-link" href={update.url} target="_blank" rel="noreferrer">
                   Descargar v{update.latest}
                 </a>

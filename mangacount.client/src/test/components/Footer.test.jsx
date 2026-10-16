@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '../test-utils'
+import userEvent from '@testing-library/user-event'
 import Footer from '../../components/Footer'
 
 describe('Footer', () => {
@@ -15,4 +16,32 @@ describe('Footer', () => {
     expect(link).toHaveAttribute('href', 'https://x/1.1.0')
     expect(link).toHaveAttribute('target', '_blank')
   })
+
+  it('modo auto: muestra Descargar y llama onDownload', async () => {
+    const user = userEvent.setup()
+    const onDownload = vi.fn()
+    render(
+      <Footer
+        version="1.0.11"
+        update={{ mode: 'auto', status: 'available', hasUpdate: true, latest: '1.2.0' }}
+        onDownload={onDownload}
+      />
+    )
+    await user.click(screen.getByRole('button', { name: /Descargar v1\.2\.0/ }))
+    expect(onDownload).toHaveBeenCalled()
+  })
+
+  it('modo auto: muestra el progreso y Reiniciar para actualizar', async () => {
+    const user = userEvent.setup()
+    const onInstall = vi.fn()
+    const { rerender } = render(
+      <Footer version="1.0.11" update={{ mode: 'auto', status: 'downloading', percent: 42 }} />
+    )
+    expect(screen.getByText(/Descargando… 42%/)).toBeInTheDocument()
+
+    rerender(<Footer version="1.0.11" update={{ mode: 'auto', status: 'downloaded' }} onInstall={onInstall} />)
+    await user.click(screen.getByRole('button', { name: 'Reiniciar para actualizar' }))
+    expect(onInstall).toHaveBeenCalled()
+  })
 })
+

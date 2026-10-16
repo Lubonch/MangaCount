@@ -18,3 +18,18 @@
 .footer-update:hover {
     color: #1b6ec2;
 }
+
+.footer-action {
+    background: transparent;
+    border: 1px solid var(--sidebar-border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.footer-action:hover {
+    color: #2e86de;
+    border-color: #2e86de;
+}
