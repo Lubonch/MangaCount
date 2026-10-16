@@ -38,8 +38,10 @@ const EMPTY_BACKUP = {
   lastBackupStatus: null,
 };
 
-function downloadTsv(text, filename) {
-  if (typeof URL?.createObjectURL !== 'function') return;
+const formatClock = (totalSeconds) =>
+  `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+
+function downloadTsv(text, filename) {  if (typeof URL?.createObjectURL !== 'function') return;
   const url = URL.createObjectURL(new Blob([text], { type: 'text/tab-separated-values' }));
   const link = document.createElement('a');
   link.href = url;
@@ -69,6 +71,10 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [updateMessage, setUpdateMessage] = useState('');
   const [update, setUpdate] = useState(null);
   const [diagnosticsMessage, setDiagnosticsMessage] = useState('');
+  const [coverBulk, setCoverBulk] = useState({ running: false, done: 0, total: 0, message: '', cooldownLeft: 0 });
+  const [bulkBatchSize, setBulkBatchSize] = useState(20);
+  const [bulkCooldownMin, setBulkCooldownMin] = useState(5);
+  const coverBulkCancelRef = useRef(false);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -319,37 +325,40 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
 
   const lastStatus = backup.lastBackupStatus;
 
-  // Bulk de portadas faltantes: secuencial y con espera entre pedidos para no
-  // pasarse del rate limit de AniList (~30 req/min). Se detiene ante un error
-  // (incluido 429) sugiriendo reintentar.
-  const COVER_BULK_DELAY_MS = 2200;
-  const [coverBulk, setCoverBulk] = useState({ running: false, done: 0, total: 0, message: '' });
-  const coverBulkCancelRef = useRef(false);
+  // Bulk de portadas faltantes: de a lotes para no acercarse al rate limit de
+  // AniList (~30 req/min). Dentro del lote espacia ~2.2s; cada N mangas hace una
+  // pausa larga (configurable). Se detiene ante un error (incluido 429).
+  const COVER_BULK_INTRA_DELAY_MS = 2200;
 
   const runCoverBulk = async () => {
-    setCoverBulk({ running: true, done: 0, total: 0, message: 'Buscando mangas…' });
+    const batchSize = Math.min(Math.max(Number.parseInt(bulkBatchSize, 10) || 20, 1), 200);
+    const cooldownSec =
+      Math.min(Math.max(Number.parseInt(bulkCooldownMin, 10) || 0, 0), 60) * 60;
+
+    setCoverBulk({ running: true, done: 0, total: 0, message: 'Buscando mangas…', cooldownLeft: 0 });
     let mangas;
     let covers;
     try {
       [mangas, covers] = await Promise.all([mangaList(), coverAll()]);
     } catch {
-      setCoverBulk({ running: false, done: 0, total: 0, message: 'No se pudo leer la colección.' });
+      setCoverBulk({ running: false, done: 0, total: 0, message: 'No se pudo leer la colección.', cooldownLeft: 0 });
       return;
     }
     const missing = mangas.filter((manga) => !covers[manga.id]);
     if (missing.length === 0) {
-      setCoverBulk({ running: false, done: 0, total: 0, message: 'Todas las portadas ya están vinculadas.' });
+      setCoverBulk({ running: false, done: 0, total: 0, message: 'Todas las portadas ya están vinculadas.', cooldownLeft: 0 });
       return;
     }
 
     coverBulkCancelRef.current = false;
-    setCoverBulk({ running: true, done: 0, total: missing.length, message: '' });
+    setCoverBulk({ running: true, done: 0, total: missing.length, message: '', cooldownLeft: 0 });
     let done = 0;
     let linked = 0;
-    for (const manga of missing) {
+
+    for (let i = 0; i < missing.length; i += 1) {
       if (coverBulkCancelRef.current) break;
       try {
-        const url = await coverAuto(manga.id);
+        const url = await coverAuto(missing[i].id);
         if (url) linked += 1;
       } catch {
         setCoverBulk({
@@ -357,20 +366,30 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           done,
           total: missing.length,
           message: `AniList limitó las peticiones (o error de red). Nuevas: ${linked}. Reintentá en un minuto.`,
+          cooldownLeft: 0,
         });
         onImportSuccess?.();
         return;
       }
       done += 1;
-      setCoverBulk({
-        running: true,
-        done,
-        total: missing.length,
-        message: `${linked} portadas nuevas hasta ahora`,
-      });
-      // Espacia sólo si quedan más (no espera de más al terminar).
-      if (done < missing.length && !coverBulkCancelRef.current) {
-        await new Promise((resolve) => setTimeout(resolve, COVER_BULK_DELAY_MS));
+      setCoverBulk({ running: true, done, total: missing.length, message: `${linked} portadas nuevas hasta ahora`, cooldownLeft: 0 });
+
+      if (i === missing.length - 1) break; // terminó: sin espera final
+
+      if (done % batchSize === 0 && cooldownSec > 0) {
+        // Pausa larga entre lotes, con cuenta regresiva cancelable.
+        for (let s = cooldownSec; s > 0; s -= 1) {
+          if (coverBulkCancelRef.current) break;
+          setCoverBulk((prev) => ({
+            ...prev,
+            running: true,
+            cooldownLeft: s,
+            message: `Lote de ${batchSize} hecho — pausa para no superar el límite de AniList`,
+          }));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, COVER_BULK_INTRA_DELAY_MS));
       }
     }
     setCoverBulk({
@@ -378,6 +397,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       done,
       total: missing.length,
       message: `Listo: ${linked} portadas nuevas${coverBulkCancelRef.current ? ' (detenido)' : ''}.`,
+      cooldownLeft: 0,
     });
     onImportSuccess?.();
   };
@@ -538,9 +558,33 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           <section className="settings-section">
             <h3>Portadas (AniList)</h3>
             <p className="settings-hint">
-              Busca y vincula las portadas de los mangas que todavía no tienen. Es **secuencial** y
-              espera ~2s entre pedidos para respetar el límite de AniList (~30/min).
+              Busca y vincula las portadas de los mangas que todavía no tienen. Va de a **lotes** (por
+              defecto 20) y **pausa** entre lotes, para no acercarse al límite de AniList (~30/min).
             </p>
+            <div className="settings-field settings-inline">
+              <label>
+                Tamaño de lote
+                <input
+                  type="number"
+                  min="1"
+                  max="200"
+                  value={bulkBatchSize}
+                  disabled={coverBulk.running}
+                  onChange={(e) => setBulkBatchSize(e.target.value)}
+                />
+              </label>
+              <label>
+                Pausa entre lotes (min)
+                <input
+                  type="number"
+                  min="0"
+                  max="60"
+                  value={bulkCooldownMin}
+                  disabled={coverBulk.running}
+                  onChange={(e) => setBulkCooldownMin(e.target.value)}
+                />
+              </label>
+            </div>
             <div className="settings-actions">
               <button type="button" className="action-button" onClick={runCoverBulk} disabled={coverBulk.running}>
                 {coverBulk.running ? `Buscando… ${coverBulk.done}/${coverBulk.total}` : 'Traer portadas faltantes'}
@@ -557,7 +601,12 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 </button>
               )}
             </div>
-            {coverBulk.message && <p className="settings-message">{coverBulk.message}</p>}
+            {coverBulk.message && (
+              <p className="settings-message">
+                {coverBulk.message}
+                {coverBulk.cooldownLeft > 0 && ` — reanuda en ${formatClock(coverBulk.cooldownLeft)}`}
+              </p>
+            )}
           </section>
 
           <section className="settings-section">

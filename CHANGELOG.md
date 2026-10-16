@@ -3,6 +3,14 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.3] - 2026-10-16
+
+### Changed
+
+- **Bulk de portadas**: ahora trabaja **de a lotes** (tamaño configurable, por defecto 20) con una
+  **pausa entre lotes** (por defecto 5 min, con cuenta regresiva), además del espaciado dentro del
+  lote, para no acercarse nunca al rate limit de AniList. Se puede **detener** en cualquier momento.
+
 ## [2.0.2] - 2026-10-16
 
 ### Added
