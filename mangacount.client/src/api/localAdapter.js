@@ -62,6 +62,8 @@ export const entryUsedPublishers = (profileId) =>
 export const mangaList = () => apiCall('manga:list', '/api/manga');
 export const mangaGet = (id) => apiCall('manga:get', `/api/manga/${id}`, undefined, id);
 export const mangaUpsert = (manga) => apiCall('manga:upsert', '/api/manga', json(manga), manga);
+export const mangaDelete = (id) =>
+  apiCall('manga:delete', `/api/manga/${id}`, { method: 'DELETE' }, id);
 export const formatList = () => apiCall('format:list', '/api/format');
 export const formatCreate = (name) => apiCall('format:create', '/api/format', json({ name }), { name });
 export const publisherList = () => apiCall('publisher:list', '/api/publisher');

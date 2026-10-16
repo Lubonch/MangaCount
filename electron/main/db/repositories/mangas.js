@@ -30,3 +30,8 @@ export function updateManga(db, { id, name, volumes, formatId, publisherId }) {
   ).run(name, safeVolumes(volumes), formatId, publisherId, id);
   return getMangaById(db, id);
 }
+
+// Borra el manga (sus Entry caen por ON DELETE CASCADE).
+export function deleteManga(db, id) {
+  return db.prepare('DELETE FROM Manga WHERE Id = ?').run(id).changes > 0;
+}

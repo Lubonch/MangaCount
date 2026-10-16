@@ -12,7 +12,7 @@ import {
   setProfilePicture,
   deleteProfile,
 } from './profiles.js';
-import { listMangas, getMangaById, createManga, updateManga } from './mangas.js';
+import { listMangas, getMangaById, createManga, updateManga, deleteManga } from './mangas.js';
 import {
   listEntries,
   getEntryById,
@@ -73,6 +73,16 @@ describe('repositories', () => {
     assert.equal(createManga(db, { name: 'd', volumes: -3 }).volumes, 0);
     const m = createManga(db, { name: 'e', volumes: 12 });
     assert.equal(updateManga(db, { ...m, volumes: null }).volumes, 0);
+  });
+
+  it('mangas: delete quita el manga y sus entries (CASCADE)', () => {
+    const manga = createManga(db, { name: 'borrar', volumes: 5 });
+    const profile = createProfile(db, 'yo');
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    assert.equal(deleteManga(db, manga.id), true);
+    assert.equal(getMangaById(db, manga.id), null);
+    assert.equal(listEntries(db).length, 0);
+    assert.equal(deleteManga(db, manga.id), false); // ya no existe
   });
 
   it('catalogs: CRUD + alta case-insensitive', () => {

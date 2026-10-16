@@ -4,6 +4,7 @@
 // Canales según parity-matrix.md (filas 1-15; recommendation y database llegan después).
 
 import { listEntries, getEntryById, upsertEntry, updateEntry } from '../db/repositories/entries.js';
+import { deleteManga } from '../db/repositories/mangas.js';
 import { importTsv, exportTsv } from '../services/entries.js';
 import {
   saveOrUpdateProfile,
@@ -85,6 +86,10 @@ export const handlers = {
   'manga:list': ({ db }) => listMangas(db),
   'manga:get': ({ db }, id) => getMangaById(db, id),
   'manga:upsert': ({ db }, manga) => saveOrUpdateManga(db, manga),
+  'manga:delete': ({ db }, id) => {
+    if (!Number.isInteger(id) || id <= 0) throw new Error('mangaId inválido');
+    return { ok: deleteManga(db, id) };
+  },
   'format:list': ({ db }) => formats.list(db),
   'format:create': ({ db }, { name }) => formats.create(db, name),
   'publisher:list': ({ db }) => publishers.list(db),

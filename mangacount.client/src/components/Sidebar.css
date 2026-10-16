@@ -316,6 +316,10 @@
     opacity: 1;
 }
 
+.delete-manga-btn-sidebar:hover {
+    background: var(--color-incomplete);
+}
+
 .empty-message {
     color: var(--text-muted);
     font-style: italic;

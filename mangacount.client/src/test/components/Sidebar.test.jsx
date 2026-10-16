@@ -1,6 +1,18 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '../test-utils'
+import { render, screen, waitFor } from '../test-utils'
 import userEvent from '@testing-library/user-event'
+
+vi.mock('../../api/localAdapter.js', () => ({
+  isElectron: () => false,
+  botStatus: vi.fn(),
+  mangaDelete: vi.fn(),
+  coverSearch: vi.fn().mockResolvedValue([]),
+  coverLink: vi.fn(),
+  coverUnlink: vi.fn(),
+  coverStatus: vi.fn().mockResolvedValue(null),
+}))
+import { mangaDelete } from '../../api/localAdapter.js'
+
 import Sidebar from '../../components/Sidebar'
 import { createMockProfile, createMockManga } from '../test-utils'
 
@@ -161,5 +173,36 @@ describe('Sidebar Component', () => {
     await user.click(screen.getByRole('button', { name: 'Buscar portada de Berserk' }))
 
     expect(await screen.findByText(/Portada — Berserk/)).toBeInTheDocument()
+  })
+
+  it('elimina un manga desde el Manga Library (con confirmación)', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const onImportSuccess = vi.fn()
+    mangaDelete.mockResolvedValue({ ok: true })
+
+    render(
+      <Sidebar
+        {...defaultProps}
+        mangas={[createMockManga({ id: 1, name: 'Berserk' })]}
+        onImportSuccess={onImportSuccess}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Eliminar Berserk' }))
+
+    await waitFor(() => expect(mangaDelete).toHaveBeenCalledWith(1))
+    expect(onImportSuccess).toHaveBeenCalled()
+  })
+
+  it('no elimina si el usuario cancela', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    render(<Sidebar {...defaultProps} mangas={[createMockManga({ id: 1, name: 'Berserk' })]} />)
+
+    await user.click(screen.getByRole('button', { name: 'Eliminar Berserk' }))
+
+    expect(mangaDelete).not.toHaveBeenCalled()
   })
 })
