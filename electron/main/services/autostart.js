@@ -59,12 +59,13 @@ export function getAutostart({ app, platform = process.platform, home } = {}) {
 }
 
 // Activa/desactiva el autostart en el sistema operativo correspondiente.
-export function setAutostart(enabled, { app, platform = process.platform, home, execPath } = {}) {
+// `args` permite decidir si el arranque del sistema abre oculto (`--hidden`).
+export function setAutostart(enabled, { app, platform = process.platform, home, execPath, args } = {}) {
   if (platform === 'linux') {
-    if (enabled) enableAutostartLinux({ home, execPath });
+    if (enabled) enableAutostartLinux({ home, execPath, args });
     else disableAutostartLinux(home);
     return getAutostart({ app, platform, home });
   }
-  app.setLoginItemSettings({ openAtLogin: !!enabled, args: AUTOSTART_ARGS });
+  app.setLoginItemSettings({ openAtLogin: !!enabled, args: args ?? AUTOSTART_ARGS });
   return getAutostart({ app, platform, home });
 }

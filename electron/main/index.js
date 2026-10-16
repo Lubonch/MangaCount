@@ -10,7 +10,7 @@ import { createLogger } from './services/logger.js';
 import { PROFILE_IMAGE_SCHEME } from './services/files.js';
 import { loadResolvedPrefs } from './services/prefs.js';
 import { createSecrets } from './services/secrets.js';
-import { getAutostart, setAutostart } from './services/autostart.js';
+import { getAutostart, setAutostart, AUTOSTART_ARGS } from './services/autostart.js';
 import { startAutoBackup } from './services/auto-backup.js';
 import { createDiscordBot } from './services/discord-bot.js';
 import { fetchLatestRelease, compareVersions, resolveUpdateMode } from './services/updates.js';
@@ -193,7 +193,11 @@ function initBackend() {
     secrets: createSecrets({ dataDir, safeStorage }),
     autostart: {
       get: () => getAutostart({ app }),
-      set: (enabled) => setAutostart(enabled, { app }),
+      // El autostart arranca oculto solo si "Arranque en bandeja" esta activo.
+      set: (enabled) => {
+        const { startInTray } = loadResolvedPrefs(app.getPath('userData'));
+        return setAutostart(enabled, { app, args: startInTray === false ? [] : AUTOSTART_ARGS });
+      },
     },
     dialog: {
       async pickDirectory() {
@@ -344,7 +348,7 @@ function createTray() {
 async function initialize() {
   const isPrimaryInstance = await acquireSingleInstanceLock();
   if (!isPrimaryInstance) {
-    app.quit();
+    app.exit(0); // salida inmediata: evita dejar instancias colgadas peleando el lock
     return;
   }
   await app.whenReady();
@@ -352,8 +356,7 @@ async function initialize() {
   createTray();
   stopAutoBackup = scheduleAutoBackup(appCtx);
   bot = startBot(appCtx);
-  const prefs = loadResolvedPrefs(app.getPath('userData'));
-  if (!shouldStartHidden(process.argv, prefs)) createWindow();
+  if (!shouldStartHidden(process.argv)) createWindow();
   app.on('activate', () => showWindow());
 }
 

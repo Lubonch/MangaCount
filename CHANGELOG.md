@@ -3,6 +3,17 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.6] - 2026-10-16
+
+### Fixed
+
+- **Doble clic no abría la ventana**: con *Arranque en bandeja* activo, **todo** lanzamiento (incluido
+  abrir el AppImage a mano) arrancaba oculto y parecía que "no iniciaba". Ahora arranca oculto
+  **solo el autostart** (`--hidden`); un lanzamiento manual **muestra la ventana**.
+- **Instancias colgadas**: un segundo lanzamiento que no obtiene el *single-instance lock* ahora sale
+  con `app.exit(0)` (antes podía quedar vivo, y varias instancias se peleaban el lock).
+- El autostart arranca oculto según *Arranque en bandeja* (al cambiarlo se reescribe la entrada).
+
 ## [2.0.5] - 2026-10-16
 
 ### Fixed
