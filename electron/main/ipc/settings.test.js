@@ -151,4 +151,23 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     handlers['log:error'](ctx, { scope: 'render', message: 'boom', stack: 'at Foo' });
     assert.ok(logged.some((m) => /renderer\/render/.test(m) && /boom/.test(m)));
   });
+
+  it('app:config incluye diagnosticsCopy (default ON)', () => {
+    assert.equal(handlers['app:config-get'](ctx).diagnosticsCopy, true);
+  });
+
+  it('diagnostics:copy arma el texto y lo copia (clipboard fake)', () => {
+    fs.mkdirSync(path.join(dir, 'logs'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'logs', 'app.txt'), 'a\nb\nc\n');
+    let copied = null;
+    const ctx2 = {
+      ...ctx,
+      app: { getVersion: () => '1.0.9', getLocale: () => 'es-AR' },
+      clipboard: { writeText: (t) => { copied = t; } },
+    };
+    const res = handlers['diagnostics:copy'](ctx2, 2);
+    assert.equal(res.copied, true);
+    assert.match(copied, /MangaCount v1\.0\.9/);
+    assert.match(copied, /b\nc/);
+  });
 });

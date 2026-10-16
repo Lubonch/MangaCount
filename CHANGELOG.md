@@ -3,6 +3,19 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [Unreleased]
+
+### Added
+
+- **Copiar diagnóstico** (Settings → Diagnóstico, toggleable, default ON): copia al portapapeles la
+  versión + SO/arch + locale y las últimas 100 líneas de `app.txt`; botón **Abrir carpeta de logs**.
+  IPC `diagnostics:copy` / `diagnostics:open-logs`.
+
+### Fixed
+
+- **Layout**: el contenido ahora ocupa el ancho disponible (sin hueco vacío a la derecha); `body` deja
+  de centrar con flex y `#root` pasa a `width: 100%`.
+
 ## [1.0.9] - 2026-10-16
 
 ### Added

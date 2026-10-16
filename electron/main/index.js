@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, ipcMain, protocol, shell, nativeImage, dialog as electronDialog, safeStorage } from 'electron';
+import { app, BrowserWindow, Tray, Menu, ipcMain, protocol, shell, nativeImage, clipboard, dialog as electronDialog, safeStorage } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -91,6 +91,8 @@ function initBackend() {
     db,
     dataDir,
     app,
+    clipboard,
+    shell,
     logger: log,
     secrets: createSecrets({ dataDir, safeStorage }),
     autostart: {

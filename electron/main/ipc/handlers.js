@@ -33,6 +33,9 @@ import {
   validateBackupConfig,
 } from '../services/prefs.js';
 import { fetchLatestRelease, compareVersions } from '../services/updates.js';
+import { buildDiagnostics } from '../services/diagnostics.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 function requireProfileId(profileId) {
   if (!Number.isInteger(profileId) || profileId <= 0) {
@@ -198,7 +201,11 @@ export const handlers = {
   // Config general de la app (arranque en bandeja, chequeo de updates).
   'app:config-get': ({ dataDir }) => {
     const prefs = loadResolvedPrefs(dataDir);
-    return { startInTray: prefs.startInTray, updateCheck: prefs.updateCheck };
+    return {
+      startInTray: prefs.startInTray,
+      updateCheck: prefs.updateCheck,
+      diagnosticsCopy: prefs.diagnosticsCopy,
+    };
   },
   'app:config-set': ({ dataDir }, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(dataDir));
@@ -206,9 +213,34 @@ export const handlers = {
       ...prefs,
       startInTray: config.startInTray ?? prefs.startInTray,
       updateCheck: config.updateCheck ?? prefs.updateCheck,
+      diagnosticsCopy: config.diagnosticsCopy ?? prefs.diagnosticsCopy,
     };
     savePrefs(dataDir, next);
-    return { startInTray: next.startInTray, updateCheck: next.updateCheck };
+    return {
+      startInTray: next.startInTray,
+      updateCheck: next.updateCheck,
+      diagnosticsCopy: next.diagnosticsCopy,
+    };
+  },
+
+  // Diagnóstico: copiar estado+log o abrir la carpeta de logs.
+  'diagnostics:copy': ({ dataDir, app, clipboard }, maxLines = 100) => {
+    const logPath = path.join(dataDir, 'logs', 'app.txt');
+    const logText = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';
+    const text = buildDiagnostics({
+      version: app?.getVersion?.() ?? null,
+      platform: process.platform,
+      arch: process.arch,
+      locale: app?.getLocale?.() ?? null,
+      logText,
+      maxLines,
+    });
+    clipboard?.writeText?.(text);
+    return { copied: true, preview: text.slice(0, 600) };
+  },
+  'diagnostics:open-logs': ({ dataDir, shell }) => {
+    shell?.openPath?.(path.join(dataDir, 'logs'));
+    return { opened: true };
   },
 
   // Errores del renderer → log del main.

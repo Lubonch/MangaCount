@@ -13,6 +13,7 @@ export function prefsPath(dataDir) {
 export const DEFAULT_PREFS = {
   startInTray: true,
   updateCheck: true,
+  diagnosticsCopy: true,
   backup: {
     enabled: false,
     destinationDir: null,

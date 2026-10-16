@@ -17,6 +17,7 @@ const channels = [
   'bot:autostart-get', 'bot:autostart-set',
   'app:config-get', 'app:config-set',
   'app:info', 'update:check', 'log:error',
+  'diagnostics:copy', 'diagnostics:open-logs',
   'dialog:pick-directory', 'dialog:pick-file',
 ];
 

@@ -7,6 +7,8 @@ vi.mock('../../api/localAdapter.js', () => ({
   appConfigSet: vi.fn(),
   appInfo: vi.fn(),
   updateCheck: vi.fn(),
+  diagnosticsCopy: vi.fn(),
+  openLogs: vi.fn(),
   backupConfigGet: vi.fn(),
   backupConfigSet: vi.fn(),
   backupList: vi.fn(),
@@ -42,9 +44,11 @@ const emptyBackup = () => ({
 })
 
 function setupDefaults() {
-  api.appConfigGet.mockResolvedValue({ startInTray: true, updateCheck: true })
+  api.appConfigGet.mockResolvedValue({ startInTray: true, updateCheck: true, diagnosticsCopy: true })
   api.appInfo.mockResolvedValue({ version: '1.0.8', platform: 'linux', arch: 'x64', packaged: true })
   api.updateCheck.mockResolvedValue({ current: '1.0.8', latest: '1.0.8', hasUpdate: false })
+  api.diagnosticsCopy.mockResolvedValue({ copied: true })
+  api.openLogs.mockResolvedValue({ opened: true })
   api.backupConfigGet.mockResolvedValue(emptyBackup())
   api.backupList.mockResolvedValue([])
   api.botConfigGet.mockResolvedValue({ enabled: false, guildId: null, allowedUserIds: [], status: 'apagado', hasToken: false })
@@ -241,5 +245,25 @@ describe('SettingsModal', () => {
 
     await user.click(screen.getByLabelText('Buscar actualizaciones al abrir la app'))
     await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ updateCheck: false }))
+  })
+
+  it('el botón Copiar diagnóstico llama al IPC y confirma', async () => {
+    const user = userEvent.setup()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Diagnóstico')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Copiar diagnóstico'))
+
+    await waitFor(() => expect(api.diagnosticsCopy).toHaveBeenCalled())
+    expect(screen.getByText('Copiado ✓')).toBeInTheDocument()
+  })
+
+  it('con el toggle Diagnóstico OFF no muestra los botones', async () => {
+    api.appConfigGet.mockResolvedValue({ startInTray: true, updateCheck: true, diagnosticsCopy: false })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Diagnóstico')).toBeInTheDocument())
+
+    expect(screen.queryByLabelText('Copiar diagnóstico')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Habilitar diagnóstico')).not.toBeChecked()
   })
 })

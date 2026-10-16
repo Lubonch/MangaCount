@@ -86,6 +86,20 @@ Diagnóstico
 
 - Con el toggle **OFF**, los dos botones quedan ocultos/deshabilitados.
 
+## Layout responsive (sin espacio vacío a la derecha)
+
+El CSS default de Vite centra `#root` con `body { display: flex; place-items: center }`, por lo que su
+ancho queda del tamaño del contenido (hueco a la derecha). Fix mínimo en `index.css`:
+
+```css
+body { margin: 0; min-width: 320px; min-height: 100vh; }   /* sin flex/place-items */
+#root { width: 100%; min-height: 100vh; }
+```
+
+- No tocar `App.css`/`CollectionView.css` (los ajustes de scroll horizontal ya están).
+- El centrado de la pantalla de selección de perfil lo hace su propio contenedor
+  (`.profile-selection-container`), así que no depende de `body`.
+
 ## Validation
 
 - **Armado**: `buildDiagnostics` incluye versión/OS/arch/locale y **solo las últimas N líneas**; log
