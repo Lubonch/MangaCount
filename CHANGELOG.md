@@ -3,7 +3,7 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
-## [Unreleased]
+## [1.0.5] - 2026-10-15
 
 ### Added
 
