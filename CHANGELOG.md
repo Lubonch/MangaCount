@@ -3,6 +3,13 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.15] - 2026-10-16
+
+### Changed
+
+- Release de **validación del auto-update in-app** (sin cambios funcionales): permite comprobar que la
+  1.0.14 detecta, descarga e instala la 1.0.15 en Windows/AppImage.
+
 ## [1.0.14] - 2026-10-16
 
 ### Fixed
