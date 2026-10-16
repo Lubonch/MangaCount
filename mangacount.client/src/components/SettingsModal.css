@@ -15,7 +15,7 @@
 }
 
 .settings-section {
-    border: 1px solid var(--border-color, #e0e0e0);
+    border: 1px solid var(--border-color, var(--border-color));
     border-radius: 8px;
     padding: 14px 16px;
     display: flex;
@@ -76,9 +76,9 @@
 }
 
 .settings-message.error {
-    color: #c0392b;
+    color: var(--color-incomplete);
 }
 
 .settings-message.success {
-    color: #27ae60;
+    color: var(--color-complete);
 }

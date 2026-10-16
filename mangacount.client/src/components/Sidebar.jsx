@@ -1,8 +1,10 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import './Sidebar.css';
+import logo from '../assets/brand/logo.svg';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
 import ThemeToggle from './ThemeToggle';
+import { botStatus as fetchBotStatus, isElectron } from '../api/localAdapter.js';
 
 const Sidebar = ({
     mangas,
@@ -19,6 +21,21 @@ const Sidebar = ({
     const [showAddManga, setShowAddManga] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
     const [editingManga, setEditingManga] = useState(null);
+    const [collapsed, setCollapsed] = useState(false);
+    const [botStatus, setBotStatus] = useState('apagado');
+
+    useEffect(() => {
+        if (!isElectron()) return undefined;
+        let cancelled = false;
+        fetchBotStatus()
+            .then((res) => {
+                if (!cancelled) setBotStatus(res?.status ?? 'apagado');
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const handleAddSuccess = () => {
         onImportSuccess();
@@ -35,11 +52,21 @@ const Sidebar = ({
 
     return (
         <>
-            <aside className="sidebar">
+            <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
                 <div className="sidebar-header">
-                    <h2>🏗️ Manga Count</h2>
+                    <div className="brand-row">
+                        <img className="brand-logo" src={logo} alt="" />
+                        <span className="brand-name">MangaCount</span>
+                        <button
+                            className="collapse-btn"
+                            onClick={() => setCollapsed((c) => !c)}
+                            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+                            aria-label="Colapsar menú"
+                        >
+                            {collapsed ? '»' : '«'}
+                        </button>
+                    </div>
 
-                    {/* Profile Info Section */}
                     {selectedProfile && (
                         <div className="current-profile-info">
                             <div className="profile-display">
@@ -72,75 +99,78 @@ const Sidebar = ({
                     )}
                 </div>
 
-                <div className="sidebar-section">
-                    <h3>Theme</h3>
-                    <ThemeToggle />
-                </div>
-
-                <div className="sidebar-section">
-                    <h3>Quick Actions</h3>
-                    <div className="quick-actions">
-                        <button
-                            className="action-button add-entry"
-                            onClick={() => setShowAddEntry(true)}
-                            disabled={!selectedProfile}
-                        >
-                            + Add Entry
-                        </button>
-                        <button
-                            className="action-button add-manga"
-                            onClick={() => setShowAddManga(true)}
-                        >
-                            + Add Manga
-                        </button>
-                        <button
-                            className="action-button recommend"
-                            onClick={onRecommend}
-                            disabled={!selectedProfile || entries.length === 0 || recommendationsLoading}
-                        >
-                            {recommendationsLoading ? 'Thinking...' : 'Recommendations'}
-                        </button>
+                <nav className="sidebar-nav">
+                    <div className="sidebar-group">
+                        <span className="group-label">Colección</span>
+                        <div className="quick-actions">
+                            <button
+                                className="action-button add-entry"
+                                onClick={() => setShowAddEntry(true)}
+                                disabled={!selectedProfile}
+                            >
+                                + Add Entry
+                            </button>
+                            <button
+                                className="action-button add-manga"
+                                onClick={() => setShowAddManga(true)}
+                            >
+                                + Add Manga
+                            </button>
+                            <button
+                                className="action-button recommend"
+                                onClick={onRecommend}
+                                disabled={!selectedProfile || entries.length === 0 || recommendationsLoading}
+                            >
+                                {recommendationsLoading ? 'Thinking...' : 'Recommendations'}
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <div className="sidebar-section">
-                    <h3>Manga Library ({mangas.length})</h3>
-                    <div className="manga-list">
-                        {mangas.length === 0 ? (
-                            <p className="empty-message">No manga in library</p>
-                        ) : (
-                            mangas.map(manga => (
-                                <div key={manga.id} className="manga-item">
-                                    <div className="manga-info">
-                                        <div className="manga-name">{manga.name}</div>
-                                        {manga.volumes && (
-                                            <div className="manga-volumes">{manga.volumes} volumes</div>
-                                        )}
+                    <div className="sidebar-group">
+                        <span className="group-label">Biblioteca</span>
+                        <h3 className="group-title">Manga Library ({mangas.length})</h3>
+                        <div className="manga-list">
+                            {mangas.length === 0 ? (
+                                <p className="empty-message">No manga in library</p>
+                            ) : (
+                                mangas.map((manga) => (
+                                    <div key={manga.id} className="manga-item">
+                                        <div className="manga-info">
+                                            <div className="manga-name">{manga.name}</div>
+                                            {manga.volumes && (
+                                                <div className="manga-volumes">{manga.volumes} volumes</div>
+                                            )}
+                                        </div>
+                                        <button
+                                            className="edit-manga-btn-sidebar"
+                                            onClick={() => handleEditManga(manga)}
+                                            title="Edit manga info"
+                                        >
+                                            ✏️
+                                        </button>
                                     </div>
-                                    <button
-                                        className="edit-manga-btn-sidebar"
-                                        onClick={() => handleEditManga(manga)}
-                                        title="Edit manga info"
-                                    >
-                                        ✏️
-                                    </button>
-                                </div>
-                            ))
-                        )}
+                                ))
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {/* Acceso a Settings (antes acá estaba la Danger Zone, ahora dentro de Settings) */}
-                <div className="sidebar-section sidebar-settings">
-                    <button
-                        className="action-button settings-open-button"
-                        onClick={onOpenSettings}
-                        title="Settings"
-                        aria-label="Settings"
-                    >
-                        ⚙️ Settings
-                    </button>
-                </div>
+                    <div className="sidebar-group sidebar-settings">
+                        <span className="group-label">App</span>
+                        <ThemeToggle />
+                        <div className="bot-status" title="Estado del bot de Discord">
+                            <span className={`bot-dot ${botStatus}`} />
+                            Bot: {botStatus}
+                        </div>
+                        <button
+                            className="action-button settings-open-button"
+                            onClick={onOpenSettings}
+                            title="Settings"
+                            aria-label="Settings"
+                        >
+                            ⚙️ Settings
+                        </button>
+                    </div>
+                </nav>
             </aside>
 
             <AddEntryModal

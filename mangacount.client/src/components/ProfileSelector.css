@@ -221,7 +221,7 @@
 }
 
 .profile-action-btn.edit-btn:hover {
-    background: #2980b9;
+    background: var(--accent);
     transform: scale(1.1);
     box-shadow: var(--shadow-hover);
 }
@@ -232,7 +232,7 @@
 }
 
 .profile-action-btn.delete-btn:hover {
-    background: #c0392b;
+    background: var(--color-incomplete);
     transform: scale(1.1);
     box-shadow: var(--shadow-hover);
 }
@@ -420,7 +420,7 @@
 }
 
 .retry-btn:hover {
-    background: #c0392b;
+    background: var(--color-incomplete);
     transform: translateY(-2px);
     box-shadow: var(--shadow-hover);
 }

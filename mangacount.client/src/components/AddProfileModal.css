@@ -177,7 +177,7 @@
 }
 
 .file-input-label:hover {
-    background-color: #2980b9;
+    background-color: var(--accent);
     transform: translateY(-1px);
 }
 
@@ -193,7 +193,7 @@
 }
 
 .remove-picture-btn:hover {
-    background-color: #c0392b;
+    background-color: var(--color-incomplete);
     transform: translateY(-1px);
 }
 
@@ -248,13 +248,13 @@
 }
 
 .submit-button {
-    background-color: #9b59b6;
+    background-color: var(--accent);
     color: white;
-    border: 1px solid #9b59b6;
+    border: 1px solid var(--accent);
 }
 
 .submit-button:hover:not(:disabled) {
-    background-color: #8e44ad;
+    background-color: var(--accent-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
 }

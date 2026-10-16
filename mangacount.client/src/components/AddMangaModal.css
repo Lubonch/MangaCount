@@ -1,7 +1,7 @@
 ﻿/* Add these if missing from your main CSS variables */
 :root {
-    --accent-color: #9b59b6;
-    --accent-hover: #8e44ad;
+    --accent-color: var(--accent);
+    --accent-hover: var(--accent-hover);
     --card-bg: var(--bg-tertiary);
     --secondary-bg: var(--bg-secondary);
     --text-color: var(--text-primary);
@@ -174,13 +174,13 @@
 }
 
 .submit-button {
-    background-color: #9b59b6;
+    background-color: var(--accent);
     color: white;
-    border: 1px solid #9b59b6;
+    border: 1px solid var(--accent);
 }
 
 .submit-button:hover:not(:disabled) {
-    background-color: #8e44ad;
+    background-color: var(--accent-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
 }

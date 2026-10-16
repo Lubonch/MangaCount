@@ -9,14 +9,14 @@
 }
 
 .footer-update {
-    color: #2e86de;
+    color: var(--accent);
     text-decoration: underline;
     cursor: pointer;
     font-weight: 600;
 }
 
 .footer-update:hover {
-    color: #1b6ec2;
+    color: var(--accent-hover);
 }
 
 .footer-action {
@@ -30,6 +30,6 @@
 }
 
 .footer-action:hover {
-    color: #2e86de;
-    border-color: #2e86de;
+    color: var(--accent);
+    border-color: var(--accent);
 }
