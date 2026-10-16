@@ -3,6 +3,21 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.9] - 2026-10-16
+
+### Changed
+
+- **`recommendations.js`**: el hook de providers de reranking ahora se **inyecta por parámetro**
+  (`{ providers }`), en vez de un array privado vacío imposible de cubrir. Mantiene el punto de
+  extensión y queda testeado (100% líneas).
+- **`NukeDataModal`**: se quitaron guards redundantes de `handleNext`/`handleBack` (la UI ya limita los
+  pasos) y se corrigió un texto desactualizado (la Nuclear Option ya **no** conserva un perfil).
+
+### Tests
+
+- Cobertura del suite **main** (solo producción, sin archivos de test): **99.8 / 97.9 / 99.4**
+  (lines/branches/funcs); **renderer 99.2 / 98.9 / 99.2 / 99.3**. Se excluyen `*.test.js` del reporte.
+
 ## [2.0.8] - 2026-10-16
 
 ### Added

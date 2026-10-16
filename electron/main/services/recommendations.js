@@ -26,16 +26,16 @@ function sharedData() {
   return cache;
 }
 
-// Punto de extensión para reranking remoto (Fase 0: sin fricción -> ninguno
-// configurado; el fallback local siempre responde). Cada provider: async
-// ({entries, baseItems, inferredCountry, limit}) -> items[] | null.
-const providers = [];
+// Punto de extensión para reranking remoto: cada provider es
+// `{ name, rerank({entries, baseItems, inferredCountry, limit}) => items[]|null }`.
+// Por defecto no hay ninguno (el fallback local siempre responde); se pueden
+// inyectar por parámetro (tests u otra fase).
 
 export function clampLimit(limit) {
   return Math.min(10, Math.max(1, Number.isInteger(limit) ? limit : 10));
 }
 
-export async function getRecommendations(db, profileId, limit = 10) {
+export async function getRecommendations(db, profileId, limit = 10, { providers = [] } = {}) {
   if (!Number.isInteger(profileId) || profileId <= 0) {
     throw new Error('profileId inválido');
   }
