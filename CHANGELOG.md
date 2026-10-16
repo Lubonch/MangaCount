@@ -3,6 +3,15 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.7] - 2026-10-16
+
+### Fixed
+
+- **La app no arrancaba** (regresión desde 2.0.4): `ReferenceError: Cannot access '__dirname' before
+  initialization`. El ícono de la ventana (`APP_ICON`) se evaluaba **antes** de declarar `__dirname`.
+  Ahora `__dirname` se declara arriba, antes de cualquier uso top-level. **Esta era la causa real de que
+  la app no abriera** en 2.0.4/2.0.5/2.0.6.
+
 ## [2.0.6] - 2026-10-16
 
 ### Fixed
