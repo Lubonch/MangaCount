@@ -91,12 +91,23 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     assert.equal(initial.hasToken, false);
     assert.equal(initial.status, 'apagado');
 
-    const saved = handlers['bot:config-set'](ctx, { enabled: true, guildId: '123' });
+    const saved = await handlers['bot:config-set'](ctx, { enabled: true, guildId: '123' });
     assert.equal(saved.guildId, '123');
     assert.equal(loadPrefs(dir).bot.guildId, '123');
 
     const out = await handlers['bot:set-token'](ctx, '  abc  ');
     assert.equal(out.saved, true);
+  });
+
+  it('bot:config-set reinicia el bot para aplicar la config en caliente', async () => {
+    let restarted = 0;
+    ctx.bot = {
+      restart: async () => {
+        restarted += 1;
+      },
+    };
+    await handlers['bot:config-set'](ctx, { enabled: true });
+    assert.equal(restarted, 1);
   });
 
   it('bot:set-token rechaza vacío', async () => {

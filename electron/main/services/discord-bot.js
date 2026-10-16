@@ -238,8 +238,7 @@ export function createDiscordBot({
         );
       });
       client.once(Events.ClientReady, async (ready) => {
-        setStatus('conectado');
-        try {
+        setStatus('conectado');        try {
           await registerGuildCommands({
             token,
             applicationId: ready.application.id,
@@ -249,6 +248,7 @@ export function createDiscordBot({
           logger?.warn?.(`no se pudieron registrar los comandos: ${err?.message ?? err}`);
         }
       });
+      setStatus('conectando');
       await client.login(token);
     } catch (err) {
       logger?.error?.(`el bot de Discord no arrancó: ${err?.message ?? err}`);
