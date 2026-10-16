@@ -18,6 +18,9 @@ import { createUpdateController } from './services/update-controller.js';
 import electronUpdater from 'electron-updater';
 import { shouldStartHidden, shouldQuitOnAllWindowsClosed, trayMenuTemplate } from './lifecycle.js';
 
+// Debe declararse antes de cualquier uso top-level de `__dirname` (si no, TDZ).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 // electron-updater es CommonJS: `autoUpdater` viene en el default, no como named export.
 const { autoUpdater } = electronUpdater;
 
@@ -50,8 +53,6 @@ if (process.platform === 'linux') {
   if (APPIMAGE_PATH) process.env.APPIMAGE = APPIMAGE_PATH;
   else delete process.env.APPIMAGE; // no dejar una ruta muerta para el updater
 }
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const IMAGE_MIME = {
   '.png': 'image/png',
