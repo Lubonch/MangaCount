@@ -134,6 +134,30 @@ describe('SettingsModal', () => {
     await waitFor(() => expect(api.entryExport).toHaveBeenCalledWith(1))
   })
 
+  it('restaura un backup tras confirmar la acción destructiva', async () => {
+    const user = userEvent.setup()
+    api.pickFile.mockResolvedValue('/b/x.zip')
+    api.backupRestore.mockResolvedValue({ restored: true, safetyBackup: '/b/safety.zip' })
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByLabelText('Restaurar')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Restaurar'))
+
+    await waitFor(() => expect(api.backupRestore).toHaveBeenCalledWith('/b/x.zip'))
+    expect(confirmSpy).toHaveBeenCalled()
+  })
+
+  it('muestra el indicador de último backup fallido', async () => {
+    api.backupConfigGet.mockResolvedValue({
+      ...emptyBackup(),
+      lastBackupAt: '2026-01-01T00:00:00Z',
+      lastBackupStatus: { ok: false, at: '2026-01-02T00:00:00Z', error: 'disco lleno' },
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText(/último error: disco lleno/)).toBeInTheDocument())
+  })
+
   it('importa TSV del perfil activo desde Settings', async () => {
     const user = userEvent.setup()
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
