@@ -3,6 +3,14 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.14] - 2026-10-16
+
+### Fixed
+
+- **La app no abría** (`SyntaxError: Named export 'autoUpdater' not found`): `electron-updater` es
+  CommonJS y se importaba con nombre en el main (ESM). Ahora se usa el **default export**. Afectaba a
+  1.0.12 y 1.0.13 (crasheaban al arrancar).
+
 ## [1.0.13] - 2026-10-16
 
 ### Changed
