@@ -3,6 +3,14 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.16] - 2026-10-16
+
+### Fixed
+
+- **Auto-update en AppImage no reabría la versión nueva**: `quitAndInstall()` sin `isForceRunAfter`
+  solo hacía la integración del AppImage; ahora `quitAndInstall(false, true)` **relanza la app con la
+  versión nueva**. Docs: recomendar nombrar el AppImage **sin** la versión (reemplazo in-place).
+
 ## [1.0.15] - 2026-10-16
 
 ### Changed
