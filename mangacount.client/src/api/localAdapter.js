@@ -115,6 +115,10 @@ export const updateCheck = () => apiCall('update:check', '/api/update/check');
 export const logError = (payload) =>
   apiCall('log:error', '/api/log/error', json(payload), payload);
 
+// Diagnóstico (copiar estado+log / abrir logs)
+export const diagnosticsCopy = () => apiCall('diagnostics:copy', '/api/diagnostics/copy');
+export const openLogs = () => apiCall('diagnostics:open-logs', '/api/diagnostics/open-logs');
+
 // Diálogos nativos de archivo
 export const pickDirectory = () => apiCall('dialog:pick-directory', '/api/dialog/directory');
 export const pickFile = (filters) =>

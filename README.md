@@ -20,7 +20,8 @@ que porta la lógica de negocio a Node.
   en **Settings** hay un botón *Buscar actualización* (el chequeo automático al abrir la app se puede
   desactivar)
 - **diagnóstico**: los errores del proceso main y del renderer quedan en `logs/app.txt`, con la versión
-  y el SO al inicio de cada sesión
+  y el SO al inicio de cada sesión; en Settings (toggleable) hay **Copiar diagnóstico** (versión + SO +
+  últimas líneas del log al portapapeles) y **Abrir carpeta de logs**
 - datos 100% locales en la carpeta de usuario; sin servidor ni base de datos externa
 
 ## Descargar e instalar

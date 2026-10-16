@@ -125,6 +125,10 @@ renderer (`window.onerror`, `unhandledrejection`, `ErrorBoundary`) se registran 
 **primera línea de cada sesión** incluye la versión, plataforma/arch y locale, para saber en qué build
 ocurrió.
 
+En **Settings → Diagnóstico** (toggleable) hay dos acciones: **Copiar diagnóstico** (copia al
+portapapeles la versión + SO + las últimas 100 líneas de `app.txt`, para pegar en un reporte) y **Abrir
+carpeta de logs**.
+
 ## Backup manual (alternativo)
 
 Con la app **cerrada** (para que el WAL esté consolidado), copiá la carpeta `userData` completa:

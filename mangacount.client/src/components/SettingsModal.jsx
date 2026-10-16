@@ -16,6 +16,8 @@ import {
   appConfigSet,
   appInfo,
   updateCheck as checkUpdatesRequest,
+  diagnosticsCopy as copyDiagnosticsRequest,
+  openLogs as openLogsRequest,
   pickDirectory,
   pickFile,
   entryExport,
@@ -43,7 +45,7 @@ function downloadTsv(text, filename) {
 }
 
 const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDataReset }) => {
-  const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true });
+  const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true, diagnosticsCopy: true });
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
   const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], status: 'apagado', hasToken: false });
@@ -60,6 +62,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [updateMessage, setUpdateMessage] = useState('');
   const [update, setUpdate] = useState(null);
+  const [diagnosticsMessage, setDiagnosticsMessage] = useState('');
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -80,6 +83,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           startInTray: !!appConfig?.startInTray,
           autostart: !!autostart?.enabled,
           updateCheck: appConfig?.updateCheck !== false,
+          diagnosticsCopy: appConfig?.diagnosticsCopy !== false,
         });
         setBackup({
           ...EMPTY_BACKUP,
@@ -109,6 +113,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     try {
       if (key === 'startInTray') await appConfigSet({ startInTray: value });
       else if (key === 'updateCheck') await appConfigSet({ updateCheck: value });
+      else if (key === 'diagnosticsCopy') await appConfigSet({ diagnosticsCopy: value });
       else await botAutostartSet(value);
       setGeneralMessage('Guardado.');
     } catch (err) {
@@ -226,6 +231,25 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       setUpdateMessage(`No se pudo verificar: ${err.message}`);
     } finally {
       setCheckingUpdate(false);
+    }
+  };
+
+  const copyDiagnostics = async () => {
+    setDiagnosticsMessage('');
+    try {
+      await copyDiagnosticsRequest();
+      setDiagnosticsMessage('Copiado ✓');
+    } catch (err) {
+      setDiagnosticsMessage(`No se pudo copiar: ${err.message}`);
+    }
+  };
+
+  const openLogsFolder = async () => {
+    setDiagnosticsMessage('');
+    try {
+      await openLogsRequest();
+    } catch (err) {
+      setDiagnosticsMessage(`No se pudo abrir: ${err.message}`);
     }
   };
 
@@ -465,6 +489,29 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
               <button type="button" aria-label="Guardar bot" onClick={saveBotConfig}>Guardar</button>
             </div>
             {botMessage && <p className="settings-message">{botMessage}</p>}
+          </section>
+
+          <section className="settings-section">
+            <h3>Diagnóstico</h3>
+            <label className="settings-check">
+              <input
+                type="checkbox"
+                checked={general.diagnosticsCopy}
+                onChange={(e) => toggleGeneral('diagnosticsCopy', e.target.checked)}
+              />
+              Habilitar diagnóstico
+            </label>
+            {general.diagnosticsCopy && (
+              <div className="settings-actions">
+                <button type="button" aria-label="Copiar diagnóstico" onClick={copyDiagnostics}>
+                  Copiar diagnóstico
+                </button>
+                <button type="button" aria-label="Abrir carpeta de logs" onClick={openLogsFolder}>
+                  Abrir carpeta de logs
+                </button>
+              </div>
+            )}
+            {diagnosticsMessage && <p className="settings-message">{diagnosticsMessage}</p>}
           </section>
 
           <section className="settings-section danger-zone">

@@ -1,15 +1,22 @@
-# Proposal: Copiar diagnóstico (exportar estado + log)
+# Proposal: Copiar diagnóstico (exportar estado + log) + layout responsive
 
 > Change aparte, a pedido. La observabilidad (handlers globales de error + contexto en el log) vive en
 > `2026-10-15-update-check-y-diagnostico`; acá va **la herramienta para que el usuario exporte** ese
-> diagnóstico y lo pegue en un reporte.
+> diagnóstico y lo pegue en un reporte. **Además** se corrige un detalle de layout (ver Problema B).
 
 ## Problem
 
-Cuando algo falla, recolectar el estado para reportarlo es manual: hay que encontrar la carpeta de
-logs, abrir `app.txt` y copiar a mano. Con el logging nuevo (versión/OS + errores capturados) hay más
-información útil, pero **el usuario no tiene forma fácil de exportarla** y terminás pidiendo
-"pegame el log". Se quiere un botón que **copie al portapapeles** un diagnóstico corto.
+**A) Diagnóstico difícil de exportar.** Cuando algo falla, recolectar el estado para reportarlo es
+manual: hay que encontrar la carpeta de logs, abrir `app.txt` y copiar a mano. Con el logging nuevo
+(versión/OS + errores capturados) hay más información útil, pero **el usuario no tiene forma fácil de
+exportarla** y terminás pidiendo "pegame el log". Se quiere un botón que **copie al portapapeles** un
+diagnóstico corto.
+
+**B) Espacio vacío a la derecha (regresión del fix de scroll horizontal).** Al quitar el scroll
+horizontal, el contenido dejó de estirarse y aparece **mucho espacio vacío a la derecha** aunque haya
+lugar de sobra. Causa: el CSS default de Vite `body { display: flex; place-items: center }`
+(`index.css:25`) hace que `#root` tome el ancho de su contenido en vez de estirarse; antes lo tapaba
+`.app-container { width: 100vw }`, que a su vez era la causa del scroll.
 
 ## Proposed change
 
@@ -25,6 +32,8 @@ información útil, pero **el usuario no tiene forma fácil de exportarla** y te
   (“Copiado ✓”).
 - **Límite**: se copian solo las **últimas N líneas** (p. ej. 100) para no volcar un log enorme.
 - **Sin secretos**: el log ya no contiene el token; el resumen no agrega datos sensibles.
+- **Layout responsive (B)**: `index.css` → `body` deja de centrar con flex y `#root` pasa a `width: 100%`
+  (el contenido ocupa el ancho disponible, sin scroll horizontal ni hueco a la derecha).
 
 ## Scope
 
@@ -34,6 +43,8 @@ In scope:
 - Handlers `diagnostics:copy` (+ opcional `diagnostics:open-logs`) y su whitelist en `preload.cjs` /
   `localAdapter.js`.
 - UI en Settings (sección “Diagnóstico”) con los botones gated por el toggle.
+- **Layout responsive**: `index.css` (`body` sin `display:flex`/`place-items`; `#root { width:100% }`) para
+  ocupar el ancho disponible sin hueco a la derecha.
 - Docs (`README`/`docs/desktop.md`) y `CHANGELOG`.
 - Tests: `diagnostics:copy` arma el texto con versión/OS y las últimas líneas (log temporal), respeta
   el límite de líneas; el toggle oculta/muestra los botones.
