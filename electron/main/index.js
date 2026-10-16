@@ -11,6 +11,9 @@ import { createSecrets } from './services/secrets.js';
 import { getAutostart, setAutostart } from './services/autostart.js';
 import { startAutoBackup } from './services/auto-backup.js';
 import { createDiscordBot } from './services/discord-bot.js';
+import { fetchLatestRelease, compareVersions, resolveUpdateMode } from './services/updates.js';
+import { createUpdateController } from './services/update-controller.js';
+import { autoUpdater } from 'electron-updater';
 import { shouldStartHidden, shouldQuitOnAllWindowsClosed, trayMenuTemplate } from './lifecycle.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -117,6 +120,24 @@ function initBackend() {
   };
   registerHandlers(ipcMain, ctx);
   serveProfileImages(dataDir);
+
+  // Controller de actualizaciones: auto (Windows/AppImage) o link (deb/makepkg).
+  const mode = resolveUpdateMode({
+    isPackaged: app.isPackaged,
+    platform: process.platform,
+    env: process.env,
+  });
+  ctx.update = createUpdateController({
+    mode,
+    autoUpdater: mode === 'auto' ? autoUpdater : undefined,
+    getVersion: () => app.getVersion(),
+    fetchLatestRelease,
+    compareVersions,
+    isPackaged: app.isPackaged,
+    logger: log,
+    onState: (state) => win?.webContents.send('update:state', state),
+  });
+
   log.info(`backend listo en ${dataDir}`);
   app.on('before-quit', () => ctx.db.close());
   return ctx;

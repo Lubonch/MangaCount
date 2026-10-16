@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { compareVersions, fetchLatestRelease, RELEASES_URL } from './updates.js';
+import { compareVersions, fetchLatestRelease, resolveUpdateMode, RELEASES_URL } from './updates.js';
 
 describe('services/updates: compareVersions', () => {
   it('detecta versiones más nuevas', () => {
@@ -41,5 +41,23 @@ describe('services/updates: fetchLatestRelease', () => {
   it('tira si la API responde con error', async () => {
     const fetchImpl = async () => ({ ok: false, status: 403 });
     await assert.rejects(() => fetchLatestRelease({ fetchImpl }), /GitHub 403/);
+  });
+});
+
+describe('services/updates: resolveUpdateMode', () => {
+  it('auto en Windows empaquetado', () => {
+    assert.equal(resolveUpdateMode({ isPackaged: true, platform: 'win32', env: {} }), 'auto');
+  });
+
+  it('auto en AppImage empaquetado (APPIMAGE seteado)', () => {
+    assert.equal(
+      resolveUpdateMode({ isPackaged: true, platform: 'linux', env: { APPIMAGE: '/x/app.AppImage' } }),
+      'auto'
+    );
+  });
+
+  it('link en dev, .deb y makepkg (/opt sin APPIMAGE)', () => {
+    assert.equal(resolveUpdateMode({ isPackaged: false, platform: 'win32' }), 'link');
+    assert.equal(resolveUpdateMode({ isPackaged: true, platform: 'linux', env: {} }), 'link');
   });
 });

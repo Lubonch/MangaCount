@@ -141,10 +141,13 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     assert.ok(info.platform);
   });
 
-  it('update:check en desarrollo devuelve skipped', async () => {
-    const res = await handlers['update:check']({ ...ctx, app: { getVersion: () => '1.0.8', isPackaged: false } });
-    assert.equal(res.skipped, true);
-    assert.equal(res.hasUpdate, false);
+  it('update:check delega en el controller (ctx.update)', async () => {
+    const res = await handlers['update:check']({
+      ...ctx,
+      update: { check: async () => ({ current: '1.0.11', hasUpdate: true, latest: '2.0.0' }) },
+    });
+    assert.equal(res.hasUpdate, true);
+    assert.equal(res.latest, '2.0.0');
   });
 
   it('log:error escribe el error del renderer en el log', () => {

@@ -49,3 +49,13 @@ export async function fetchLatestRelease({ fetchImpl = fetch, timeoutMs = 5000 }
 }
 
 export { RELEASES_URL };
+
+// Modo de actualización según el canal:
+// - 'auto' solo donde el ejecutable se puede reemplazar (Windows NSIS o AppImage con $APPIMAGE).
+// - 'link' en dev y donde manda el gestor de paquetes (.deb, makepkg en /opt).
+export function resolveUpdateMode({ isPackaged = false, platform = process.platform, env = process.env } = {}) {
+  if (!isPackaged) return 'link';
+  if (platform === 'win32') return 'auto';
+  if (platform === 'linux' && env.APPIMAGE) return 'auto';
+  return 'link';
+}

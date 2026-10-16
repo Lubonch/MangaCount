@@ -32,7 +32,6 @@ import {
   loadResolvedPrefs,
   validateBackupConfig,
 } from '../services/prefs.js';
-import { fetchLatestRelease, compareVersions } from '../services/updates.js';
 import { buildDiagnostics } from '../services/diagnostics.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -257,19 +256,11 @@ export const handlers = {
     arch: process.arch,
     packaged: !!app?.isPackaged,
   }),
-  'update:check': async ({ app, logger }) => {
-    const current = app?.getVersion?.() ?? null;
-    if (!app?.isPackaged) {
-      return { current, latest: current, hasUpdate: false, skipped: true };
-    }
-    try {
-      const release = await fetchLatestRelease();
-      return { current, ...release, hasUpdate: compareVersions(current, release.latest) > 0 };
-    } catch (err) {
-      logger?.warn?.(`update check falló: ${err?.message ?? err}`);
-      return { current, hasUpdate: false, error: err?.message ?? String(err) };
-    }
-  },
+  // Chequeo y aplicación de actualizaciones (controller en ctx.update).
+  'update:check': (ctx) => ctx.update.check(),
+  'update:get-state': (ctx) => ctx.update.state(),
+  'update:download': (ctx) => ctx.update.download(),
+  'update:install': (ctx) => ctx.update.install(),
 
   // Diálogos nativos de archivo.
   'dialog:pick-directory': async (ctx) =>

@@ -111,12 +111,23 @@ Sin token o sin red el bot queda *apagado* y la app funciona normal. Los fallos 
 
 ## Actualizaciones
 
-La app **no se auto-instala** (en Linux lo maneja el gestor de paquetes: `apt`/`pacman`). El **footer**
-muestra la versión actual (`MangaCount vX`) y, si hay una nueva publicada, un enlace `vX → vY` que abre
-la página del release. El chequeo **automático al abrir la app** se puede desactivar en
+La app actualiza **dentro de la app** donde el canal lo permite, y **avisa con un link** donde no:
+
+| Canal | Comportamiento |
+|---|---|
+| Windows `.exe` (NSIS) | **Auto-update**: descarga e instala, y pide reiniciar |
+| AppImage **corrido directo** | **Auto-update** (reemplaza el AppImage) |
+| `.deb` (apt) | Link a la release de GitHub |
+| Arch `makepkg` (`/opt`) | Link a la release de GitHub (lo maneja `pacman`) |
+
+El **footer** muestra la versión actual y el estado (enlace `vX → vY`, “Descargando… X%”, **Reiniciar
+para actualizar**). El chequeo **automático al abrir la app** se puede desactivar en
 **Settings → General** (toggle *Buscar actualizaciones al abrir la app*); ahí mismo hay un botón
-**Buscar actualización** manual. Se consulta `releases/latest` de GitHub, que excluye
-drafts/prereleases → solo se ofrecen releases **publicadas**.
+**Buscar actualización** manual. Se consulta `releases/latest`/metadatos de GitHub Releases, que
+excluyen drafts/prereleases → solo se ofrecen releases **publicadas**.
+
+> En Windows el instalador **no está firmado**: SmartScreen puede advertir (el auto-update igual
+> funciona).
 
 ## Diagnóstico
 

@@ -110,6 +110,17 @@ export const appConfigSet = (config) =>
 // Info de la app y actualizaciones
 export const appInfo = () => apiCall('app:info', '/api/app/info');
 export const updateCheck = () => apiCall('update:check', '/api/update/check');
+export const updateState = () => apiCall('update:get-state', '/api/update/state');
+export const updateDownload = () => apiCall('update:download', '/api/update/download');
+export const updateInstall = () => apiCall('update:install', '/api/update/install');
+
+// Estado de update en vivo (push del main). Devuelve un `off`.
+export const onUpdateState = (cb) => {
+  if (isElectron() && typeof window.mangaCount?.onUpdateState === 'function') {
+    return window.mangaCount.onUpdateState(cb);
+  }
+  return () => {};
+};
 
 // Diagnóstico (errores del renderer → main)
 export const logError = (payload) =>

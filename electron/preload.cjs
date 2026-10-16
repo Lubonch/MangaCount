@@ -17,6 +17,7 @@ const channels = [
   'bot:autostart-get', 'bot:autostart-set',
   'app:config-get', 'app:config-set',
   'app:info', 'update:check', 'log:error',
+  'update:get-state', 'update:download', 'update:install',
   'diagnostics:copy', 'diagnostics:open-logs',
   'dialog:pick-directory', 'dialog:pick-file',
 ];
@@ -28,5 +29,11 @@ contextBridge.exposeInMainWorld('mangaCount', {
       return Promise.reject(new Error(`Canal IPC no registrado: ${channel}`));
     }
     return ipcRenderer.invoke(channel, ...args);
+  },
+  // Evento push del estado de actualización (devuelve un `off`).
+  onUpdateState: (cb) => {
+    const listener = (_event, state) => cb(state);
+    ipcRenderer.on('update:state', listener);
+    return () => ipcRenderer.removeListener('update:state', listener);
   },
 });

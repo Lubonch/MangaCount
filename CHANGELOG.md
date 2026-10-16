@@ -3,6 +3,16 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [Unreleased]
+
+### Added
+
+- **Auto-update dentro de la app** en los canales donde se puede reemplazar el ejecutable (Windows NSIS
+  y AppImage corrido directo): con `electron-updater` la app **descarga e instala** y ofrece **Reiniciar
+  para actualizar** (footer y Settings). En `.deb`/`makepkg` (y en dev) se mantiene el **check + link** a
+  GitHub. El modo se resuelve en runtime (`resolveUpdateMode`). El workflow de release publica
+  `latest.yml` / `latest-linux.yml`.
+
 ## [1.0.11] - 2026-10-16
 
 ### Security
