@@ -22,9 +22,12 @@ jobs:
             artifacts: |
               release/*.deb
               release/*.AppImage
+              release/latest-linux.yml
           - os: windows-latest
             command: npm run dist:win
-            artifacts: release/*.exe
+            artifacts: |
+              release/*.exe
+              release/latest.yml
     steps:
       - name: Checkout
         uses: actions/checkout@v4
