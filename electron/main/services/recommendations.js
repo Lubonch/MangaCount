@@ -72,7 +72,9 @@ function toResponse(local, limit) {
     inferredCountry: local.inferredCountry,
     isConfident: local.isConfident,
     availableCount: local.items.length,
+    blockedByImportCount: local.blockedByImportCount ?? 0,
     items: local.items,
     limit,
+    inference: local.inference ?? null,
   };
 }

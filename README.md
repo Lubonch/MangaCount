@@ -104,8 +104,16 @@ Detalles de esquema, backup, tray/autostart, bot y troubleshooting por plataform
 ## Bot de Discord (opcional)
 
 MangaCount puede exponer la colección por un bot de Discord **embebido** en la app (arranca y se
-detiene con ella, sobre la misma base local). Es **solo consulta**: `/perfil`, `/buscar`,
-`/pendientes` y `/recomendar`.
+detiene con ella, sobre la misma base local). Permite **consultar** y **editar** la colección:
+
+- Consulta: `/perfil`, `/buscar`, `/pendientes`, `/recomendar`.
+- Edición: `/tomo` (+1 volumen), `/actualizar` (fijar cantidad), `/pending` (tomos no consecutivos),
+  `/prioridad` (activar/desactivar) y `/nuevo` (agregar una serie, crea manga + entry en 0).
+- `/ayuda` lista los comandos.
+
+Las operaciones de **edición piden confirmación** (botones Confirmar/Cancelar) y solo las puede usar
+alguien de la allowlist; si el título coincide con 0 o más de una serie, el bot no escribe y pide
+desambiguar.
 
 **Cada usuario usa su propio bot**: su propia aplicación de Discord, su token y su servidor. No se
 comparte token ni bot entre usuarios, y la configuración vive en la instalación de cada uno.

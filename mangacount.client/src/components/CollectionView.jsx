@@ -263,9 +263,9 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                     <div className="table-progress">
                                         <span className="progress-text">
                                             {entry.quantity}
-                                            {entry.manga.volumes && ` / ${entry.manga.volumes}`}
+                                            {entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}
                                         </span>
-                                        {entry.manga.volumes && (
+                                        {entry.manga.volumes > 0 && (
                                             <div className="table-progress-bar">
                                                 <div 
                                                     className={`table-progress-fill ${status}`}
@@ -276,7 +276,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                     </div>
                                 </td>
                                 <td className="completion-cell">
-                                    {completionPercent && (
+                                    {completionPercent !== null && (
                                         <span className={`completion-percent ${status}`}>
                                             {completionPercent}%
                                         </span>
@@ -294,7 +294,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                 </td>
                                 <td className="actions-cell">
                                     <div className="action-buttons">
-                                        {entry.manga.volumes && entry.quantity < entry.manga.volumes && (
+                                        {entry.manga.volumes > 0 && entry.quantity < entry.manga.volumes && (
                                             <button
                                                 className="quick-btn plus-one"
                                                 onClick={() => handleQuickVolumeUpdate(entry, entry.quantity + 1)}
@@ -340,15 +340,15 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                         </div>
                         <div className="compact-progress">
                             <span className="compact-numbers">
-                                {entry.quantity}{entry.manga.volumes && ` / ${entry.manga.volumes}`}
+                                {entry.quantity}{entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}
                             </span>
-                            {completionPercent && (
+                            {completionPercent !== null && (
                                 <span className={`compact-percent ${status}`}>
                                     {completionPercent}%
                                 </span>
                             )}
                         </div>
-                        {entry.manga.volumes && (
+                        {entry.manga.volumes > 0 && (
                             <div className="compact-bar">
                                 <div 
                                     className={`compact-fill ${status}`}
@@ -360,7 +360,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                             <div className="compact-pending">{entry.pending}</div>
                         )}
                         <div className="compact-actions">
-                            {entry.manga.volumes && entry.quantity < entry.manga.volumes && (
+                            {entry.manga.volumes > 0 && entry.quantity < entry.manga.volumes && (
                                 <button
                                     className="quick-btn plus-one compact"
                                     onClick={() => handleQuickVolumeUpdate(entry, entry.quantity + 1)}
@@ -404,10 +404,9 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                         
                         <div className="entry-details">
                             <div className="quantity-info">
-                                <span className="owned">Owned: {entry.quantity}</span>
-                                {entry.manga.volumes && (
+                                <span className="owned">Owned: {entry.quantity}{entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}</span>
+                                {entry.manga.volumes > 0 && (
                                     <>
-                                        <span className="total">/ {entry.manga.volumes}</span>
                                         <div className="progress-bar">
                                             <div 
                                                 className={`progress-fill ${status}`}
@@ -428,7 +427,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                             )}
 
                             <div className="card-actions">
-                                {entry.manga.volumes && entry.quantity < entry.manga.volumes && (
+                                {entry.manga.volumes > 0 && entry.quantity < entry.manga.volumes && (
                                     <button
                                         className="quick-btn plus-one"
                                         onClick={() => handleQuickVolumeUpdate(entry, entry.quantity + 1)}

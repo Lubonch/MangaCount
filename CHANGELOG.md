@@ -3,6 +3,31 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [Unreleased]
+
+### Added
+
+- **Bot de Discord — comandos de escritura**: `/tomo` (+1 volumen), `/actualizar` (fijar cantidad),
+  `/pending` (tomos no consecutivos), `/prioridad` (toggle) y `/nuevo` (crea manga + entry en 0);
+  más `/ayuda`. Las ediciones piden **confirmación** (botones) y reusan `entry:upsert`/`manga:upsert`.
+- `publisher-countries.json`: aliases y editoriales nuevas (`ovni` → Argentina, Yen On/Viz Media →
+  United States, Glenat/Planeta → Spain).
+
+### Fixed
+
+- **`/recomendar` siempre respondía "No pude inferir tu mercado"**: el handler llamaba a
+  `getRecommendations(...)` (async) **sin `await`**, así que `response` era una `Promise` y
+  `response.isConfident` era `undefined`. Ahora espera el resultado.
+- **Bot — perfil de sesión inválido**: si el perfil recordado ya no existe (tras Nuclear Option /
+  restore), el bot pide `/perfil` (o auto-selecciona si hay uno solo) en vez de operar con un id viejo.
+- **`/pendientes`**: ahora detalla prioridad, `cantidad/total`, el campo `pending`, formato y
+  editorial; y acota la salida al límite de Discord.
+- **Recomendaciones**: la respuesta incluye `inference` (desglose por país) y, cuando no hay
+  confianza, el bot explica el motivo (países detectados y series sin editorial reconocida).
+- **UI — series sin total de tomos**: se muestran como `owned / ??` (sin barra ni `%`) y se corrigió el
+  `0` que React dibujaba al usar un flag numérico como condición de render (`CollectionView`,
+  `AddEntryModal`).
+
 ## [1.0.7] - 2026-10-15
 
 ### Fixed
