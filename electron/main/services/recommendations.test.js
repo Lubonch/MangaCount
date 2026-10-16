@@ -63,6 +63,47 @@ describe('services/recommendations', () => {
     }
   });
 
+  async function seedArgentina() {
+    const profile = createProfile(db, 'yo');
+    const { default: catalog } = await import('../../../shared/recommendations/catalog.json', {
+      with: { type: 'json' },
+    });
+    const owned = catalog.find((c) => c.publisher === 'Ivrea');
+    const ivrea = publishers.create(db, 'Ivrea');
+    const manga = createManga(db, { name: owned.title, volumes: 5, publisherId: ivrea.id });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 5 });
+    return profile;
+  }
+
+  it('reranking: usa el resultado del provider cuando devuelve items', async () => {
+    const profile = await seedArgentina();
+    const res = await getRecommendations(db, profile.id, 10, {
+      providers: [{ name: 'fake', rerank: async () => [{ title: 'reranked' }] }],
+    });
+    assert.equal(res.provider, 'fake');
+    assert.deepEqual(
+      res.items.map((i) => i.title),
+      ['reranked']
+    );
+  });
+
+  it('reranking: provider que falla, devuelve vacío o no-array -> fallback local', async () => {
+    const profile = await seedArgentina();
+    const boom = {
+      name: 'boom',
+      rerank: async () => {
+        throw new Error('boom');
+      },
+    };
+    const empty = { name: 'empty', rerank: async () => [] };
+    const notArray = { name: 'na', rerank: async () => 'nope' };
+    const res = await getRecommendations(db, profile.id, 10, {
+      providers: [boom, empty, notArray],
+    });
+    assert.equal(res.provider, 'local');
+    assert.ok(res.items.length > 0);
+  });
+
   it('valida profileId', async () => {
     await assert.rejects(handlers['recommendation:get'](ctx(), { profileId: 0 }), /profileId inválido/);
   });

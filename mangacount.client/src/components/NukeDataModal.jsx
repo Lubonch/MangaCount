@@ -30,17 +30,10 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
         }
     };
 
-    const handleNext = () => {
-        if (step < TOTAL_STEPS) {
-            setStep(step + 1);
-        }
-    };
-
-    const handleBack = () => {
-        if (step > 1) {
-            setStep(step - 1);
-        }
-    };
+    // Los botones solo se renderizan dentro del rango válido (1..TOTAL_STEPS);
+    // el clamp evita salirse si en el futuro se renderizan sin condición.
+    const handleNext = () => setStep((s) => Math.min(TOTAL_STEPS, s + 1));
+    const handleBack = () => setStep((s) => Math.max(1, s - 1));
 
     const handleFinalNuke = async () => {
         if (confirmationText !== REQUIRED_TEXT) {
@@ -110,7 +103,7 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                                     <h4>Consequences:</h4>
                                     <ul>
                                         <li>All manga and reading progress will be lost</li>
-                                        <li>All user profiles will be removed (a default profile is kept)</li>
+                                        <li>All user profiles will be removed (you will need to create one again)</li>
                                         <li>Formats and publishers catalogs are preserved</li>
                                         <li>You will need to re-import or recreate all data</li>
                                     </ul>
