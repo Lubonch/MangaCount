@@ -3,6 +3,13 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.13] - 2026-10-16
+
+### Changed
+
+- **Workflow de release**: publica `latest.yml` (Windows) y `latest-linux.yml` (AppImage) junto a los
+  instaladores, la metadata que `electron-updater` necesita para el **auto-update in-app**.
+
 ## [1.0.12] - 2026-10-16
 
 ### Added
