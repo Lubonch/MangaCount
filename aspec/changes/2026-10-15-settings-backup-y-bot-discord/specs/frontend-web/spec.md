@@ -3,11 +3,13 @@
 ### Requirement: Pantalla de Settings unificada
 
 The system SHALL exponer en `mangacount.client` una única pantalla de Settings, separada de la vista
-principal de la colección y abierta desde un acceso (engranaje) en el `Sidebar`, con secciones
+principal de la colección y abierta desde un acceso en el `Sidebar`, con secciones
 **General** (arranque en bandeja e inicio con el sistema), **Backup** (habilitar automático,
 destino, intervalo, disparadores, indicador de último OK/error, botones "Backup ahora" y
-"Restaurar…"), **Intercambio** (Import TSV y Export TSV) y **Bot** (toggle, token, guild ID,
-allowlist y estado de conexión), consumiendo los nuevos canales IPC vía `localAdapter.js`.
+"Restaurar…"), **Intercambio** (Import TSV y Export TSV), **Bot** (toggle, token, guild ID,
+allowlist y estado de conexión) y **Danger Zone** (Nuclear Option / borrado total), consumiendo los
+nuevos canales IPC vía `localAdapter.js`. Tras una acción destructiva que re-siembra la base
+(Nuclear Option), la pantalla SHALL disparar una recarga de perfiles y re-seleccionar uno válido.
 
 #### Scenario: Guardar configuración de backup válida
 
@@ -28,6 +30,11 @@ allowlist y estado de conexión), consumiendo los nuevos canales IPC vía `local
 
 - **WHEN** el usuario abre la app principal
 - **THEN** el Sidebar ya no muestra el bloque "Import Collection" y el acceso a Settings queda disponible para Backup, Intercambio y Bot
+
+#### Scenario: Nuclear Option desde Settings
+
+- **WHEN** el usuario ejecuta la Nuclear Option (borrado total) desde Settings
+- **THEN** la pantalla cierra, la app recarga los perfiles re-sembrados y vuelve a seleccionar uno válido, de modo que un import posterior no falla por un perfil inexistente
 
 ### Requirement: Ajustes del bot y arranque en el renderer
 

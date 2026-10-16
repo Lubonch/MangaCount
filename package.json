@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test electron/main/db/client.test.js electron/main/db/repositories/repositories.test.js electron/main/services/entries.test.js electron/main/services/catalog-base.test.js electron/main/services/recommendations.test.js electron/main/services/platform.test.js electron/main/ipc/roundtrip.test.js electron/main/ipc/settings.test.js electron/main/lifecycle.test.js electron/main/services/backup.test.js electron/main/services/auto-backup.test.js electron/main/services/search.test.js electron/main/services/discord-bot.test.js electron/main/services/autostart.test.js",
+    "test": "node --test electron/main/db/client.test.js electron/main/db/repositories/repositories.test.js electron/main/services/entries.test.js electron/main/services/catalog-base.test.js electron/main/services/recommendations.test.js electron/main/services/platform.test.js electron/main/ipc/roundtrip.test.js electron/main/ipc/settings.test.js electron/main/lifecycle.test.js electron/main/services/backup.test.js electron/main/services/auto-backup.test.js electron/main/services/search.test.js electron/main/services/discord-bot.test.js electron/main/services/autostart.test.js electron/main/services/secrets.test.js",
     "dev": "npm --prefix mangacount.client run dev",
     "build:renderer": "npm --prefix mangacount.client run build",
     "dist": "npm run build:renderer && electron-builder --publish never",

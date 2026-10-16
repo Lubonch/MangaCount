@@ -56,6 +56,7 @@ Electron main (Node, "type":"module")
 │   │        └── NUEVO: backup:create / restore / list / config-get / config-set
 │   │        └── NUEVO: dialog:pick-directory / dialog:pick-file
 │   │        └── NUEVO: bot:config-get / config-set / set-token / status / autostart
+│   │        └── NUEVO: app:config-get / config-set   (startInTray)
 │   ├── createTray()                               │   Abrir / Estado bot / Iniciar con el sistema / Salir
 │   ├── scheduleAutoBackup({db, dataDir, prefs})   ← NUEVO
 │   │        ├── al iniciar: ¿now - lastBackupAt > interval? → backup
@@ -76,9 +77,9 @@ Electron main (Node, "type":"module")
 └── secrets (safeStorage → token de Discord)
 
 Renderer (mangacount.client)
-├── components/SettingsModal.jsx   ← NUEVO (Backup + Intercambio + Bot)
-├── components/Sidebar.jsx         ← engranaje → Settings; se le quita "Import Collection"
-└── api/localAdapter.js            ← NUEVO: /api/backup/*, /api/bot/*, dialog:*
+├── components/SettingsModal.jsx   ← NUEVO (General + Backup + Intercambio + Bot + Danger Zone)
+├── components/Sidebar.jsx         ← acceso a Settings; se le quita "Import Collection" y la Danger Zone
+└── api/localAdapter.js            ← NUEVO: /api/backup/*, /api/bot/*, /api/app/config, dialog:*
 ```
 
 La ventana del renderer se puede ocultar y recrear; el main (y el bot) sobrevive.
@@ -296,6 +297,9 @@ Settings (nuevo, abierto desde el engranaje del Sidebar)
     ├── Guild ID:  [ ........ ]                          ← autorización
     ├── Usuarios permitidos: [ ids ]                     ← allowlist (vacía = nadie)
     └── Estado: conectado / desconectado / sin token / apagado
+└── Danger Zone
+    └── [ 💥 Nuclear Option ]                            ← NukeDataModal (borra todo y re-siembra)
+        └── onSuccess → recargar perfiles y re-seleccionar (handleDataReset en App.jsx)
 ```
 
 El estado del último backup y el estado de conexión del bot se reflejan al reabrir Settings.
