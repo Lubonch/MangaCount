@@ -3,7 +3,7 @@
 # Empaqueta el AppImage publicado en GitHub Releases. Al subir una release nueva,
 # actualizá pkgver y recalculá sha256sums (`updpkgsums`).
 pkgname=mangacount
-pkgver=1.0.1
+pkgver=1.0.5
 pkgrel=1
 pkgdesc="Gestor de coleccion de manga local-first (Electron + SQLite)"
 arch=('x86_64')
@@ -24,6 +24,12 @@ package() {
 
   install -d "$pkgdir/opt/${pkgname}"
   cp -a squashfs-root/. "$pkgdir/opt/${pkgname}/"
+
+  # El squashfs-root del AppImage viene en modo 0700 y `cp -a` copia ese modo al
+  # destino: sin esto, /opt/mangacount queda inaccesible para el usuario y el
+  # binario falla con "Permission denied". Normalizamos lectura/ejecución.
+  chmod 755 "$pkgdir/opt/${pkgname}"
+  chmod -R a+rX "$pkgdir/opt/${pkgname}"
 
   # Sin user namespaces, el sandbox de Electron necesita el helper setuid.
   if [ -e "$pkgdir/opt/${pkgname}/chrome-sandbox" ]; then
