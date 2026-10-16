@@ -3,6 +3,16 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.11] - 2026-10-16
+
+### Security
+
+- **Zip-slip en el restore** (`electron/main/services/backup.js`): al restaurar un `.zip`, las entradas
+  `profiles/…` con `..` podían escribir **fuera** de `profiles/` (sobrescritura arbitraria de archivos).
+  Ahora se descartan rutas con `..`/segmentos vacíos y se valida que el destino quede dentro de
+  `profiles/`.
+- **`shell.openExternal`** (`electron/main/index.js`): el `setWindowOpenHandler` abre solo `http(s)`.
+
 ## [1.0.10] - 2026-10-16
 
 ### Added
