@@ -4,7 +4,7 @@
 # actualizá pkgver y recalculá sha256sums (`updpkgsums`).
 pkgname=mangacount
 pkgver=1.0.5
-pkgrel=1
+pkgrel=2
 pkgdesc="Gestor de coleccion de manga local-first (Electron + SQLite)"
 arch=('x86_64')
 url="https://github.com/Lubonch/MangaCount"
@@ -12,6 +12,7 @@ license=('MIT')
 depends=('gtk3' 'nss' 'libxss' 'libxtst' 'libnotify' 'alsa-lib' 'xdg-utils')
 provides=('mangacount')
 conflicts=('mangacount')
+install=mangacount.install
 options=('!strip')
 source=("MangaCount-${pkgver}.AppImage::${url}/releases/download/v${pkgver}/MangaCount-${pkgver}.AppImage")
 sha256sums=('SKIP')
