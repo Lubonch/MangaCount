@@ -109,6 +109,22 @@ para armar la URL de invitación (ver el README).
 Sin token o sin red el bot queda *apagado* y la app funciona normal. Los fallos se registran en
 `logs/`. El comando de escritura `actualizar` no está expuesto (queda como punto de extensión).
 
+## Actualizaciones
+
+La app **no se auto-instala** (en Linux lo maneja el gestor de paquetes: `apt`/`pacman`). El **footer**
+muestra la versión actual (`MangaCount vX`) y, si hay una nueva publicada, un enlace `vX → vY` que abre
+la página del release. El chequeo **automático al abrir la app** se puede desactivar en
+**Settings → General** (toggle *Buscar actualizaciones al abrir la app*); ahí mismo hay un botón
+**Buscar actualización** manual. Se consulta `releases/latest` de GitHub, que excluye
+drafts/prereleases → solo se ofrecen releases **publicadas**.
+
+## Diagnóstico
+
+Los errores del proceso main (excepciones no capturadas, promesas rechazadas, caída de procesos) y del
+renderer (`window.onerror`, `unhandledrejection`, `ErrorBoundary`) se registran en `logs/app.txt`. La
+**primera línea de cada sesión** incluye la versión, plataforma/arch y locale, para saber en qué build
+ocurrió.
+
 ## Backup manual (alternativo)
 
 Con la app **cerrada** (para que el WAL esté consolidado), copiá la carpeta `userData` completa:

@@ -32,6 +32,7 @@ import {
   loadResolvedPrefs,
   validateBackupConfig,
 } from '../services/prefs.js';
+import { fetchLatestRelease, compareVersions } from '../services/updates.js';
 
 function requireProfileId(profileId) {
   if (!Number.isInteger(profileId) || profileId <= 0) {
@@ -194,13 +195,48 @@ export const handlers = {
   'bot:autostart-get': (ctx) => ({ enabled: !!ctx.autostart?.get?.() }),
   'bot:autostart-set': (ctx, enabled) => ({ enabled: !!ctx.autostart?.set?.(!!enabled) }),
 
-  // Config general de la app (arranque en bandeja).
-  'app:config-get': ({ dataDir }) => ({ startInTray: loadResolvedPrefs(dataDir).startInTray }),
+  // Config general de la app (arranque en bandeja, chequeo de updates).
+  'app:config-get': ({ dataDir }) => {
+    const prefs = loadResolvedPrefs(dataDir);
+    return { startInTray: prefs.startInTray, updateCheck: prefs.updateCheck };
+  },
   'app:config-set': ({ dataDir }, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(dataDir));
-    const startInTray = config.startInTray ?? prefs.startInTray;
-    savePrefs(dataDir, { ...prefs, startInTray });
-    return { startInTray };
+    const next = {
+      ...prefs,
+      startInTray: config.startInTray ?? prefs.startInTray,
+      updateCheck: config.updateCheck ?? prefs.updateCheck,
+    };
+    savePrefs(dataDir, next);
+    return { startInTray: next.startInTray, updateCheck: next.updateCheck };
+  },
+
+  // Errores del renderer → log del main.
+  'log:error': ({ logger }, payload = {}) => {
+    const scope = payload?.scope ? `/${payload.scope}` : '';
+    const where = payload?.component ? ` (${payload.component})` : '';
+    const stack = payload?.stack ? `\n${payload.stack}` : '';
+    logger?.error?.(`renderer${scope}${where}: ${payload?.message ?? ''}${stack}`);
+    return { ok: true };
+  },
+  'app:info': ({ app }) => ({
+    version: app?.getVersion?.() ?? null,
+    platform: process.platform,
+    arch: process.arch,
+    packaged: !!app?.isPackaged,
+  }),
+  'update:check': async ({ app, logger }) => {
+    const current = app?.getVersion?.() ?? null;
+    if (!app?.isPackaged) {
+      return { current, latest: current, hasUpdate: false, skipped: true };
+    }
+    try {
+      const release = await fetchLatestRelease();
+      return { current, ...release, hasUpdate: compareVersions(current, release.latest) > 0 };
+    } catch (err) {
+      logger?.warn?.(`update check falló: ${err?.message ?? err}`);
+      return { current, hasUpdate: false, error: err?.message ?? String(err) };
+    }
   },
 
   // Diálogos nativos de archivo.

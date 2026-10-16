@@ -105,6 +105,8 @@
 
 .app {
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -113,15 +115,17 @@
 
 .app-container {
     display: flex;
-    min-height: 100vh;
-    width: 100vw;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
 }
 
 .main-content {
     flex: 1;
+    min-width: 0;
     padding: 10px;
     overflow-y: auto;
-    width: 100%;
 }
 
 /* NEW: Profile selection container */

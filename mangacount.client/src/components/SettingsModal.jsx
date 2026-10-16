@@ -14,6 +14,8 @@ import {
   botAutostartSet,
   appConfigGet,
   appConfigSet,
+  appInfo,
+  updateCheck as checkUpdatesRequest,
   pickDirectory,
   pickFile,
   entryExport,
@@ -41,7 +43,7 @@ function downloadTsv(text, filename) {
 }
 
 const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDataReset }) => {
-  const [general, setGeneral] = useState({ startInTray: true, autostart: false });
+  const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true });
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
   const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], status: 'apagado', hasToken: false });
@@ -54,21 +56,31 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [importMessage, setImportMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [showNuke, setShowNuke] = useState(false);
+  const [version, setVersion] = useState(null);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
+  const [update, setUpdate] = useState(null);
 
   useEffect(() => {
     if (!isOpen) return undefined;
     let cancelled = false;
     (async () => {
       try {
-        const [appConfig, backupConfig, backupFiles, botConfig, autostart] = await Promise.all([
+        const [appConfig, backupConfig, backupFiles, botConfig, autostart, appMeta] = await Promise.all([
           appConfigGet(),
           backupConfigGet(),
           backupList(),
           botConfigGet(),
           botAutostartGet(),
+          appInfo(),
         ]);
         if (cancelled) return;
-        setGeneral({ startInTray: !!appConfig?.startInTray, autostart: !!autostart?.enabled });
+        setVersion(appMeta?.version ?? null);
+        setGeneral({
+          startInTray: !!appConfig?.startInTray,
+          autostart: !!autostart?.enabled,
+          updateCheck: appConfig?.updateCheck !== false,
+        });
         setBackup({
           ...EMPTY_BACKUP,
           ...backupConfig,
@@ -96,6 +108,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     setGeneralMessage('');
     try {
       if (key === 'startInTray') await appConfigSet({ startInTray: value });
+      else if (key === 'updateCheck') await appConfigSet({ updateCheck: value });
       else await botAutostartSet(value);
       setGeneralMessage('Guardado.');
     } catch (err) {
@@ -200,6 +213,22 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     }
   };
 
+  const runUpdateCheck = async () => {
+    setCheckingUpdate(true);
+    setUpdateMessage('');
+    try {
+      const result = await checkUpdatesRequest();
+      setUpdate(result);
+      setUpdateMessage(
+        result?.hasUpdate ? `Hay una versión nueva: v${result.latest}` : 'Estás al día.'
+      );
+    } catch (err) {
+      setUpdateMessage(`No se pudo verificar: ${err.message}`);
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
   const handleImport = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -267,6 +296,31 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
               />
               Iniciar con el sistema
             </label>
+            <label className="settings-check">
+              <input
+                type="checkbox"
+                checked={general.updateCheck}
+                onChange={(e) => toggleGeneral('updateCheck', e.target.checked)}
+              />
+              Buscar actualizaciones al abrir la app
+            </label>
+            <p className="settings-hint">Versión actual: {version ?? '—'}</p>
+            <div className="settings-actions">
+              <button
+                type="button"
+                aria-label="Buscar actualización"
+                onClick={runUpdateCheck}
+                disabled={checkingUpdate}
+              >
+                {checkingUpdate ? 'Buscando…' : 'Buscar actualización'}
+              </button>
+              {update?.hasUpdate && update?.url && (
+                <a className="settings-link" href={update.url} target="_blank" rel="noreferrer">
+                  Descargar v{update.latest}
+                </a>
+              )}
+            </div>
+            {updateMessage && <p className="settings-message">{updateMessage}</p>}
             {generalMessage && <p className="settings-message">{generalMessage}</p>}
           </section>
 

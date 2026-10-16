@@ -16,6 +16,7 @@ const channels = [
   'bot:config-get', 'bot:config-set', 'bot:set-token', 'bot:status',
   'bot:autostart-get', 'bot:autostart-set',
   'app:config-get', 'app:config-set',
+  'app:info', 'update:check', 'log:error',
   'dialog:pick-directory', 'dialog:pick-file',
 ];
 

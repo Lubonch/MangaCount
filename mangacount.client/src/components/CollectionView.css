@@ -132,7 +132,8 @@
 .table-container {
     background: var(--bg-secondary);
     border-radius: 6px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     box-shadow: 0 1px 3px var(--shadow);
     border: 1px solid var(--border-color);
 }

@@ -6,11 +6,12 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ProfileSelector from './components/ProfileSelector';
 import RecommendationModal from './components/RecommendationModal';
 import SettingsModal from './components/SettingsModal';
+import Footer from './components/Footer';
+import { appInfo, updateCheck, appConfigGet, isElectron } from './api/localAdapter.js';
 import { ThemeProvider } from './contexts/ThemeContext';
 import catalog from '@shared/recommendations/catalog.json';
 import publisherCountries from '@shared/recommendations/publisher-countries.json';
 import { recommendManga } from '@shared/recommendations/recommendationEngine.js';
-
 function App() {
     const [entries, setEntries] = useState([]);
     const [mangas, setMangas] = useState([]);
@@ -27,10 +28,35 @@ function App() {
     const [recommendationsLoading, setRecommendationsLoading] = useState(false);
     const [recommendationData, setRecommendationData] = useState(null);
     const [recommendationError, setRecommendationError] = useState(null);
+    const [appVersion, setAppVersion] = useState(null);
+    const [updateInfo, setUpdateInfo] = useState(null);
     const recommendationRequestRef = useRef({ controller: null, requestId: 0 });
 
     useEffect(() => {
         initializeApp();
+    }, []);
+
+    // Versión + chequeo de actualizaciones (una vez al abrir la app, si está habilitado).
+    // Solo dentro de Electron (fuera no hay IPC ni update real).
+    useEffect(() => {
+        if (!isElectron()) return undefined;
+        let cancelled = false;
+        (async () => {
+            try {
+                const info = await appInfo();
+                if (!cancelled) setAppVersion(info?.version ?? null);
+                const config = await appConfigGet();
+                if (!cancelled && config?.updateCheck !== false) {
+                    const result = await updateCheck();
+                    if (!cancelled) setUpdateInfo(result);
+                }
+            } catch {
+                /* el chequeo de updates no debe romper la app */
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {
@@ -350,6 +376,7 @@ function App() {
                             onDataReset={handleDataReset}
                         />
                     </div>
+                    <Footer version={appVersion} update={updateInfo} />
                 </div>
         </ThemeProvider>
     );

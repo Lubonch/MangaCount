@@ -34,6 +34,17 @@ let stopAutoBackup = null;
 let bot = null;
 let botStatus = 'apagado';
 
+// Captura global de errores del proceso main y de la finalización de procesos.
+// `log` arranca como console y se reemplaza por el logger en initBackend().
+process.on('uncaughtException', (err) => log?.error?.('uncaughtException', err));
+process.on('unhandledRejection', (reason) => log?.error?.('unhandledRejection', reason));
+app.on('render-process-gone', (_event, _contents, details) =>
+  log?.error?.(`render-process-gone: ${details?.reason ?? 'unknown'}`)
+);
+app.on('child-process-gone', (_event, details) =>
+  log?.error?.(`child-process-gone: ${details?.type ?? ''}/${details?.reason ?? ''}`)
+);
+
 // Flag de salida: `close` oculta la ventana salvo que estemos saliendo de verdad.
 app.isQuitting = false;
 
@@ -74,10 +85,12 @@ function serveProfileImages(dataDir) {
 function initBackend() {
   const dataDir = app.getPath('userData');
   log = createLogger({ logsDir: path.join(dataDir, 'logs') });
+  log.info(`MangaCount v${app.getVersion()} · ${process.platform}/${process.arch} · ${app.getLocale()}`);
   const db = openDb(dataDir);
   const ctx = {
     db,
     dataDir,
+    app,
     logger: log,
     secrets: createSecrets({ dataDir, safeStorage }),
     autostart: {
