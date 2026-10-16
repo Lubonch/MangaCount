@@ -3,6 +3,14 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.8] - 2026-10-16
+
+### Fixed
+
+- **Crear/editar un manga dejando los volúmenes vacíos**: el formulario mandaba `volumes: null` y
+  violaba `Manga.TotalVolumes NOT NULL`, así que no se podía guardar. Ahora vacío/`null`/inválido se
+  normaliza a **`0`** (serie en publicación) en el renderer y en el repositorio.
+
 ## [2.0.7] - 2026-10-16
 
 ### Fixed
