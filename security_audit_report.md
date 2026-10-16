@@ -1,84 +1,40 @@
 # Security Audit Report — MangaCount
 
-**Scope:** proyecto completo (Electron main + renderer + shared).
-**Fecha:** 2026-10-16
-**Herramientas:** `npm audit` (root y client), `eslint`, revisión manual (grep + lectura).
+**Fecha:** 2026-10-16 · **Alcance:** app de escritorio Electron (main + renderer) a la altura de la 2.0.8
+**Método:** ESLint (`0 errors`) + revisión manual dirigida (SQL, XSS, secretos, command injection, path traversal, protocolo custom, red saliente) + `npm audit`.
 
 ## Resumen
 
-| Severidad | Cantidad |
-|---|---|
-| Critical | 0 |
-| High | 1 |
-| Medium | 0 |
-| Low | 1 |
+Sin hallazgos **Critical/High**. La app es local-first, no carga contenido remoto en el renderer
+(`loadFile`), usa SQL parametrizado y no evalúa input. Se listan oportunidades de endurecimiento (Low).
 
-`npm audit`: **0 vulnerabilidades** (root y client). `eslint`: 0 errores.
+## Verificaciones realizadas
 
-## Hallazgos
+| Categoría | Resultado | Evidencia |
+|---|---|---|
+| **SQL injection** | OK | `db.prepare(...)` con valores por `?`. Las interpolaciones son constantes (`SELECT`/`COLS`/`JOIN`) o el nombre de tabla fijo del closure (`Format`/`Publisher`), nunca input del usuario. |
+| **XSS** | OK | Renderer React (escapa por defecto); sin `dangerouslySetInnerHTML` ni `eval`/`new Function`. |
+| **Secretos hardcodeados** | OK | Sin tokens/keys en el código. El token del bot se guarda cifrado (`safeStorage`) en `userData`. |
+| **Command injection** | OK | Sin `exec`/`spawn` con input del usuario. El único `spawnSync` usa binarios fijos (`update-desktop-database`, `gtk-update-icon-cache`) y args fijos. |
+| **Path traversal** | OK | `mangacount://` (hosts `profiles`/`covers`) y las portadas usan `path.basename` + nombre generado (`<id>.<ext>`). |
+| **Zip-slip (restore)** | OK | `backup.js:183-186`: descarta segmentos `..`/vacíos y valida que el destino quede dentro de `profiles/` (`target.startsWith(profilesPath + sep)`). |
+| **SSRF (portadas)** | OK | `covers.js` restringe a URLs **https** (`isAllowedCoverUrl`) y valida `content-type` de imagen + tamaño máximo antes de escribir. |
+| **IPC (superficie)** | OK | Whitelist de canales en `preload.cjs`; handlers validan ids (`profileId`/`mangaId`); `contextIsolation: true`, `nodeIntegration: false`, `sandbox` default. |
+| **Dependencias** | OK | `npm audit --audit-level=high` (workflow `audit.yml`) + overrides de paquetes transitivos. |
+| **Integridad de backup** | OK | `integrity_check` de SQLite + validación de `manifest` (app y `schemaVersion`) antes de restaurar. |
 
-### HIGH — Zip-slip al restaurar un backup (escritura arbitraria de archivos)
+## Oportunidades de endurecimiento (Low)
 
-- **Ubicación:** `electron/main/services/backup.js:180-186` (`restoreBackup`).
-- **Detalle:** al restaurar, se recorre cada entrada del `.zip`; para las que empiezan con `profiles/`
-  se calcula `path.join(profilesPath, ...rel.split('/'))` **sin validar `..`**. Un backup `.zip`
-  manipulado con entradas tipo `profiles/../../../../home/<user>/.bashrc` (o cualquier ruta con `..`)
-  escribe **fuera** de `<userData>/profiles`, con los permisos del usuario que corre la app.
-- **Impacto:** sobrescritura de archivos arbitrarios del usuario (p. ej. dotfiles, config) al restaurar
-  un backup ajeno/crafteado. Requiere que el usuario elija ese `.zip` en "Restaurar…".
-- **Remediación** (validar que el destino quede dentro de `profilesPath`):
+1. **Sin CSP** en el renderer. No hay vector de inyección conocido (sin `innerHTML`, React escapa), pero
+   definir una `Content-Security-Policy` restrictiva (permitir solo `self`, `mangacount:`, `data:` e
+   imágenes `https://*.anilist.co`) reduce la superficie si apareciera un XSS. *(Backlog.)*
+2. **Protocolo `mangacount://`**: sirve cualquier archivo de `userData/<host>/<basename>`. Acotado por
+   host (`profiles`/`covers`) y `basename`; sin impacto práctico, pero podría restringirse a extensiones
+   de imagen. *(Backlog.)*
+3. **Imágenes remotas de AniList** (por diseño): el renderer carga miniaturas `https` de AniList, lo que
+   revela la IP del usuario a ese CDN. Aceptable para la feature; documentado.
 
-```js
-for (const [name, bytes] of Object.entries(entries)) {
-  if (!name.startsWith(`${PROFILES_DIR}/`)) continue;
-  const rel = name.slice(PROFILES_DIR.length + 1);
-  if (!rel || rel.split('/').some((seg) => seg === '..' || seg === '')) continue; // zip-slip
-  const target = path.resolve(profilesPath, rel);
-  if (target !== profilesPath && !target.startsWith(profilesPath + path.sep)) continue;
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, bytes);
-}
-```
+## Conclusión
 
-- **Test sugerido:** un zip con `profiles/../evil.txt` no debe escribir fuera de `profiles/`.
-
-### LOW — `shell.openExternal` sin restringir el esquema
-
-- **Ubicación:** `electron/main/index.js:137-138` (`setWindowOpenHandler`).
-- **Detalle:** ante `window.open(url)` / enlaces `target="_blank"`, se llama `shell.openExternal(url)`
-  con **cualquier** URL/esquema (p. ej. `file://`, esquemas custom). El renderer es propio (riesgo bajo),
-  pero conviene limitar a `http(s)`.
-- **Remediación:**
-
-```js
-win.webContents.setWindowOpenHandler(({ url }) => {
-  if (/^https?:\/\//i.test(url)) shell.openExternal(url);
-  return { action: 'deny' };
-});
-```
-
-### INFO — Configuración de seguridad del renderer
-
-- `contextIsolation: true` y `nodeIntegration: false` (`index.js:132-133`): correcto.
-- `sandbox` no está seteado explícitamente → Electron usa `true` por defecto: OK.
-- `preload.cjs` valida el canal contra una whitelist y rechaza los no registrados: correcto.
-- `serveProfileImages` usa `path.basename`: sin path traversal.
-
-## Lo que está bien (sin hallazgos)
-
-- **SQL:** todas las consultas son parametrizadas (`better-sqlite3` con `?`); **no hay** concatenación
-  de SQL con input del usuario. `db.exec(schema)` es un esquema estático.
-- **XSS:** **no** hay `dangerouslySetInnerHTML`/`innerHTML`; React escapa por defecto.
-- **Command injection:** **no** hay `child_process`/`exec`/`spawn` con input; los `.exec(` encontrados
-  son `RegExp.exec` y `db.exec` (estático).
-- **Secretos:** el token de Discord se guarda con `safeStorage` en `<userData>/discord-token.bin`
-  (nunca en `preferences.json` ni en el repo); no hay claves hardcodeadas.
-- **Path traversal:** el protocolo `mangacount://` usa `path.basename`; los diálogos de archivo/carpeta
-  son elegidos por el usuario (intencional).
-- **`eval`/`new Function`:** ninguno.
-
-## Plan de acción propuesto
-
-1. **Aplicar el fix de zip-slip** (High) en `restoreBackup` + test con `profiles/../evil.txt`.
-2. **Restringir `openExternal` a http(s)** (Low).
-3. (Opcional) agregar el `sandbox: true` explícito en `webPreferences` para dejarlo documentado.
+**Aprobado.** No hay vulnerabilidades explotables en el modelo de amenaza (app local de un solo usuario,
+sin servidor, sin contenido remoto en el renderer). Los ítems Low son mejoras opcionales.
