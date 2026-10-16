@@ -77,6 +77,23 @@ export const recommendationGet = (profileId, limit = 10) =>
     { profileId, limit }
   );
 
+// Portadas + vínculo externo (AniList)
+export const coverSearch = (query) =>
+  apiCall('cover:search', `/api/cover/search?query=${encodeURIComponent(query ?? '')}`, undefined, {
+    query,
+  });
+export const coverLink = (mangaId, candidate) =>
+  apiCall('cover:link', '/api/cover/link', json({ mangaId, candidate }), { mangaId, candidate });
+export const coverFetch = (mangaId, coverUrl) =>
+  apiCall('cover:fetch', '/api/cover/fetch', json({ mangaId, coverUrl }), { mangaId, coverUrl });
+export const coverUnlink = (mangaId) =>
+  apiCall('cover:unlink', `/api/cover/unlink/${mangaId}`, { method: 'DELETE' }, mangaId);
+export const coverStatus = (mangaId) =>
+  apiCall('cover:status', `/api/cover/status/${mangaId}`, undefined, mangaId);
+export const coverAll = () => apiCall('cover:all', '/api/cover');
+export const coverAuto = (mangaId) =>
+  apiCall('cover:auto', `/api/cover/auto/${mangaId}`, undefined, mangaId);
+
 // Base local (fila 15)
 export const databaseStatistics = () => apiCall('database:statistics', '/api/database/statistics');
 export const databaseNukeLocal = () => apiCall('database:nuke-local', '/api/database/nuke', json({}));

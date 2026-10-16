@@ -33,4 +33,10 @@ describe('CollectionView: series sin total de tomos', () => {
     render(<CollectionView entries={[entryWithTotal()]} mangas={[]} selectedProfile={null} />)
     expect(screen.getByText(/Owned: 1 \/ 26/)).toBeInTheDocument()
   })
+
+  it('muestra la portada generada (iniciales) cuando no hay vínculo', () => {
+    render(<CollectionView entries={[entryWithTotal()]} mangas={[]} selectedProfile={null} />)
+    // 'Bleach' -> iniciales 'B' en la portada generada.
+    expect(screen.getByText('B')).toBeInTheDocument()
+  })
 })

@@ -79,14 +79,18 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-function serveProfileImages(dataDir) {
+// Hosts del esquema `mangacount://` -> subdirectorio en userData.
+const SCHEME_HOST_DIRS = { profiles: 'profiles', covers: 'covers' };
+
+function serveLocalImages(dataDir) {
   protocol.handle(PROFILE_IMAGE_SCHEME, (request) => {
     const url = new URL(request.url);
-    if (url.hostname !== 'profiles') {
+    const subdir = SCHEME_HOST_DIRS[url.hostname];
+    if (!subdir) {
       return new Response('Not found', { status: 404 });
     }
     const fileName = path.basename(decodeURIComponent(url.pathname));
-    const filePath = path.join(dataDir, 'profiles', fileName);
+    const filePath = path.join(dataDir, subdir, fileName);
     if (!fileName || !fs.existsSync(filePath)) {
       return new Response('Not found', { status: 404 });
     }
@@ -129,7 +133,7 @@ function initBackend() {
     },
   };
   registerHandlers(ipcMain, ctx);
-  serveProfileImages(dataDir);
+  serveLocalImages(dataDir);
 
   // Controller de actualizaciones: auto (Windows/AppImage) o link (deb/makepkg).
   const mode = resolveUpdateMode({

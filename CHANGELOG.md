@@ -3,6 +3,28 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.0] - 2026-10-16
+
+**Rework visual.** Actualización mayor (major) por la nueva identidad, el design system y las
+portadas con vínculo externo. Los datos locales son compatibles: la migración de esquema es
+**aditiva** (no toca mangas ni entradas existentes).
+
+### Added
+
+- **Design system**: tokens de color, espaciado, radios, sombras y motion; tema **dark** (por
+  defecto) y **light**, con acento azul vivo y la tipografía **Inter** self-hosted.
+- **Identidad visual**: logo monograma **MC** (favicon, íconos de instalador y de bandeja).
+- **Sidebar modernizada**, agrupada (Colección / Biblioteca / App) y **colapsable**.
+- **Portadas vía AniList** (GraphQL, **sin API key**): busca por título y **vincula** la portada
+  manteniendo el nombre local. Cache en `<userData>/covers/`, servida por `mangacount://covers/…`.
+  Auto-match best-effort al agregar (solo con match único). Modal **Vincular portada** por tarjeta.
+- **Portada generada** (gradiente por hash + iniciales + progreso) para mangas sin portada.
+- Animaciones sutiles (hover, modales, barras) con soporte de `prefers-reduced-motion`.
+
+### Changed
+
+- UI re-estilizada sobre tokens: tarjetas, tabla, vista compacta, modales, Settings, perfiles y footer.
+
 ## [1.0.19] - 2026-10-16
 
 ### Changed

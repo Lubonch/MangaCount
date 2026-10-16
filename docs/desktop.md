@@ -28,6 +28,7 @@ Contenido:
 ├── backups-restore/       # backups de seguridad previos a un restore
 ├── profiles/              # fotos de perfil subidas
 │   └── profile_<id>_<uuid>.<ext>
+├── covers/                # portadas cacheadas de AniList (<MangaId>.<ext>)
 └── logs/
     ├── app.txt            # log actual
     └── app.YYYY-MM-DD.txt # logs rotados (al cambiar el día, sólo si había contenido)
@@ -37,7 +38,7 @@ Contenido:
 
 ## Formato del SQLite
 
-Esquema en [`electron/main/db/schema.sqlite.sql`](../electron/main/db/schema.sqlite.sql). Cinco
+Esquema en [`electron/main/db/schema.sqlite.sql`](../electron/main/db/schema.sqlite.sql). Seis
 tablas:
 
 - `Profile(Id, Name UNIQUE, ProfilePicture, CreatedAt)`
@@ -45,6 +46,7 @@ tablas:
 - `Publisher(Id, Name UNIQUE)`
 - `Manga(Id, Title, TotalVolumes, FormatId, PublisherId, ImageUrl, CreatedAt)`
 - `Entry(Id, ProfileId, MangaId, PurchasedVolumes, PendingVolumes, IsComplete, IsPriority, CreatedAt, UpdatedAt, UNIQUE(ProfileId, MangaId))`
+- `MangaExternalRef(Id, MangaId, Provider, ExternalId, CoverFile, UpdatedAt, UNIQUE(MangaId, Provider))`
 
 Detalles:
 
@@ -54,12 +56,28 @@ Detalles:
   (`electron/main/db/client.js`).
 - En el primer arranque se hace *seed* de 5 formatos, 5 editoriales y el perfil `Default Profile`.
 - `Profile.ProfilePicture` guarda una URL `mangacount://profiles/<archivo>`, no un path local.
+- `MangaExternalRef` es **aditiva**: vincula un manga con una entrada externa (hoy `anilist`) sin
+  tocar `Manga`/`Entry`. `CoverFile` es el nombre del archivo cacheado en `<userData>/covers/`.
+
+## Portadas (AniList) y design system
+
+- **Portadas**: el renderer busca en **AniList** (GraphQL, **sin API key**, rate limit ~30 req/min) y,
+  al elegir un candidato, el main **descarga** la imagen a `<userData>/covers/<MangaId>.<ext>` y
+  guarda el vínculo (`AniListId`) en `MangaExternalRef`. El **nombre local del manga no se cambia**.
+  Las tarjetas resuelven la URL con `cover:all` (`{ mangaId: url }`) y, si no hay vínculo, muestran
+  una **portada generada** (gradiente por hash del título + iniciales).
+- **Design system**: tokens y temas en `mangacount.client/src/styles/` (`tokens.css`, `theme.css`);
+  Inter self-hosted; los componentes no usan colores hardcodeados.
 
 ## Protocolo `mangacount://`
 
 Las fotos de perfil no se sirven por HTTP: el proceso main registra un esquema custom
 (`protocol.handle('mangacount', …)`) que lee `<userData>/profiles/<archivo>` y lo responde con
 el `content-type` correcto. El renderer lo usa directo en `<img src="mangacount://profiles/…">`.
+
+El mismo esquema sirve el host **`covers`** para las portadas cacheadas: el main lee
+`<userData>/covers/<archivo>` (siempre con `path.basename` sobre el nombre) y responde con el
+`content-type` de imagen. El renderer usa `mangacount://covers/<MangaId>.<ext>`.
 
 ## Backup y restore integrados
 

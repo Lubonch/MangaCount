@@ -46,6 +46,18 @@ CREATE TABLE IF NOT EXISTS Entry (
     UNIQUE(ProfileId, MangaId)
 );
 
+-- Vínculo de un manga con una entrada externa (p. ej. AniList). Aditivo:
+-- no cambia el nombre local del manga ni Manga/Entry.
+CREATE TABLE IF NOT EXISTS MangaExternalRef (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    MangaId INTEGER NOT NULL REFERENCES Manga(Id) ON DELETE CASCADE,
+    Provider VARCHAR(32) NOT NULL,
+    ExternalId VARCHAR(64) NOT NULL,
+    CoverFile VARCHAR(255),
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(MangaId, Provider)
+);
+
 -- Datos iniciales (mismo seed que PostgreSQL)
 INSERT OR IGNORE INTO Format (Name) VALUES
 ('Tankoubon'), ('Kanzenban'), ('Bunkoban'), ('Aizouban'), ('Digital');
@@ -61,3 +73,4 @@ CREATE INDEX IF NOT EXISTS IX_Entry_MangaId ON Entry(MangaId);
 CREATE INDEX IF NOT EXISTS IX_Manga_Title ON Manga(Title);
 CREATE INDEX IF NOT EXISTS IX_Entry_IsComplete ON Entry(IsComplete);
 CREATE INDEX IF NOT EXISTS IX_Entry_IsPriority ON Entry(IsPriority);
+CREATE INDEX IF NOT EXISTS IX_MangaExternalRef_MangaId ON MangaExternalRef(MangaId);

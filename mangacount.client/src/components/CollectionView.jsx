@@ -1,7 +1,9 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import LoadingSpinner from './LoadingSpinner';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
+import LinkCoverModal from './LinkCoverModal';
+import { coverAll, coverAuto } from '../api/localAdapter';
 import './CollectionView.css';
 
 const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], selectedProfile }) => {
@@ -21,6 +23,63 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
     const [showEditManga, setShowEditManga] = useState(false);
     const [editingEntry, setEditingEntry] = useState(null);
     const [editingManga, setEditingManga] = useState(null);
+
+    // Portadas: mapa { mangaId: url } + manga que se está vinculando.
+    const [coverMap, setCoverMap] = useState({});
+    const [coverTarget, setCoverTarget] = useState(null);
+
+    useEffect(() => {
+        let active = true;
+        coverAll()
+            .then((map) => {
+                if (active) setCoverMap(map ?? {});
+            })
+            .catch(() => {});
+        return () => {
+            active = false;
+        };
+    }, [entries, selectedProfile]);
+
+    const handleCoverLinked = (mangaId, url) => {
+        setCoverMap((prev) => {
+            const next = { ...prev };
+            if (url) next[mangaId] = url;
+            else delete next[mangaId];
+            return next;
+        });
+    };
+
+    // Auto-match best-effort al agregar: cuando aparece un manga nuevo, se
+    // intenta vincular su portada (solo si hay match único; fire-and-forget).
+    const knownMangasRef = useRef(null);
+    useEffect(() => {
+        const ids = entries.map((entry) => entry.manga.id);
+        if (knownMangasRef.current === null) {
+            knownMangasRef.current = new Set(ids);
+            return;
+        }
+        const known = knownMangasRef.current;
+        const fresh = ids.filter((id) => !known.has(id));
+        fresh.forEach((id) => known.add(id));
+        if (fresh.length === 0) return;
+
+        // Secuencial: no saturar AniList (rate limit). Se detiene ante un 429.
+        let cancelled = false;
+        (async () => {
+            for (const id of fresh) {
+                if (cancelled) break;
+                try {
+                    const url = await coverAuto(id);
+                    if (url) handleCoverLinked(id, url);
+                } catch {
+                    break;
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [entries]);
 
     // Load filter options when entries or profile changes
     useEffect(() => {
@@ -78,6 +137,26 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
             return 'incomplete';
         }
     };
+
+    // Identidad visual generada por título (fallback sin portada): gradiente + iniciales.
+    const titleHash = (value) => {
+        let hash = 0;
+        const text = value || '';
+        for (let i = 0; i < text.length; i += 1) hash = (hash * 31 + text.charCodeAt(i)) | 0;
+        return Math.abs(hash);
+    };
+    const coverGradient = (title) => {
+        const hue = titleHash(title) % 360;
+        return `linear-gradient(135deg, hsl(${hue} 68% 52%), hsl(${(hue + 42) % 360} 62% 36%))`;
+    };
+    const coverInitials = (title) =>
+        (title || '?')
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((word) => word[0])
+            .join('')
+            .toUpperCase();
 
     const getStatusCounts = () => {
         const filteredAndStatusFiltered = getFilteredEntries();
@@ -391,6 +470,29 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 
                 return (
                     <div key={entry.id} className={`entry-card ${status}`}>
+                        <div
+                            className={`card-cover${coverMap[entry.manga.id] ? ' has-cover' : ''}`}
+                            style={
+                                coverMap[entry.manga.id]
+                                    ? undefined
+                                    : { backgroundImage: coverGradient(entry.manga.name) }
+                            }
+                        >
+                            {coverMap[entry.manga.id] ? (
+                                <img
+                                    className="card-cover-img"
+                                    src={coverMap[entry.manga.id]}
+                                    alt=""
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <span className="card-cover-initials">{coverInitials(entry.manga.name)}</span>
+                            )}
+                            {completionPercent !== null && (
+                                <span className={`card-cover-badge ${status}`}>{completionPercent}%</span>
+                            )}
+                            {entry.priority && <span className="card-cover-priority">⭐</span>}
+                        </div>
                         <div className="entry-header">
                             <h3 className="manga-title">{entry.manga.name}</h3>
                             <div className="entry-badges">
@@ -401,8 +503,18 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                 </span>
                             </div>
                         </div>
-                        
+
                         <div className="entry-details">
+                            {(entry.manga.format || entry.manga.publisher) && (
+                                <div className="card-chips">
+                                    {entry.manga.format?.name && (
+                                        <span className="chip">{entry.manga.format.name}</span>
+                                    )}
+                                    {entry.manga.publisher?.name && (
+                                        <span className="chip">{entry.manga.publisher.name}</span>
+                                    )}
+                                </div>
+                            )}
                             <div className="quantity-info">
                                 <span className="owned">Owned: {entry.quantity}{entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}</span>
                                 {entry.manga.volumes > 0 && (
@@ -442,6 +554,13 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                     title="Edit entry"
                                 >
                                     ✏️ Edit Entry
+                                </button>
+                                <button
+                                    className="edit-btn cover-btn"
+                                    onClick={() => setCoverTarget(entry.manga)}
+                                    title="Vincular portada (AniList)"
+                                >
+                                    🖼️ Portada
                                 </button>
                             </div>
                         </div>
@@ -612,9 +731,17 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     setShowEditManga(false);
                     setEditingManga(null);
                 }}
-                onSuccess={handleEditSuccess}
-                editManga={editingManga}
+                    onSuccess={handleEditSuccess}
+                    editManga={editingManga}
             />
+
+            {coverTarget && (
+                <LinkCoverModal
+                    manga={coverTarget}
+                    onClose={() => setCoverTarget(null)}
+                    onLinked={handleCoverLinked}
+                />
+            )}
         </div>
     );
 };

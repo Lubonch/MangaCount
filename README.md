@@ -24,6 +24,11 @@ que porta la lógica de negocio a Node.
 - **diagnóstico**: los errores del proceso main y del renderer quedan en `logs/app.txt`, con la versión
   y el SO al inicio de cada sesión; en Settings (toggleable) hay **Copiar diagnóstico** (versión + SO +
   últimas líneas del log al portapapeles) y **Abrir carpeta de logs**
+- **identidad y design system**: temas **claro/oscuro** (oscuro por defecto) con tokens de color,
+  espaciado y motion, tipografía **Inter** y logo propio; sidebar agrupada y colapsable
+- **portadas de manga**: buscá y **vinculá la portada de AniList** (sin API key) por título, sin cambiar
+  el nombre local; la portada se cachea localmente y las series sin portada usan una **generada**
+  (gradiente + iniciales)
 - datos 100% locales en la carpeta de usuario; sin servidor ni base de datos externa
 
 ## Descargar e instalar
