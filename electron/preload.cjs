@@ -12,6 +12,11 @@ const channels = [
   'recommendation:get',
   'profile:upload-picture',
   'database:statistics', 'database:nuke-local',
+  'backup:create', 'backup:restore', 'backup:list', 'backup:config-get', 'backup:config-set',
+  'bot:config-get', 'bot:config-set', 'bot:set-token', 'bot:status',
+  'bot:autostart-get', 'bot:autostart-set',
+  'app:config-get', 'app:config-set',
+  'dialog:pick-directory', 'dialog:pick-file',
 ];
 
 contextBridge.exposeInMainWorld('mangaCount', {

@@ -18,6 +18,20 @@ import { formats, publishers } from '../db/repositories/catalogs.js';
 import { getRecommendations } from '../services/recommendations.js';
 import { saveProfilePicture } from '../services/files.js';
 import { databaseStatistics, nukeLocalData } from '../services/database.js';
+import {
+  createBackup,
+  restoreBackup,
+  listBackups,
+  pruneBackups,
+  DEFAULT_KEEP,
+} from '../services/backup.js';
+import {
+  loadPrefs,
+  savePrefs,
+  resolvePrefs,
+  loadResolvedPrefs,
+  validateBackupConfig,
+} from '../services/prefs.js';
 
 function requireProfileId(profileId) {
   if (!Number.isInteger(profileId) || profileId <= 0) {
@@ -83,6 +97,102 @@ export const handlers = {
   },
   'entry:used-formats': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.format),
   'entry:used-publishers': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.publisher),
+
+  // Backup y restore del sistema.
+  'backup:config-get': ({ dataDir }) => loadResolvedPrefs(dataDir).backup,
+  'backup:config-set': ({ dataDir }, config = {}) => {
+    const prefs = resolvePrefs(loadPrefs(dataDir));
+    const backup = {
+      ...prefs.backup,
+      ...config,
+      triggers: { ...prefs.backup.triggers, ...(config.triggers ?? {}) },
+    };
+    const errors = validateBackupConfig(backup);
+    if (errors.length) throw new Error(errors.join(' '));
+    savePrefs(dataDir, { ...prefs, backup });
+    return backup;
+  },
+  'backup:list': ({ dataDir }) => {
+    const { backup } = loadResolvedPrefs(dataDir);
+    return backup.destinationDir ? listBackups(backup.destinationDir) : [];
+  },
+  'backup:create': async (ctx, destinationDir) => {
+    const { db, dataDir, logger } = ctx;
+    const prefs = resolvePrefs(loadPrefs(dataDir));
+    const dest = destinationDir ?? prefs.backup.destinationDir;
+    if (!dest) throw new Error('No hay destino de backup configurado.');
+    const at = new Date().toISOString();
+    try {
+      const result = await createBackup(db, dataDir, dest);
+      pruneBackups(dest, DEFAULT_KEEP);
+      const lastBackupStatus = { ok: true, at };
+      savePrefs(dataDir, {
+        ...prefs,
+        backup: { ...prefs.backup, lastBackupAt: at, lastBackupStatus },
+      });
+      return { ...result, lastBackupStatus };
+    } catch (err) {
+      const lastBackupStatus = { ok: false, at, error: err?.message ?? String(err) };
+      savePrefs(dataDir, { ...prefs, backup: { ...prefs.backup, lastBackupStatus } });
+      logger?.error?.(`backup falló: ${lastBackupStatus.error}`);
+      throw err;
+    }
+  },
+  'backup:restore': async (ctx, zipPath) => {
+    const { db, dataDir, logger } = ctx;
+    const result = await restoreBackup(db, dataDir, zipPath, { logger });
+    ctx.db = result.db;
+    return { restored: true, safetyBackup: result.safetyBackup, manifest: result.manifest };
+  },
+
+  // Config del bot de Discord.
+  'bot:config-get': (ctx) => {
+    const { bot: config } = loadResolvedPrefs(ctx.dataDir);
+    return {
+      ...config,
+      hasToken: !!ctx.secrets?.hasToken?.(),
+      secretsAvailable: !!ctx.secrets?.available,
+      status: ctx.bot?.status?.() ?? 'apagado',
+    };
+  },
+  'bot:config-set': (ctx, config = {}) => {
+    const prefs = resolvePrefs(loadPrefs(ctx.dataDir));
+    const bot = { ...prefs.bot, ...config };
+    savePrefs(ctx.dataDir, { ...prefs, bot });
+    ctx.bot?.reload?.(bot);
+    return bot;
+  },
+  'bot:set-token': async (ctx, token) => {
+    if (typeof token !== 'string' || token.trim().length === 0) throw new Error('Token vacío.');
+    ctx.secrets?.saveToken(token.trim());
+    const prefs = resolvePrefs(loadPrefs(ctx.dataDir));
+    try {
+      await ctx.bot?.restart?.(prefs.bot);
+    } catch (err) {
+      ctx.logger?.warn?.(`el bot no pudo reiniciarse: ${err?.message ?? err}`);
+    }
+    return { saved: true, secretsAvailable: !!ctx.secrets?.available };
+  },
+  'bot:status': (ctx) => ({ status: ctx.bot?.status?.() ?? 'apagado' }),
+
+  // Autostart por sistema operativo.
+  'bot:autostart-get': (ctx) => ({ enabled: !!ctx.autostart?.get?.() }),
+  'bot:autostart-set': (ctx, enabled) => ({ enabled: !!ctx.autostart?.set?.(!!enabled) }),
+
+  // Config general de la app (arranque en bandeja).
+  'app:config-get': ({ dataDir }) => ({ startInTray: loadResolvedPrefs(dataDir).startInTray }),
+  'app:config-set': ({ dataDir }, config = {}) => {
+    const prefs = resolvePrefs(loadPrefs(dataDir));
+    const startInTray = config.startInTray ?? prefs.startInTray;
+    savePrefs(dataDir, { ...prefs, startInTray });
+    return { startInTray };
+  },
+
+  // Diálogos nativos de archivo.
+  'dialog:pick-directory': async (ctx) =>
+    ctx.dialog?.pickDirectory ? ctx.dialog.pickDirectory() : null,
+  'dialog:pick-file': async (ctx, filters) =>
+    ctx.dialog?.pickFile ? ctx.dialog.pickFile(filters) : null,
 };
 
 export function channelNames() {

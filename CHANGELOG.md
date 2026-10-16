@@ -3,6 +3,33 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [Unreleased]
+
+### Added
+
+- **Pantalla de Settings unificada** (`components/SettingsModal.jsx`) con secciones **General**,
+  **Backup**, **Intercambio** y **Bot**, abierta desde un engranaje en el `Sidebar`. El import TSV se
+  mueve del `Sidebar` a Settings y se agrega el **Export TSV** (reusa `entry:export`).
+- **Backup y restore del sistema** a `.zip` (`services/backup.js`): snapshot consistente con
+  `db.backup()`, `profiles/` y `manifest.json`; retención de los últimos 5; `fflate` para la
+  compresión. Restore con validación + safety-backup + reemplazo completo.
+- **Backup automático opcional** (`services/auto-backup.js`): disparadores *al iniciar* y *mientras
+  la app corre*, con destino y disparador obligatorios al habilitar; apagado por defecto.
+- **App residente en bandeja** (`lifecycle.js` + `index.js`): cerrar la ventana la oculta, tray con
+  menú, instancia única (`requestSingleInstanceLock`), `startInTray`/`--hidden`.
+- **Autostart por SO** (`services/autostart.js`): `setLoginItemSettings` en Windows/macOS y
+  `~/.config/autostart/mangacount.desktop` en Linux, con toggle en Settings.
+- **Bot de Discord embebido** (`services/discord-bot.js`, solo consulta): `/perfil`, `/buscar`,
+  `/pendientes`, `/recomendar`, autorización por guild/user IDs, sesión por usuario y token cifrado
+  con `safeStorage`. Lógica de consulta compartida en `services/search.js`.
+- Canales IPC nuevos (`backup:*`, `bot:*`, `app:*`, `dialog:*`) en handlers, `preload.cjs` y
+  `localAdapter.js`. Callback `ctx` ampliado con `logger`, `secrets`, `autostart`, `dialog` y `bot`.
+
+### Changed
+
+- `prefs.js`: defaults resueltos (`resolvePrefs`) con `startInTray` y bloques `backup`/`bot`.
+- Documentación actualizada: `README.md` y `docs/desktop.md` (backup, tray/autostart, bot, config).
+
 ## [1.0.4] - 2026-10-12
 
 ### Changed
