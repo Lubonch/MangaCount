@@ -66,6 +66,15 @@ describe('repositories', () => {
     assert.equal(listMangas(db).length, 1);
   });
 
+  it('mangas: volúmenes vacío/null/inválido -> 0 (serie en publicación)', () => {
+    assert.equal(createManga(db, { name: 'a' }).volumes, 0);
+    assert.equal(createManga(db, { name: 'b', volumes: null }).volumes, 0);
+    assert.equal(createManga(db, { name: 'c', volumes: '' }).volumes, 0);
+    assert.equal(createManga(db, { name: 'd', volumes: -3 }).volumes, 0);
+    const m = createManga(db, { name: 'e', volumes: 12 });
+    assert.equal(updateManga(db, { ...m, volumes: null }).volumes, 0);
+  });
+
   it('catalogs: CRUD + alta case-insensitive', () => {
     assert.equal(formats.list(db).length, 0);
     // "ivrea" reusa "Ivrea": no crea duplicado.

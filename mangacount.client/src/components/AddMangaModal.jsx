@@ -157,7 +157,7 @@ const AddMangaModal = ({
             const mangaData = {
                 id: editManga ? editManga.id : 0,
                 name: formData.name.trim(),
-                volumes: formData.volumes ? parseInt(formData.volumes) : null,
+                volumes: formData.volumes ? parseInt(formData.volumes, 10) : 0,
                 formatId: parseInt(formData.formatId),
                 publisherId: parseInt(formData.publisherId)
             };
