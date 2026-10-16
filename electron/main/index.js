@@ -1,6 +1,8 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, protocol, shell, nativeImage, clipboard, dialog as electronDialog, safeStorage } from 'electron';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { openDb } from './db/client.js';
 import { registerHandlers, handlers } from './ipc/handlers.js';
@@ -18,6 +20,10 @@ import { shouldStartHidden, shouldQuitOnAllWindowsClosed, trayMenuTemplate } fro
 
 // electron-updater es CommonJS: `autoUpdater` viene en el default, no como named export.
 const { autoUpdater } = electronUpdater;
+
+// Ícono de la app (ventana + integración con el escritorio). Va dentro del
+// bundle (electron/assets) para poder usarlo también en runtime.
+const APP_ICON = path.join(__dirname, '../assets/app-icon.png');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -99,10 +105,57 @@ function serveLocalImages(dataDir) {
   });
 }
 
+// Registra el .desktop + ícono a nivel usuario cuando corre como AppImage: sin
+// esto, un AppImage suelto no aparece en el lanzador/menú y en **Wayland** el
+// compositor no puede resolver el ícono (queda el genérico). En .deb/.rpm ya lo
+// instala el sistema, así que no hacemos nada.
+function ensureDesktopIntegration() {
+  if (process.platform !== 'linux') return;
+  const appImage = process.env.APPIMAGE;
+  if (!appImage || !fs.existsSync(appImage)) return;
+  try {
+    const share = path.join(os.homedir(), '.local', 'share');
+    const appsDir = path.join(share, 'applications');
+    const iconsDir = path.join(share, 'icons', 'hicolor', '512x512', 'apps');
+    fs.mkdirSync(appsDir, { recursive: true });
+    fs.mkdirSync(iconsDir, { recursive: true });
+    if (fs.existsSync(APP_ICON)) fs.copyFileSync(APP_ICON, path.join(iconsDir, 'mangacount.png'));
+
+    const desktop = [
+      '[Desktop Entry]',
+      'Type=Application',
+      'Name=MangaCount',
+      `Exec="${appImage}" %U`,
+      'Icon=mangacount',
+      'Terminal=false',
+      'Categories=Office;',
+      'StartupWMClass=MangaCount',
+      `X-AppImage-Version=${app.getVersion()}`,
+      '',
+    ].join('\n');
+    fs.writeFileSync(path.join(appsDir, 'mangacount.desktop'), desktop, { mode: 0o755 });
+
+    // Refresca las cachés (best-effort: si los binarios no están, no importa).
+    for (const [bin, args] of [
+      ['update-desktop-database', [appsDir]],
+      ['gtk-update-icon-cache', ['-f', '-t', path.join(share, 'icons', 'hicolor')]],
+    ]) {
+      try {
+        spawnSync(bin, args, { stdio: 'ignore' });
+      } catch {
+        /* opcional */
+      }
+    }
+  } catch (err) {
+    log?.warn?.(`no se pudo registrar el .desktop: ${err?.message ?? err}`);
+  }
+}
+
 function initBackend() {
   const dataDir = app.getPath('userData');
   log = createLogger({ logsDir: path.join(dataDir, 'logs') });
   log.info(`MangaCount v${app.getVersion()} · ${process.platform}/${process.arch} · ${app.getLocale()}`);
+  ensureDesktopIntegration();
   const db = openDb(dataDir);
   const ctx = {
     db,
@@ -165,6 +218,7 @@ function createWindow() {
     width: 1280,
     height: 800,
     autoHideMenuBar: true,
+    icon: APP_ICON,
     webPreferences: {
       preload: path.join(__dirname, '../preload.cjs'),
       contextIsolation: true,
