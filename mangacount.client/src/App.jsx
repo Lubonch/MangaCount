@@ -352,7 +352,7 @@ function App() {
 
     return (
             <ThemeProvider>
-                <div className="app">
+                <div className="app app--shell">
                     <div className="app-container">
                         <Sidebar 
                             mangas={mangas} 

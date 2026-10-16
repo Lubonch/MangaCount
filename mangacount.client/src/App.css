@@ -24,6 +24,17 @@
     max-width: 100%;
 }
 
+/* Shell principal: alto de viewport con scroll INTERNO, para que la sidebar y el
+   footer queden fijos y no haya que scrollear toda la página con muchas entries. */
+.app--shell {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app--shell .app-container {
+    overflow: hidden;
+}
+
 .main-content {
     flex: 1;
     min-width: 0;
