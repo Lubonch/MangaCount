@@ -3,6 +3,14 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.0.4] - 2026-10-16
+
+### Fixed
+
+- **Ícono en Linux/Wayland**: la ventana ahora setea el ícono de la app y, al correr como **AppImage**,
+  MangaCount registra su `.desktop` + ícono en `~/.local/share` (idempotente, se rehace al abrir), para
+  que el compositor de Wayland y el lanzador muestren el **logo** en vez de un ícono genérico.
+
 ## [2.0.3] - 2026-10-16
 
 ### Changed

@@ -87,6 +87,15 @@ El mismo esquema sirve el host **`covers`** para las portadas cacheadas: el main
 `<userData>/covers/<archivo>` (siempre con `path.basename` sobre el nombre) y responde con el
 `content-type` de imagen. El renderer usa `mangacount://covers/<MangaId>.<ext>`.
 
+## Ícono e integración del escritorio (Linux)
+
+- La ventana usa el ícono de la app (`electron/assets/app-icon.png`).
+- Al correr como **AppImage** (variable `APPIMAGE`), la app **registra sola** su `.desktop` +
+  `~/.local/share/icons/hicolor/512x512/apps/mangacount.png` (idempotente, se rehace en cada arranque
+  para seguir al AppImage actual tras una actualización). Así el lanzador y, sobre todo, **Wayland**
+  (que resuelve el ícono por `app_id` ↔ `.desktop`, no por el ícono de ventana) muestran el logo.
+- En `.deb`/`makepkg` el `.desktop` y el ícono los instala el sistema; la app no toca nada.
+
 ## Backup y restore integrados
 
 La app trae backup/restore del **sistema completo** desde **Settings → Backup**:
