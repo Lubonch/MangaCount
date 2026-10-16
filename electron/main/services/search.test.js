@@ -46,6 +46,19 @@ describe('services/search: buscar', () => {
   it('suggestTitles ignora palabras cortas', () => {
     assert.deepEqual(suggestTitles(collection(), 'de la'), []);
   });
+
+  it('findEntries tolera query nulo y entries sin manga', () => {
+    const conHuecos = [{ id: 'sin-manga', quantity: 1 }, ...collection()];
+    assert.deepEqual(findEntries(conHuecos, null), []);
+    assert.equal(findEntries(conHuecos, 'berserk').length, 2);
+  });
+
+  it('suggestTitles tolera query nulo y respeta el límite', () => {
+    assert.deepEqual(suggestTitles(collection(), null), []);
+    assert.deepEqual(suggestTitles(collection(), 'berserk'), ['Berserk', 'Berserk Max']);
+    assert.deepEqual(suggestTitles(collection(), 'berserk monster', 1), ['Berserk']);
+    assert.deepEqual(suggestTitles([{ id: 'x', manga: null }], 'berserk'), []);
+  });
 });
 
 describe('services/search: estado', () => {
@@ -53,6 +66,10 @@ describe('services/search: estado', () => {
     assert.deepEqual(entryStatus(entry('a', 41, 41)), { quantity: 41, total: 41, pending: 0, complete: true });
     assert.deepEqual(entryStatus(entry('b', 3, 20)), { quantity: 3, total: 20, pending: 17, complete: false });
     assert.deepEqual(entryStatus(entry('c', 2, 0)), { quantity: 2, total: 0, pending: null, complete: false });
+  });
+
+  it('entryStatus tolera entrada nula', () => {
+    assert.deepEqual(entryStatus(undefined), { quantity: 0, total: 0, pending: null, complete: false });
   });
 });
 
@@ -62,9 +79,24 @@ describe('services/search: pendientes', () => {
     assert.deepEqual(pending, ['Berserk Max', 'Monster']);
   });
 
+  it('con igual prioridad ordena por mayor pendiente (ambas direcciones)', () => {
+    const a = entry('A', 1, 10, true);
+    const b = entry('B', 1, 20, true);
+    assert.deepEqual(pendingEntries([a, b]).map((e) => e.manga.name), ['B', 'A']);
+    assert.deepEqual(pendingEntries([b, a]).map((e) => e.manga.name), ['B', 'A']);
+  });
+
+  it('ignora entries sin manga', () => {
+    assert.deepEqual(pendingEntries([{ id: 'x', quantity: 2 }]), []);
+  });
+
   it('resume count y total pendiente', () => {
     const summary = pendingSummary(collection());
     assert.equal(summary.count, 2);
     assert.equal(summary.totalPending, 17 + 4);
+  });
+
+  it('resumen vacío no rompe', () => {
+    assert.deepEqual(pendingSummary([]), { entries: [], count: 0, totalPending: 0 });
   });
 });

@@ -15,6 +15,13 @@ describe('services/updates: compareVersions', () => {
     assert.equal(compareVersions('1.0.8', '1.0.8-beta.1'), 0);
     assert.equal(compareVersions('1.0', '1.0.0'), 0);
   });
+
+  it('tolera valores no numéricos, longitudes distintas y undefined', () => {
+    assert.equal(compareVersions('1.x.0', '1.0.0'), 0);
+    assert.ok(compareVersions('1.0', '1.0.1') > 0);
+    assert.ok(compareVersions('1.0.1', '1.0') < 0);
+    assert.equal(compareVersions(undefined, ''), 0);
+  });
 });
 
 describe('services/updates: fetchLatestRelease', () => {
@@ -42,6 +49,21 @@ describe('services/updates: fetchLatestRelease', () => {
     const fetchImpl = async () => ({ ok: false, status: 403 });
     await assert.rejects(() => fetchLatestRelease({ fetchImpl }), /GitHub 403/);
   });
+
+  it('completa con null/vacío los campos faltantes', async () => {
+    const release = await fetchLatestRelease({
+      fetchImpl: async () => ({ ok: true, json: async () => ({}) }),
+    });
+    assert.deepEqual(release, { latest: '', url: null, name: null, publishedAt: null });
+  });
+
+  it('aborta por timeout (se dispara el timer)', async () => {
+    const fetchImpl = (url, { signal }) =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('abortado')));
+      });
+    await assert.rejects(() => fetchLatestRelease({ fetchImpl, timeoutMs: 1 }), /abortado/);
+  });
 });
 
 describe('services/updates: resolveUpdateMode', () => {
@@ -59,5 +81,11 @@ describe('services/updates: resolveUpdateMode', () => {
   it('link en dev, .deb y makepkg (/opt sin APPIMAGE)', () => {
     assert.equal(resolveUpdateMode({ isPackaged: false, platform: 'win32' }), 'link');
     assert.equal(resolveUpdateMode({ isPackaged: true, platform: 'linux', env: {} }), 'link');
+  });
+
+  it('usa defaults de platform y env y linkea otros sistemas', () => {
+    assert.equal(resolveUpdateMode({ isPackaged: false }), 'link');
+    assert.equal(resolveUpdateMode({ isPackaged: true, env: {} }), 'link');
+    assert.equal(resolveUpdateMode({ isPackaged: true, platform: 'darwin', env: {} }), 'link');
   });
 });

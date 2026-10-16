@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { unzipSync, strToU8, zipSync } from 'fflate';
-import { openDb } from '../db/client.js';
+import { openDb, SCHEMA_VERSION } from '../db/client.js';
 import { createProfile, listProfiles } from '../db/repositories/profiles.js';
 import { saveProfilePicture } from './files.js';
 import {
@@ -132,5 +132,115 @@ describe('services/backup', () => {
     const result = await restoreBackup(db, dataDir, evil, { now: at(60), logger: { warn() {} } });
     db = result.db;
     assert.equal(fs.existsSync(path.join(dataDir, 'evil.txt')), false);
+  });
+
+  it('nombre por defecto y backup con reloj por defecto', async () => {
+    assert.match(backupFileName(), /^mangacount-backup-\d{4}-\d{2}-\d{2}-\d{4}\.zip$/);
+    const result = await createBackup(db, dataDir, destDir);
+    assert.equal(isBackupFileName(result.fileName), true);
+    assert.ok(fs.existsSync(result.path));
+  });
+
+  it('rechaza createBackup sin destino', async () => {
+    await assert.rejects(() => createBackup(db, dataDir, ''), /destinationDir requerido/);
+  });
+
+  it('listBackupFiles tolera destino nulo o inexistente', () => {
+    assert.deepEqual(listBackupFiles(null), []);
+    assert.deepEqual(listBackupFiles(path.join(destDir, 'no-existe')), []);
+  });
+
+  it('pruneBackups no poda cuando no se supera keep', async () => {
+    await createBackup(db, dataDir, destDir, { now: at(0) });
+    assert.deepEqual(pruneBackups(destDir, 5), []);
+  });
+
+  it('createBackup incluye subdirectorios de profiles y omite no-archivos', async () => {
+    const profile = createProfile(db, 'yo');
+    saveProfilePicture(db, dataDir, profile.id, { originalName: 'a.png', buffer: Buffer.from([1]) });
+    const sub = path.join(dataDir, 'profiles', 'anidado');
+    fs.mkdirSync(sub, { recursive: true });
+    fs.writeFileSync(path.join(sub, 'nota.txt'), 'hola');
+    // un symlink no es archivo ni directorio: walkFiles lo ignora
+    fs.symlinkSync(path.join(sub, 'nota.txt'), path.join(dataDir, 'profiles', 'link.txt'));
+
+    const result = await createBackup(db, dataDir, destDir, { now: at(0) });
+    const entries = unzipSync(new Uint8Array(fs.readFileSync(result.path)));
+    assert.ok(entries['profiles/anidado/nota.txt']);
+    assert.ok(!Object.keys(entries).some((k) => k.endsWith('link.txt')));
+  });
+
+  it('validateBackup rechaza rutas inexistentes, manifest ilegible, schema y db faltantes', async () => {
+    assert.throws(() => validateBackup(path.join(destDir, 'nada.zip')), /inexistente/);
+
+    const ilegible = path.join(destDir, 'ilegible.zip');
+    fs.writeFileSync(
+      ilegible,
+      zipSync({
+        'manifest.json': strToU8('{esto no es json'),
+        'mangacount.db': new Uint8Array(),
+      })
+    );
+    assert.throws(() => validateBackup(ilegible), /ilegible/);
+
+    const schema = path.join(destDir, 'schema.zip');
+    fs.writeFileSync(
+      schema,
+      zipSync({
+        'manifest.json': strToU8(JSON.stringify({ app: 'MangaCount', schemaVersion: 999 })),
+        'mangacount.db': new Uint8Array(),
+      })
+    );
+    assert.throws(() => validateBackup(schema), /schemaVersion incompatible/);
+
+    const sinDb = path.join(destDir, 'sindb.zip');
+    fs.writeFileSync(
+      sinDb,
+      zipSync({
+        'manifest.json': strToU8(
+          JSON.stringify({ app: 'MangaCount', schemaVersion: SCHEMA_VERSION })
+        ),
+      })
+    );
+    assert.throws(() => validateBackup(sinDb), /falta mangacount.db/);
+  });
+
+  it('restore loguea un warning si el safety-backup falla y sigue', async () => {
+    const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
+    const blocked = path.join(destDir, 'bloqueado');
+    fs.writeFileSync(blocked, 'no soy un directorio');
+    const warnings = [];
+
+    const result = await restoreBackup(db, dataDir, backup.path, {
+      now: at(60),
+      safetyDir: blocked,
+      logger: { warn: (m) => warnings.push(m) },
+    });
+    db = result.db;
+    assert.equal(result.restored, true);
+    assert.equal(result.safetyBackup, null);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /safety-backup/);
+  });
+
+  it('restore con opciones por defecto (now/logger/safetyDir)', async () => {
+    const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
+    const result = await restoreBackup(db, dataDir, backup.path);
+    db = result.db;
+    assert.equal(result.restored, true);
+    assert.ok(result.safetyBackup);
+  });
+
+  it('restore descarta entradas con rel vacío o segmentos vacíos', async () => {
+    const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
+    const entries = unzipSync(new Uint8Array(fs.readFileSync(backup.path)));
+    entries['profiles/'] = strToU8('');
+    entries['profiles//nested.txt'] = strToU8('x');
+    const weird = path.join(destDir, 'weird.zip');
+    fs.writeFileSync(weird, zipSync(entries));
+
+    const result = await restoreBackup(db, dataDir, weird, { now: at(60), logger: { warn() {} } });
+    db = result.db;
+    assert.equal(fs.existsSync(path.join(dataDir, 'nested.txt')), false);
   });
 });

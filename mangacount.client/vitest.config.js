@@ -11,10 +11,12 @@ export default defineConfig({
     css: true,
     testTimeout: 10000,
     coverage: {
+      all: true,
+      include: ['src/**/*.{js,jsx}'],
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
-        'src/test/',
+        'src/test/**',
         '**/*.test.{js,jsx}',
         '**/*.spec.{js,jsx}',
         'src/main.jsx',
@@ -25,10 +27,10 @@ export default defineConfig({
       ],
       thresholds: {
         global: {
-          branches: 70,
-          functions: 70,
-          lines: 70,
-          statements: 70
+          branches: 90,
+          functions: 90,
+          lines: 90,
+          statements: 90
         }
       }
     }

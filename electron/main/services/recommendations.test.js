@@ -93,4 +93,16 @@ describe('services/recommendations', () => {
     assert.equal(inference.country, 'Argentina');
     assert.equal(inference.isConfident, true);
   });
+
+  it('mercado confiable sin títulos en catálogo → items vacíos (fallback local)', async () => {
+    const profile = createProfile(db, 'yo');
+    const yen = publishers.create(db, 'Yen Press');
+    const manga = createManga(db, { name: 'Serie Yen', volumes: 1, publisherId: yen.id });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+
+    const res = await getRecommendations(db, profile.id, 10);
+    assert.equal(res.inferredCountry, 'United States');
+    assert.equal(res.isConfident, true);
+    assert.deepEqual(res.items, []);
+  });
 });

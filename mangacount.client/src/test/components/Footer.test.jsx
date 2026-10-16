@@ -43,5 +43,33 @@ describe('Footer', () => {
     await user.click(screen.getByRole('button', { name: 'Reiniciar para actualizar' }))
     expect(onInstall).toHaveBeenCalled()
   })
+
+  it('muestra un guión cuando no hay versión', () => {
+    render(<Footer />)
+    expect(screen.getByText(/MangaCount v—/)).toBeInTheDocument()
+  })
+
+  it('sin update sólo muestra la versión', () => {
+    render(<Footer version="2.0.0" />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('hasUpdate sin url ni modo auto no muestra extra', () => {
+    render(<Footer version="1.0.0" update={{ hasUpdate: true, latest: '1.0.1' }} />)
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('usa los handlers por defecto cuando no se pasan callbacks', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <Footer version="1" update={{ mode: 'auto', hasUpdate: true, latest: '2' }} />
+    )
+    await user.click(screen.getByRole('button', { name: /Descargar/ }))
+
+    rerender(<Footer version="1" update={{ status: 'downloaded' }} />)
+    await user.click(screen.getByRole('button', { name: 'Reiniciar para actualizar' }))
+  })
 })
 

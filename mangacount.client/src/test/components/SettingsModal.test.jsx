@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '../test-utils'
+import { render, screen, waitFor, within, fireEvent, act } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('../../api/localAdapter.js', () => ({
@@ -31,8 +31,13 @@ vi.mock('../../api/localAdapter.js', () => ({
 }))
 
 vi.mock('../../components/NukeDataModal', () => ({
-  default: ({ isOpen, onSuccess }) =>
-    isOpen ? <button onClick={onSuccess}>nuke-mock</button> : null,
+  default: ({ isOpen, onClose, onSuccess }) =>
+    isOpen ? (
+      <div>
+        <button onClick={onSuccess}>nuke-mock</button>
+        <button onClick={onClose}>nuke-close</button>
+      </div>
+    ) : null,
 }))
 
 import * as api from '../../api/localAdapter.js'
@@ -62,9 +67,15 @@ function setupDefaults() {
 }
 
 describe('SettingsModal', () => {
+  let updateStateCallback
+
   beforeEach(() => {
     vi.clearAllMocks()
     setupDefaults()
+    api.onUpdateState.mockImplementation((cb) => {
+      updateStateCallback = cb
+      return () => {}
+    })
   })
 
   it('no renderiza nada si está cerrado', () => {
@@ -285,5 +296,651 @@ describe('SettingsModal', () => {
     await waitFor(() => expect(api.coverAuto).toHaveBeenCalledWith(2))
     expect(api.coverAuto).toHaveBeenCalledTimes(1) // no toca el que ya tiene
     expect(await screen.findByText(/1 portadas nuevas/)).toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // General
+  // ---------------------------------------------------------------------------
+  it('muestra error si no se puede guardar un toggle general', async () => {
+    const user = userEvent.setup()
+    api.appConfigSet.mockRejectedValue(new Error('boom'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Arrancar en la bandeja'))
+
+    expect(await screen.findByText(/No se pudo guardar: boom/)).toBeInTheDocument()
+  })
+
+  it('persiste el toggle de diagnóstico', async () => {
+    const user = userEvent.setup()
+    api.appConfigSet.mockResolvedValue({ diagnosticsCopy: false })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Diagnóstico')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Habilitar diagnóstico'))
+
+    await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ diagnosticsCopy: false }))
+  })
+
+  it('muestra error si falla el autostart', async () => {
+    const user = userEvent.setup()
+    api.botAutostartSet.mockRejectedValue(new Error('nope'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Iniciar con el sistema'))
+
+    expect(await screen.findByText(/No se pudo guardar: nope/)).toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Inicialización
+  // ---------------------------------------------------------------------------
+  it('tolera metadatos y config incompletos', async () => {
+    api.appInfo.mockResolvedValue(null)
+    api.backupConfigGet.mockResolvedValue(undefined)
+    api.backupList.mockResolvedValue(null)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+    expect(screen.getByText(/Versión actual: —/)).toBeInTheDocument()
+    expect(screen.getByText(/0 backups/)).toBeInTheDocument()
+  })
+
+  it('muestra un mensaje si falla la carga de configuración', async () => {
+    api.appConfigGet.mockRejectedValue(new Error('cfg fail'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    expect(await screen.findByText(/No se pudo cargar la configuración: cfg fail/)).toBeInTheDocument()
+  })
+
+  it('no aplica la configuración si se desmonta antes de resolver', async () => {
+    let resolveConfig
+    api.appConfigGet.mockReturnValue(new Promise((resolve) => { resolveConfig = resolve }))
+    const { unmount } = render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    unmount()
+    await act(async () => {
+      resolveConfig({ startInTray: true })
+      await Promise.resolve()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Actualizaciones
+  // ---------------------------------------------------------------------------
+  it('muestra Reiniciar cuando hay una actualización descargada', async () => {
+    const user = userEvent.setup()
+    api.updateInstall.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await act(async () => updateStateCallback({ status: 'downloaded' }))
+    await user.click(screen.getByLabelText('Reiniciar para actualizar'))
+
+    await waitFor(() => expect(api.updateInstall).toHaveBeenCalled())
+  })
+
+  it('muestra el progreso mientras descarga', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await act(async () => updateStateCallback({ status: 'downloading', percent: 42 }))
+
+    expect(screen.getByText('Descargando… 42%')).toBeInTheDocument()
+  })
+
+  it('permite descargar cuando la actualización es automática', async () => {
+    const user = userEvent.setup()
+    api.updateDownload.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await act(async () => updateStateCallback({ hasUpdate: true, latest: '2.0', mode: 'auto' }))
+    await user.click(screen.getByLabelText('Descargar actualización'))
+
+    await waitFor(() => expect(api.updateDownload).toHaveBeenCalled())
+  })
+
+  it('muestra error si falla la descarga de la actualización', async () => {
+    const user = userEvent.setup()
+    api.updateDownload.mockRejectedValue(new Error('dl'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await act(async () => updateStateCallback({ hasUpdate: true, latest: '2.0', mode: 'auto' }))
+    await user.click(screen.getByLabelText('Descargar actualización'))
+
+    expect(await screen.findByText(/No se pudo descargar: dl/)).toBeInTheDocument()
+  })
+
+  it('muestra el link de descarga manual', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await act(async () =>
+      updateStateCallback({ hasUpdate: true, latest: '3.0', mode: 'manual', url: 'https://x/3.0' })
+    )
+
+    expect(screen.getByRole('link', { name: 'Descargar v3.0' })).toHaveAttribute('href', 'https://x/3.0')
+  })
+
+  it('informa que está al día', async () => {
+    const user = userEvent.setup()
+    api.updateCheck.mockResolvedValue({ current: '1.0.8', latest: '1.0.8', hasUpdate: false })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Buscar actualización'))
+
+    expect(await screen.findByText('Estás al día.')).toBeInTheDocument()
+  })
+
+  it('muestra error si falla el chequeo de actualización', async () => {
+    const user = userEvent.setup()
+    api.updateCheck.mockRejectedValue(new Error('net'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Buscar actualización'))
+
+    expect(await screen.findByText(/No se pudo verificar: net/)).toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Backup
+  // ---------------------------------------------------------------------------
+  it('no cambia el destino si no se elige carpeta', async () => {
+    const user = userEvent.setup()
+    api.pickDirectory.mockResolvedValue(null)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByText('Elegir…'))
+
+    expect(screen.getByPlaceholderText('Elegí una carpeta')).toHaveValue('')
+  })
+
+  it('muestra error si falla guardar la config de backup', async () => {
+    const user = userEvent.setup()
+    api.pickDirectory.mockResolvedValue('/mnt/backup')
+    api.backupConfigSet.mockRejectedValue(new Error('save fail'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    const section = screen.getByText('Backup').closest('section')
+    await user.click(section.querySelector('input[type=checkbox]'))
+    await user.click(within(section).getByText('Elegir…'))
+    await user.click(screen.getByLabelText('Guardar backup'))
+
+    expect(await screen.findByText('save fail')).toBeInTheDocument()
+  })
+
+  it('guarda backup aunque la respuesta no incluya triggers', async () => {
+    const user = userEvent.setup()
+    api.pickDirectory.mockResolvedValue('/mnt/backup')
+    api.backupConfigSet.mockResolvedValue({ enabled: true, destinationDir: '/mnt/backup', triggers: undefined })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    const section = screen.getByText('Backup').closest('section')
+    await user.click(section.querySelector('input[type=checkbox]'))
+    await user.click(within(section).getByText('Elegir…'))
+    await user.click(screen.getByLabelText('Guardar backup'))
+
+    expect(await screen.findByText('Configuración guardada.')).toBeInTheDocument()
+  })
+
+  it('gate: destino sin disparadores no es válido', async () => {
+    const user = userEvent.setup()
+    api.pickDirectory.mockResolvedValue('/mnt/backup')
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    const section = screen.getByText('Backup').closest('section')
+    await user.click(section.querySelector('input[type=checkbox]'))
+    await user.click(within(section).getByText('Elegir…'))
+    await user.click(screen.getByLabelText('Al iniciar')) // deja ambos triggers en false
+    await user.click(screen.getByLabelText('Guardar backup'))
+
+    expect(api.backupConfigSet).not.toHaveBeenCalled()
+    expect(screen.getByText(/requiere un destino y al menos un disparador/i)).toBeInTheDocument()
+  })
+
+  it('permite editar intervalo y disparadores', async () => {
+    const user = userEvent.setup()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByLabelText('Intervalo de backup'), { target: { value: '30' } })
+    await user.click(screen.getByLabelText('Mientras la app corre'))
+    await user.click(screen.getByLabelText('Al iniciar'))
+
+    expect(screen.getByLabelText('Intervalo de backup')).toHaveValue(30)
+    expect(screen.getByLabelText('Mientras la app corre')).toBeChecked()
+  })
+
+  it('muestra error si falla el backup manual', async () => {
+    const user = userEvent.setup()
+    api.backupConfigGet.mockResolvedValue({ ...emptyBackup(), destinationDir: '/mnt/backup' })
+    api.backupCreate.mockRejectedValue(new Error('bk fail'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(await screen.findByLabelText('Backup ahora'))
+
+    expect(await screen.findByText(/Backup falló: bk fail/)).toBeInTheDocument()
+  })
+
+  it('no restaura si no se elige archivo', async () => {
+    const user = userEvent.setup()
+    api.pickFile.mockResolvedValue(null)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Restaurar'))
+
+    await waitFor(() => expect(api.pickFile).toHaveBeenCalled())
+    expect(api.backupRestore).not.toHaveBeenCalled()
+    expect(window.confirm).not.toHaveBeenCalled()
+  })
+
+  it('no restaura si se cancela la confirmación', async () => {
+    const user = userEvent.setup()
+    api.pickFile.mockResolvedValue('/b/x.zip')
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Restaurar'))
+
+    await waitFor(() => expect(confirmSpy).toHaveBeenCalled())
+    expect(api.backupRestore).not.toHaveBeenCalled()
+  })
+
+  it('restaura aunque no haya backup de seguridad', async () => {
+    const user = userEvent.setup()
+    api.pickFile.mockResolvedValue('/b/x.zip')
+    api.backupRestore.mockResolvedValue(null)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Restaurar'))
+
+    expect(await screen.findByText(/Backup de seguridad: —/)).toBeInTheDocument()
+  })
+
+  it('muestra error si falla el restore', async () => {
+    const user = userEvent.setup()
+    api.pickFile.mockResolvedValue('/b/x.zip')
+    api.backupRestore.mockRejectedValue(new Error('rst fail'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Restaurar'))
+
+    expect(await screen.findByText(/Restore falló: rst fail/)).toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Intercambio
+  // ---------------------------------------------------------------------------
+  it('rechaza archivos que no son TSV', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    const file = new File(['x'], 'notes.txt', { type: 'text/plain' })
+    fireEvent.change(screen.getByLabelText('Choose TSV File'), { target: { files: [file] } })
+
+    expect(await screen.findByText('Please select a TSV file')).toBeInTheDocument()
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('ignora el cambio de archivo sin archivo', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    fireEvent.change(screen.getByLabelText('Choose TSV File'), { target: { files: [] } })
+
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(screen.queryByText(/Import/)).not.toBeInTheDocument()
+  })
+
+  it('muestra el mensaje del servidor si falla el import', async () => {
+    const user = userEvent.setup()
+    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'bad format' }) })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
+    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+
+    expect(await screen.findByText('Import failed: bad format')).toBeInTheDocument()
+  })
+
+  it('usa "Unknown error" cuando el servidor no informa detalle', async () => {
+    const user = userEvent.setup()
+    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
+    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+
+    expect(await screen.findByText('Import failed: Unknown error')).toBeInTheDocument()
+  })
+
+  it('muestra error si el import lanza', async () => {
+    const user = userEvent.setup()
+    global.fetch.mockRejectedValueOnce(new Error('net'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
+    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+
+    expect(await screen.findByText('Import failed: net')).toBeInTheDocument()
+  })
+
+  it('muestra error si falla la exportación', async () => {
+    const user = userEvent.setup()
+    api.entryExport.mockRejectedValue(new Error('exp'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+
+    expect(await screen.findByText('Export failed: exp')).toBeInTheDocument()
+  })
+
+  it('no intenta descargar si createObjectURL no está disponible', async () => {
+    const user = userEvent.setup()
+    const originalCreate = global.URL.createObjectURL
+    global.URL.createObjectURL = undefined
+    api.entryExport.mockResolvedValue('Titulo\tx')
+    try {
+      render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+      await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+      await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+
+      expect(await screen.findByText('Export ready!')).toBeInTheDocument()
+    } finally {
+      global.URL.createObjectURL = originalCreate
+    }
+  })
+
+  it('descarga el TSV exportado', async () => {
+    const user = userEvent.setup()
+    const createSpy = vi.fn(() => 'blob:mangacount')
+    const revokeSpy = vi.fn()
+    const originalCreate = global.URL.createObjectURL
+    const originalRevoke = global.URL.revokeObjectURL
+    global.URL.createObjectURL = createSpy
+    global.URL.revokeObjectURL = revokeSpy
+    api.entryExport.mockResolvedValue('Titulo\tx')
+    try {
+      render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+      await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+      await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+
+      await waitFor(() => expect(createSpy).toHaveBeenCalled())
+      expect(revokeSpy).toHaveBeenCalledWith('blob:mangacount')
+      expect(await screen.findByText('Export ready!')).toBeInTheDocument()
+    } finally {
+      global.URL.createObjectURL = originalCreate
+      global.URL.revokeObjectURL = originalRevoke
+    }
+  })
+
+  it('deshabilita el intercambio sin perfil seleccionado', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={null} />)
+    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+
+    expect(screen.getByText('Select a profile first')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Export TSV' })).toBeDisabled()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Bot
+  // ---------------------------------------------------------------------------
+  it('muestra error si falla guardar el token del bot', async () => {
+    const user = userEvent.setup()
+    api.botSetToken.mockRejectedValue(new Error('tok'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.type(screen.getByLabelText('Token de Discord'), 'abc')
+    await user.click(screen.getByText('Guardar token'))
+
+    expect(await screen.findByText(/No se pudo guardar el token: tok/)).toBeInTheDocument()
+  })
+
+  it('muestra error si falla guardar la config del bot', async () => {
+    const user = userEvent.setup()
+    api.botConfigSet.mockRejectedValue(new Error('cfg'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Guardar bot'))
+
+    expect(await screen.findByText(/No se pudo guardar: cfg/)).toBeInTheDocument()
+  })
+
+  it('guarda el bot sin guildId usando null', async () => {
+    const user = userEvent.setup()
+    api.botConfigSet.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Guardar bot'))
+
+    await waitFor(() => expect(api.botConfigSet).toHaveBeenCalled())
+    expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({ guildId: null, allowedUserIds: [] })
+  })
+
+  it('refleja token y usuarios permitidos del bot', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: null,
+      status: 'conectado',
+      hasToken: true,
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    expect(screen.getByLabelText('Token de Discord')).toHaveAttribute('placeholder', '••••••••')
+    expect(screen.getByLabelText('Usuarios permitidos')).toHaveValue('')
+    expect(screen.getByText('Estado: conectado')).toBeInTheDocument()
+    expect(screen.getByLabelText('Habilitar bot')).toBeChecked()
+
+    await user.click(screen.getByLabelText('Habilitar bot'))
+    expect(screen.getByLabelText('Habilitar bot')).not.toBeChecked()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Diagnóstico
+  // ---------------------------------------------------------------------------
+  it('muestra error si falla copiar el diagnóstico', async () => {
+    const user = userEvent.setup()
+    api.diagnosticsCopy.mockRejectedValue(new Error('cp'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Diagnóstico')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Copiar diagnóstico'))
+
+    expect(await screen.findByText(/No se pudo copiar: cp/)).toBeInTheDocument()
+  })
+
+  it('abre la carpeta de logs', async () => {
+    const user = userEvent.setup()
+    api.openLogs.mockResolvedValue({ opened: true })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Diagnóstico')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Abrir carpeta de logs'))
+
+    await waitFor(() => expect(api.openLogs).toHaveBeenCalled())
+  })
+
+  it('muestra error si falla abrir los logs', async () => {
+    const user = userEvent.setup()
+    api.openLogs.mockRejectedValue(new Error('ol'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Diagnóstico')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Abrir carpeta de logs'))
+
+    expect(await screen.findByText(/No se pudo abrir: ol/)).toBeInTheDocument()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Danger Zone
+  // ---------------------------------------------------------------------------
+  it('la Nuclear Option cae a onImportSuccess si no hay onDataReset', async () => {
+    const user = userEvent.setup()
+    const onImportSuccess = vi.fn()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={onImportSuccess} />)
+    await waitFor(() => expect(screen.getByLabelText('Nuclear Option')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Nuclear Option'))
+    await user.click(screen.getByText('nuke-mock'))
+
+    expect(onImportSuccess).toHaveBeenCalledTimes(1)
+  })
+
+  it('cierra el modal de Nuclear Option sin borrar', async () => {
+    const user = userEvent.setup()
+    const onDataReset = vi.fn()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onDataReset={onDataReset} />)
+    await waitFor(() => expect(screen.getByLabelText('Nuclear Option')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Nuclear Option'))
+    await user.click(screen.getByText('nuke-close'))
+
+    await waitFor(() => expect(screen.queryByText('nuke-close')).not.toBeInTheDocument())
+    expect(onDataReset).not.toHaveBeenCalled()
+  })
+
+  // ---------------------------------------------------------------------------
+  // Portadas: casos de borde
+  // ---------------------------------------------------------------------------
+  it('bulk de portadas: informa cuando todas ya están vinculadas', async () => {
+    const user = userEvent.setup()
+    api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }])
+    api.coverAll.mockResolvedValue({ 1: 'mangacount://covers/1.jpg' })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
+
+    expect(await screen.findByText('Todas las portadas ya están vinculadas.')).toBeInTheDocument()
+  })
+
+  it('bulk de portadas: informa si no puede leer la colección', async () => {
+    const user = userEvent.setup()
+    api.mangaList.mockRejectedValue(new Error('x'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
+
+    expect(await screen.findByText('No se pudo leer la colección.')).toBeInTheDocument()
+  })
+
+  it('bulk de portadas: se detiene ante un error y notifica', async () => {
+    const user = userEvent.setup()
+    const onImportSuccess = vi.fn()
+    api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
+    api.coverAll.mockResolvedValue({})
+    api.coverAuto.mockRejectedValue(new Error('429'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={onImportSuccess} />)
+
+    await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
+
+    expect(await screen.findByText(/AniList limitó las peticiones/)).toBeInTheDocument()
+    expect(onImportSuccess).toHaveBeenCalled()
+  })
+
+  it('bulk de portadas: cuenta cero nuevas si coverAuto no devuelve url', async () => {
+    const user = userEvent.setup()
+    api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }])
+    api.coverAll.mockResolvedValue({})
+    api.coverAuto.mockResolvedValue(null)
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
+
+    expect(await screen.findByText(/Listo: 0 portadas nuevas/)).toBeInTheDocument()
+  })
+
+  it('bulk de portadas: usa defaults si los campos están vacíos', async () => {
+    const user = userEvent.setup()
+    api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }])
+    api.coverAll.mockResolvedValue({})
+    api.coverAuto.mockResolvedValue('u')
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    fireEvent.change(screen.getByDisplayValue('20'), { target: { value: '' } })
+    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '' } })
+
+    await user.click(screen.getByRole('button', { name: /Traer portadas faltantes/ }))
+
+    expect(await screen.findByText(/Listo: 1 portadas nuevas/)).toBeInTheDocument()
+  })
+
+  it('bulk de portadas: aplica la espera intra-lote cuando no hay pausa configurada', async () => {
+    const user = userEvent.setup()
+    api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
+    api.coverAll.mockResolvedValue({})
+    api.coverAuto.mockResolvedValue('u')
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+
+    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '0' } })
+
+    await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
+
+    await waitFor(
+      () => expect(screen.getByText(/Listo: 2 portadas nuevas/)).toBeInTheDocument(),
+      { timeout: 8000 }
+    )
+    expect(api.coverAuto).toHaveBeenCalledTimes(2)
+  })
+
+  it('bulk de portadas: recorre varios mangas con pausa entre lotes y se puede detener', async () => {
+    vi.useFakeTimers()
+    try {
+      api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }, { id: 3, name: 'C' }])
+      api.coverAll.mockResolvedValue({})
+      api.coverAuto.mockResolvedValue('u')
+      const onImportSuccess = vi.fn()
+      render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={onImportSuccess} />)
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+
+      fireEvent.change(screen.getByDisplayValue('20'), { target: { value: '1' } })
+      fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '1' } })
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /Traer portadas faltantes/ }))
+        await vi.advanceTimersByTimeAsync(0)
+      })
+
+      expect(screen.getByText(/reanuda en 1:00/)).toBeInTheDocument()
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Detener' }))
+        await vi.advanceTimersByTimeAsync(1000)
+      })
+
+      expect(screen.getByText(/Listo: 1 portadas nuevas/)).toBeInTheDocument()
+      expect(onImportSuccess).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

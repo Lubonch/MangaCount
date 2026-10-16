@@ -80,6 +80,49 @@ describe('services/update-controller: modo auto', () => {
     assert.match(controller.state().error, /sin red/);
     assert.equal(errors.length, 1);
   });
+
+  it('defaults: onState/onBeforeInstall, getVersion opcional y eventos sin payload', () => {
+    const autoUpdater = fakeAutoUpdater();
+    const controller = createUpdateController({
+      mode: 'auto',
+      autoUpdater,
+      logger: { error() {}, warn() {} },
+    });
+
+    assert.equal(controller.state().current, null);
+    assert.equal(controller.state().skipped, false); // isPackaged default = true
+
+    autoUpdater.emit('update-not-available'); // default onState
+    assert.equal(controller.state().status, 'idle');
+    assert.equal(controller.state().hasUpdate, false);
+
+    autoUpdater.emit('update-available'); // info undefined → latest null
+    assert.equal(controller.state().latest, null);
+    assert.equal(controller.state().hasUpdate, true);
+
+    autoUpdater.emit('download-progress'); // p undefined → percent 0
+    assert.equal(controller.state().percent, 0);
+
+    autoUpdater.emit('error', 'boom'); // sin message → String(err)
+    assert.equal(controller.state().error, 'boom');
+
+    controller.install(); // default onBeforeInstall
+    assert.equal(autoUpdater.wasInstalled(), true);
+  });
+
+  it('update-downloaded sin info conserva el latest previo', () => {
+    const autoUpdater = fakeAutoUpdater();
+    const controller = createUpdateController({
+      mode: 'auto',
+      autoUpdater,
+      getVersion: () => '1.0.0',
+      logger: { error() {}, warn() {} },
+    });
+    autoUpdater.emit('update-available', { version: '2.0.0' });
+    autoUpdater.emit('update-downloaded');
+    assert.equal(controller.state().latest, '2.0.0');
+    assert.equal(controller.state().status, 'downloaded');
+  });
 });
 
 describe('services/update-controller: modo link', () => {
@@ -128,5 +171,36 @@ describe('services/update-controller: modo link', () => {
     await controller.check();
     assert.match(controller.state().error, /sin red/);
     assert.equal(warnings.length, 1);
+  });
+
+  it('error no-Error en link se stringifica', async () => {
+    const controller = createUpdateController({
+      mode: 'link',
+      getVersion: () => '1.0.11',
+      fetchLatestRelease: async () => {
+        throw 'caída total';
+      },
+      compareVersions: () => 0,
+      logger: { warn() {} },
+    });
+    await controller.check();
+    assert.equal(controller.state().error, 'caída total');
+  });
+
+  it('modo auto sin autoUpdater cae al chequeo por link', async () => {
+    const controller = createUpdateController({
+      mode: 'auto',
+      getVersion: () => '1.0.11',
+      fetchLatestRelease: async () => ({ latest: '2.0.0', url: 'https://x/2.0.0' }),
+      compareVersions: () => 1,
+      logger: { warn() {} },
+    });
+    await controller.check();
+    assert.equal(controller.state().hasUpdate, true);
+    assert.equal(controller.state().url, 'https://x/2.0.0');
+    // download/install sin autoUpdater son no-op
+    await controller.download();
+    controller.install();
+    assert.equal(controller.state().mode, 'auto');
   });
 });

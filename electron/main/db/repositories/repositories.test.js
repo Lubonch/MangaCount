@@ -101,6 +101,18 @@ describe('repositories', () => {
     assert.equal(publishers.getById(db, created.id), null);
   });
 
+  it('catalogs: nombres vacíos/null, alta y update', () => {
+    assert.equal(publishers.findByName(db, null), null);
+    assert.equal(publishers.findByName(db, '   '), null);
+    assert.equal(publishers.findByName(db, 'NoExiste'), null);
+    assert.throws(() => publishers.create(db, '   '), /requerido/i);
+    assert.throws(() => publishers.create(db, null), /requerido/i);
+    const created = publishers.create(db, 'Kemuri');
+    assert.equal(publishers.update(db, created.id, null).name, '');
+    assert.equal(publishers.remove(db, created.id), undefined);
+    assert.equal(publishers.getById(db, created.id), null);
+  });
+
   it('entries: upsert con JOIN anidado y conflicto', () => {
     const format = formats.create(db, 'Tankoubon');
     const publisher = publishers.create(db, 'Panini');

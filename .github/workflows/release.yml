@@ -10,8 +10,13 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    name: Tests (gate)
+    uses: ./.github/workflows/test.yml
+
   build:
     name: Build installers (${{ matrix.os }})
+    needs: test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

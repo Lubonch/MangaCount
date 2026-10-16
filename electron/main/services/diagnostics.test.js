@@ -29,4 +29,22 @@ describe('services/diagnostics', () => {
     const out = buildDiagnostics({ version: '1', platform: 'linux', arch: 'x64', locale: 'x', logText: '' });
     assert.match(out, /\(log vacío\)/);
   });
+
+  it('tailLines tolera null/undefined, una sola línea y salto final', () => {
+    assert.equal(tailLines(null, 3), '');
+    assert.equal(tailLines(undefined, 3), '');
+    assert.equal(tailLines('solo', 3), 'solo');
+    assert.equal(tailLines('a\nb\n', 5), 'a\nb');
+    assert.equal(tailLines('a\n', 5), 'a');
+  });
+
+  it('buildDiagnostics usa defaults y marca log vacío cuando falta el texto', () => {
+    const out = buildDiagnostics();
+    assert.match(out, /MangaCount vundefined · undefined\/undefined · undefined/);
+    assert.match(out, /\(log vacío\)/);
+    // maxLines default (100) recorta el log largo
+    const largo = Array.from({ length: 120 }, (_, i) => `l${i}`).join('\n');
+    assert.match(buildDiagnostics({ logText: largo }), /l119/);
+    assert.doesNotMatch(buildDiagnostics({ logText: largo }), /l19\n/);
+  });
 });

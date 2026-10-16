@@ -40,6 +40,21 @@ describe('db/client', () => {
     assert.equal(getCounts(db).formats, 0);
   });
 
+  it('openDb cierra y propaga si falla la aplicación del esquema', () => {
+    db = openDb(dir);
+    // Provoca que el esquema vuelva a correr y falle: un objeto con el nombre de
+    // uno de sus índices revienta el `db.exec`.
+    db.exec('DROP INDEX IX_Entry_ProfileId');
+    db.prepare('CREATE TABLE IX_Entry_ProfileId (x)').run();
+    db.pragma('user_version = 0');
+    db.close();
+    assert.throws(
+      () => openDb(dir),
+      /there is already a table named IX_Entry_ProfileId/
+    );
+    db = null; // la conexión interna ya se cerró dentro de openDb
+  });
+
   it('respeta UNIQUE(ProfileId, MangaId) y FK con CASCADE', () => {
     db = openDb(dir);
     const profileId = db
