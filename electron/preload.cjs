@@ -8,7 +8,7 @@ const channels = [
   'entry:list', 'entry:get-by-id', 'entry:upsert', 'entry:import', 'entry:export',
   'entry:used-formats', 'entry:used-publishers',
   'cover:search', 'cover:link', 'cover:fetch', 'cover:unlink', 'cover:status', 'cover:all', 'cover:auto',
-  'manga:list', 'manga:get', 'manga:upsert',
+  'manga:list', 'manga:get', 'manga:upsert', 'manga:delete',
   'format:list', 'format:create', 'publisher:list', 'publisher:create',
   'recommendation:get',
   'profile:upload-picture',

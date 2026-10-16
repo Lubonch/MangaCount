@@ -5,7 +5,7 @@ import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
 import LinkCoverModal from './LinkCoverModal';
 import ThemeToggle from './ThemeToggle';
-import { botStatus as fetchBotStatus, isElectron } from '../api/localAdapter.js';
+import { botStatus as fetchBotStatus, isElectron, mangaDelete } from '../api/localAdapter.js';
 
 const Sidebar = ({
     mangas,
@@ -50,6 +50,19 @@ const Sidebar = ({
     const handleEditManga = (manga) => {
         setEditingManga(manga);
         setShowEditManga(true);
+    };
+
+    const handleDeleteManga = async (manga) => {
+        const ok = window.confirm(
+            `¿Eliminar "${manga.name}"?\n\nSe borra el manga y sus entradas de la colección (todos los perfiles).`
+        );
+        if (!ok) return;
+        try {
+            await mangaDelete(manga.id);
+            onImportSuccess?.();
+        } catch (err) {
+            console.error('Error deleting manga:', err);
+        }
     };
 
     return (
@@ -158,6 +171,14 @@ const Sidebar = ({
                                                 title="Edit manga info"
                                             >
                                                 ✏️
+                                            </button>
+                                            <button
+                                                className="edit-manga-btn-sidebar delete-manga-btn-sidebar"
+                                                onClick={() => handleDeleteManga(manga)}
+                                                title="Eliminar manga"
+                                                aria-label={`Eliminar ${manga.name}`}
+                                            >
+                                                🗑️
                                             </button>
                                         </div>
                                     </div>

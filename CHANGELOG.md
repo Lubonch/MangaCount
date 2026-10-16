@@ -5,6 +5,12 @@ y versionado semántico.
 
 ## [2.0.8] - 2026-10-16
 
+### Added
+
+- **Eliminar mangas**: botón 🗑️ en cada manga del *Manga Library* (con confirmación). Borra el manga
+  y sus entradas de la colección (todos los perfiles, por `ON DELETE CASCADE`). Nuevo canal IPC
+  `manga:delete`.
+
 ### Fixed
 
 - **Crear/editar un manga dejando los volúmenes vacíos**: el formulario mandaba `volumes: null` y

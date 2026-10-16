@@ -77,6 +77,9 @@ describe('ipc roundtrip por canal', () => {
     assert.ok((await api.formatCreate('Wideban')).id > 0);
     assert.equal((await api.publisherList()).length, 0);
     assert.ok((await api.publisherCreate('Kemuri')).id > 0);
+    // manga:delete
+    assert.deepEqual(await api.mangaDelete(manga.id), { ok: true });
+    assert.equal(await api.mangaGet(manga.id), null);
   });
 
   it('filas 14-15: recomendación y base local', async () => {
