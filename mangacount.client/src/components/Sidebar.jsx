@@ -25,6 +25,7 @@ const Sidebar = ({
     const [collapsed, setCollapsed] = useState(false);
     const [botStatus, setBotStatus] = useState('apagado');
     const [coverTarget, setCoverTarget] = useState(null);
+    const [mangaFilter, setMangaFilter] = useState('');
 
     useEffect(() => {
         if (!isElectron()) return undefined;
@@ -51,6 +52,11 @@ const Sidebar = ({
         setEditingManga(manga);
         setShowEditManga(true);
     };
+
+    const normalizedFilter = mangaFilter.trim().toLowerCase();
+    const filteredMangas = normalizedFilter
+        ? mangas.filter((manga) => manga.name.toLowerCase().includes(normalizedFilter))
+        : mangas;
 
     const handleDeleteManga = async (manga) => {
         const ok = window.confirm(
@@ -141,14 +147,30 @@ const Sidebar = ({
                         </div>
                     </div>
 
-                    <div className="sidebar-group">
+                    <div className="sidebar-group sidebar-library">
                         <span className="group-label">Biblioteca</span>
-                        <h3 className="group-title">Manga Library ({mangas.length})</h3>
+                        <h3 className="group-title">
+                            {`Manga Library (${filteredMangas.length}${
+                                filteredMangas.length !== mangas.length ? `/${mangas.length}` : ''
+                            })`}
+                        </h3>
+                        {mangas.length > 0 && (
+                            <input
+                                type="search"
+                                className="manga-search"
+                                placeholder="Filtrar por título…"
+                                value={mangaFilter}
+                                onChange={(e) => setMangaFilter(e.target.value)}
+                                aria-label="Filtrar mangas"
+                            />
+                        )}
                         <div className="manga-list">
                             {mangas.length === 0 ? (
                                 <p className="empty-message">No manga in library</p>
+                            ) : filteredMangas.length === 0 ? (
+                                <p className="empty-message">Sin coincidencias</p>
                             ) : (
-                                mangas.map((manga) => (
+                                filteredMangas.map((manga) => (
                                     <div key={manga.id} className="manga-item">
                                         <div className="manga-info">
                                             <div className="manga-name">{manga.name}</div>

@@ -205,4 +205,19 @@ describe('Sidebar Component', () => {
 
     expect(mangaDelete).not.toHaveBeenCalled()
   })
+
+  it('filtra el Manga Library por título', async () => {
+    const user = userEvent.setup()
+    const mangas = [
+      createMockManga({ id: 1, name: 'Berserk' }),
+      createMockManga({ id: 2, name: 'Vagabond' }),
+    ]
+
+    render(<Sidebar {...defaultProps} mangas={mangas} />)
+    await user.type(screen.getByLabelText('Filtrar mangas'), 'bers')
+
+    expect(screen.getByText('Berserk')).toBeInTheDocument()
+    expect(screen.queryByText('Vagabond')).not.toBeInTheDocument()
+    expect(screen.getByText('Manga Library (1/2)')).toBeInTheDocument()
+  })
 })

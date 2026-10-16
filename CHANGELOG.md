@@ -10,9 +10,14 @@ y versionado semántico.
 - **Eliminar mangas**: botón 🗑️ en cada manga del *Manga Library* (con confirmación). Borra el manga
   y sus entradas de la colección (todos los perfiles, por `ON DELETE CASCADE`). Nuevo canal IPC
   `manga:delete`.
+- **Buscador en el Manga Library**: filtra por título (y la lista ocupa el alto disponible), útil con
+  muchas series.
 
 ### Fixed
 
+- **"Perfil no encontrado" al guardar una entry**: el modal usaba un `profileId` **hardcodeado (`1`)** como
+  fallback cuando no había perfil seleccionado; con el estado cero ese perfil no existe. Ahora exige un
+  perfil válido y avisa en vez de fallar.
 - **Crear/editar un manga dejando los volúmenes vacíos**: el formulario mandaba `volumes: null` y
   violaba `Manga.TotalVolumes NOT NULL`, así que no se podía guardar. Ahora vacío/`null`/inválido se
   normaliza a **`0`** (serie en publicación) en el renderer y en el repositorio.

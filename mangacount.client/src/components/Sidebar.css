@@ -254,6 +254,31 @@
     background-color: var(--sidebar-accent);
 }
 
+/* La Biblioteca ocupa el alto disponible y su lista hace scroll interno. */
+.sidebar-library {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-library .manga-list {
+    flex: 1;
+    min-height: 120px;
+    max-height: none;
+}
+
+.manga-search {
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--sidebar-border);
+    background: var(--sidebar-accent);
+    color: var(--sidebar-text);
+    font-size: var(--text-xs);
+}
+
 .manga-item {
     background-color: var(--sidebar-accent-hover);
     padding: 12px;

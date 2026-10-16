@@ -56,13 +56,19 @@ const AddEntryModal = ({
             return;
         }
 
+        if (!selectedProfile?.id) {
+            setError('Elegí un perfil antes de guardar (volvé a la selección de perfiles).');
+            setIsSubmitting(false);
+            return;
+        }
+
         try {
             const selectedManga = mangas.find(m => m.id === parseInt(formData.mangaId));
             const entryData = {
                 id: editEntry ? editEntry.id : 0,
                 manga: selectedManga,
                 mangaId: parseInt(formData.mangaId),
-                profileId: selectedProfile ? selectedProfile.id : 1, // Use selected profile
+                profileId: selectedProfile.id,
                 quantity: parseInt(formData.quantity),
                 pending: formData.pending || null,
                 priority: formData.priority
