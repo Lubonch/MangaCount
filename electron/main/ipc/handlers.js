@@ -227,7 +227,7 @@ export const handlers = {
       diagnosticsCopy: prefs.diagnosticsCopy,
     };
   },
-  'app:config-set': ({ dataDir }, config = {}) => {
+  'app:config-set': ({ dataDir, autostart }, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(dataDir));
     const next = {
       ...prefs,
@@ -236,6 +236,9 @@ export const handlers = {
       diagnosticsCopy: config.diagnosticsCopy ?? prefs.diagnosticsCopy,
     };
     savePrefs(dataDir, next);
+    // Si cambió "Arranque en bandeja" y el autostart está activo, reescribe la
+    // entrada para que arranque (o no) oculto según la preferencia.
+    if (autostart?.get?.()) autostart.set(true);
     return {
       startInTray: next.startInTray,
       updateCheck: next.updateCheck,

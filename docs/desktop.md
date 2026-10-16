@@ -120,11 +120,13 @@ La app trae backup/restore del **sistema completo** desde **Settings → Backup*
 
 La app queda **residente en la bandeja del sistema**: cerrar la ventana la **oculta** en vez de
 salir. El menú del tray ofrece *Abrir*, *Estado del bot*, *Iniciar con el sistema* y *Salir* (único
-camino para terminar el proceso). El arranque por defecto es en tray (`startInTray`), incluido el
-autostart con `--hidden`.
+camino para terminar el proceso). Un **lanzamiento manual** (abrir el AppImage/ejecutable) **muestra la
+ventana**; arranca oculto **solo el autostart** (que pasa `--hidden`, y únicamente si *Arranque en
+bandeja* está activo).
 
-- **Instancia única**: un segundo lanzamiento enfoca la instancia existente (evita dos conexiones
-  de bot y dos escritores de SQLite).
+- **Instancia única**: un segundo lanzamiento que no obtiene el lock le pide a la instancia existente
+  que muestre la ventana y **sale de inmediato** (`app.exit(0)`); evita instancias colgadas peleando el
+  lock.
 - **Autostart** (opcional, en Settings → General): Windows/macOS con `app.setLoginItemSettings`;
   Linux escribiendo o borrando `~/.config/autostart/mangacount.desktop` con la ruta real del
   ejecutable (`$APPIMAGE` o el binario del `.deb`). El toggle refleja el estado real del sistema.

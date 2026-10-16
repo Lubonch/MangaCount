@@ -4,12 +4,11 @@
 export const HIDDEN_FLAG = '--hidden';
 export const SHOW_FLAG = '--show';
 
-// Arranque oculto: `startInTray` (default true) rige salvo que `--show` lo
-// fuerce visible o `--hidden` lo fuerce oculto (autostart).
-export function shouldStartHidden(argv = [], { startInTray = true } = {}) {
+// Arranque oculto SOLO cuando lo pide el autostart (`--hidden`). Un lanzamiento
+// manual (doble clic) muestra la ventana; `--show` fuerza visible igual.
+export function shouldStartHidden(argv = []) {
   if (argv.includes(SHOW_FLAG)) return false;
-  if (argv.includes(HIDDEN_FLAG)) return true;
-  return startInTray !== false;
+  return argv.includes(HIDDEN_FLAG);
 }
 
 // Con la app residente en bandeja, cerrar todas las ventanas nunca la termina:

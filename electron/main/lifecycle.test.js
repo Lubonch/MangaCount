@@ -12,21 +12,17 @@ import {
 } from './lifecycle.js';
 
 describe('lifecycle: arranque oculto', () => {
-  it('arranca en tray por defecto (startInTray default true)', () => {
-    assert.equal(shouldStartHidden([], {}), true);
-    assert.equal(shouldStartHidden(['/usr/bin/mangacount'], {}), true);
+  it('un lanzamiento manual muestra la ventana', () => {
+    assert.equal(shouldStartHidden([]), false);
+    assert.equal(shouldStartHidden(['/usr/bin/mangacount']), false);
   });
 
-  it('respeta startInTray=false', () => {
-    assert.equal(shouldStartHidden([], { startInTray: false }), false);
+  it('--hidden (autostart) arranca oculto', () => {
+    assert.equal(shouldStartHidden([HIDDEN_FLAG]), true);
   });
 
-  it('el argumento --hidden fuerza oculto (autostart)', () => {
-    assert.equal(shouldStartHidden([HIDDEN_FLAG], { startInTray: false }), true);
-  });
-
-  it('el argumento --show fuerza visible', () => {
-    assert.equal(shouldStartHidden([SHOW_FLAG], { startInTray: true }), false);
+  it('--show fuerza visible aunque venga --hidden', () => {
+    assert.equal(shouldStartHidden([SHOW_FLAG, HIDDEN_FLAG]), false);
   });
 });
 
