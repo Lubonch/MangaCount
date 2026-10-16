@@ -3,6 +3,24 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [Unreleased]
+
+### Added
+
+- **Chequeo de actualizaciones**: el footer muestra la versión actual y, si hay una nueva publicada
+  (GitHub Releases), un enlace `vX → vY` al release. En **Settings → General** hay un botón
+  *Buscar actualización* y el toggle `updateCheck` (chequeo automático al abrir la app, default ON).
+  `electron/main/services/updates.js` (cliente GitHub + comparación semver).
+- **Diagnóstico/logging**: captura global de errores en el main (`uncaughtException`,
+  `unhandledRejection`, `render-process-gone`, `child-process-gone`) y del renderer (`window.onerror`,
+  `unhandledrejection`, `ErrorBoundary` → `log:error`). La primera línea del log incluye versión,
+  plataforma/arch y locale.
+
+### Fixed
+
+- **Layout**: se elimina el scroll horizontal de página (`.main-content` con `min-width: 0`, sin
+  `100vw`); la tabla scrollea dentro de su contenedor.
+
 ## [1.0.8] - 2026-10-15
 
 ### Added

@@ -126,4 +126,29 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     assert.deepEqual(handlers['bot:autostart-get'](ctx), { enabled: false });
     assert.deepEqual(handlers['bot:autostart-set'](ctx, true), { enabled: true });
   });
+
+  it('app:config incluye updateCheck (default ON, persistente)', () => {
+    assert.equal(handlers['app:config-get'](ctx).updateCheck, true);
+    const saved = handlers['app:config-set'](ctx, { updateCheck: false });
+    assert.equal(saved.updateCheck, false);
+    assert.equal(loadResolvedPrefs(dir).updateCheck, false);
+  });
+
+  it('app:info devuelve versión/plataforma/empaquetado', () => {
+    const info = handlers['app:info']({ ...ctx, app: { getVersion: () => '1.0.8', isPackaged: true } });
+    assert.equal(info.version, '1.0.8');
+    assert.equal(info.packaged, true);
+    assert.ok(info.platform);
+  });
+
+  it('update:check en desarrollo devuelve skipped', async () => {
+    const res = await handlers['update:check']({ ...ctx, app: { getVersion: () => '1.0.8', isPackaged: false } });
+    assert.equal(res.skipped, true);
+    assert.equal(res.hasUpdate, false);
+  });
+
+  it('log:error escribe el error del renderer en el log', () => {
+    handlers['log:error'](ctx, { scope: 'render', message: 'boom', stack: 'at Foo' });
+    assert.ok(logged.some((m) => /renderer\/render/.test(m) && /boom/.test(m)));
+  });
 });

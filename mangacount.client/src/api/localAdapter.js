@@ -107,6 +107,14 @@ export const appConfigGet = () => apiCall('app:config-get', '/api/app/config');
 export const appConfigSet = (config) =>
   apiCall('app:config-set', '/api/app/config', json(config), config);
 
+// Info de la app y actualizaciones
+export const appInfo = () => apiCall('app:info', '/api/app/info');
+export const updateCheck = () => apiCall('update:check', '/api/update/check');
+
+// Diagnóstico (errores del renderer → main)
+export const logError = (payload) =>
+  apiCall('log:error', '/api/log/error', json(payload), payload);
+
 // Diálogos nativos de archivo
 export const pickDirectory = () => apiCall('dialog:pick-directory', '/api/dialog/directory');
 export const pickFile = (filters) =>

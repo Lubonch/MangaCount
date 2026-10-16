@@ -5,6 +5,8 @@ import userEvent from '@testing-library/user-event'
 vi.mock('../../api/localAdapter.js', () => ({
   appConfigGet: vi.fn(),
   appConfigSet: vi.fn(),
+  appInfo: vi.fn(),
+  updateCheck: vi.fn(),
   backupConfigGet: vi.fn(),
   backupConfigSet: vi.fn(),
   backupList: vi.fn(),
@@ -40,7 +42,9 @@ const emptyBackup = () => ({
 })
 
 function setupDefaults() {
-  api.appConfigGet.mockResolvedValue({ startInTray: true })
+  api.appConfigGet.mockResolvedValue({ startInTray: true, updateCheck: true })
+  api.appInfo.mockResolvedValue({ version: '1.0.8', platform: 'linux', arch: 'x64', packaged: true })
+  api.updateCheck.mockResolvedValue({ current: '1.0.8', latest: '1.0.8', hasUpdate: false })
   api.backupConfigGet.mockResolvedValue(emptyBackup())
   api.backupList.mockResolvedValue([])
   api.botConfigGet.mockResolvedValue({ enabled: false, guildId: null, allowedUserIds: [], status: 'apagado', hasToken: false })
@@ -215,5 +219,27 @@ describe('SettingsModal', () => {
 
     await user.click(screen.getByLabelText('Iniciar con el sistema'))
     await waitFor(() => expect(api.botAutostartSet).toHaveBeenCalledWith(true))
+  })
+
+  it('el botón Buscar actualización consulta y refleja el estado', async () => {
+    const user = userEvent.setup()
+    api.updateCheck.mockResolvedValue({ hasUpdate: true, latest: '1.1.0', url: 'https://x/1.1.0' })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Buscar actualización'))
+
+    await waitFor(() => expect(api.updateCheck).toHaveBeenCalled())
+    expect(screen.getByText(/versión nueva: v1\.1\.0/)).toBeInTheDocument()
+  })
+
+  it('toggle de updateCheck persiste', async () => {
+    const user = userEvent.setup()
+    api.appConfigSet.mockResolvedValue({ updateCheck: false })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Buscar actualizaciones al abrir la app'))
+    await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ updateCheck: false }))
   })
 })

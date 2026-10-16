@@ -12,6 +12,7 @@ export function prefsPath(dataDir) {
 // Valores por defecto: el backup automático y el bot arrancan apagados.
 export const DEFAULT_PREFS = {
   startInTray: true,
+  updateCheck: true,
   backup: {
     enabled: false,
     destinationDir: null,

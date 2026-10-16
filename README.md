@@ -16,6 +16,11 @@ que porta la lógica de negocio a Node.
 - **backup y restore del sistema** completo a `.zip` (base + fotos), con backup automático opcional
 - **app residente en la bandeja (tray)** con autostart opcional, sin cerrar la app al cerrar la ventana
 - **bot de Discord embebido** (solo consulta: `/perfil`, `/buscar`, `/pendientes`, `/recomendar`)
+- **chequeo de actualizaciones**: el footer muestra la versión y, si hay una nueva, un enlace al release;
+  en **Settings** hay un botón *Buscar actualización* (el chequeo automático al abrir la app se puede
+  desactivar)
+- **diagnóstico**: los errores del proceso main y del renderer quedan en `logs/app.txt`, con la versión
+  y el SO al inicio de cada sesión
 - datos 100% locales en la carpeta de usuario; sin servidor ni base de datos externa
 
 ## Descargar e instalar
