@@ -71,9 +71,11 @@ Detalles:
   guarda el vínculo (`AniListId`) en `MangaExternalRef`. El **nombre local del manga no se cambia**.
   Las tarjetas resuelven la URL con `cover:all` (`{ mangaId: url }`) y, si no hay vínculo, muestran
   una **portada generada** (gradiente por hash del título + iniciales).
-- **Bulk**: en Settings, *Traer portadas faltantes* recorre los mangas sin portada de forma
-  **secuencial** con ~2s entre pedidos (respeta el límite de AniList) y se puede **detener**; el
-  vínculo por manga también está en cada entrada del **Manga Library** del sidebar (botón 🖼️).
+- **Bulk**: en Settings, *Traer portadas faltantes* recorre los mangas sin portada **de a lotes**
+  (configurable, por defecto 20) con una **pausa entre lotes** (por defecto 5 min, con cuenta
+  regresiva) además del espaciado dentro del lote, para no acercarse al límite de AniList; es
+  **detenible**. El vínculo por manga también está en cada entrada del **Manga Library** del sidebar
+  (botón 🖼️).
 - **Design system**: tokens y temas en `mangacount.client/src/styles/` (`tokens.css`, `theme.css`);
   Inter self-hosted; los componentes no usan colores hardcodeados.
 
