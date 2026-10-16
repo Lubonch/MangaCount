@@ -3,6 +3,15 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.18] - 2026-10-16
+
+### Fixed
+
+- **Auto-update quedaba en la versión vieja al reiniciar**: el modo bandeja (`close → preventDefault`)
+  bloqueaba el `app.quit()` de `electron-updater`, y el proceso nuevo perdía el *single-instance lock*.
+  Ahora `install()` marca `isQuitting` antes de `quitAndInstall`, y el lock **reintenta ~5s** para tomar
+  el relevo del proceso viejo. El update **reabre sola en la versión nueva**.
+
 ## [1.0.17] - 2026-10-16
 
 ### Changed
