@@ -3,6 +3,18 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [1.0.7] - 2026-10-15
+
+### Fixed
+
+- **Import y edición tras la Nuclear Option**: la Nuclear Option re-siembra los perfiles con un
+  **id nuevo**, pero la UI conservaba el perfil viejo en memoria, así que el import escribía un
+  `Entry` con un `ProfileId` inexistente y fallaba con `FOREIGN KEY constraint failed`. Ahora, tras
+  el borrado, la app **recarga los perfiles y vuelve a seleccionar** uno válido; además
+  `entry:import` y `entry:upsert` validan el perfil y devuelven un mensaje claro si no existe.
+- Los errores de los handlers IPC ahora se registran en `logs/app.txt` (antes el import fallaba sin
+  dejar rastro en el log).
+
 ## [1.0.6] - 2026-10-15
 
 ### Added
