@@ -12,10 +12,11 @@ vi.mock('../../api/localAdapter', () => ({
 
 // Modales controlables para poder disparar onSuccess/onClose desde el test.
 vi.mock('../../components/AddEntryModal', () => ({
-  default: ({ isOpen, onSuccess, onClose }) =>
+  default: ({ isOpen, onSuccess, onClose, selectedProfile }) =>
     isOpen ? (
       <div>
         <span>edit-entry-open</span>
+        <span>entry-profile:{selectedProfile?.id ?? 'none'}</span>
         <button onClick={onSuccess}>confirm-entry</button>
         <button onClick={onClose}>close-entry</button>
       </div>
@@ -366,10 +367,16 @@ describe('CollectionView: vistas table/compact/cards', () => {
   it('abre y cierra el modal de edición de entry', async () => {
     const user = userEvent.setup()
     const onRefresh = vi.fn()
-    render(<CollectionView entries={[mkEntry({ id: 1 })]} mangas={[]} selectedProfile={null} onRefresh={onRefresh} />)
+    global.fetch.mockImplementation((url) =>
+      String(url).includes('/filters/')
+        ? Promise.resolve({ ok: true, json: async () => [] })
+        : Promise.resolve({ ok: true, json: async () => ({}) })
+    )
+    render(<CollectionView entries={[mkEntry({ id: 1 })]} mangas={[]} selectedProfile={profile} onRefresh={onRefresh} />)
 
     await user.click(screen.getAllByTitle('Edit entry')[0])
     expect(screen.getByText('edit-entry-open')).toBeInTheDocument()
+    expect(screen.getByText('entry-profile:1')).toBeInTheDocument()
 
     await user.click(screen.getByText('close-entry'))
     expect(screen.queryByText('edit-entry-open')).not.toBeInTheDocument()

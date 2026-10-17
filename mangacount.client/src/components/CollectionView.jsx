@@ -749,6 +749,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     setEditingEntry(null);
                 }}
                 mangas={mangas}
+                selectedProfile={selectedProfile}
                 onSuccess={handleEditSuccess}
                 editEntry={editingEntry}
             />
