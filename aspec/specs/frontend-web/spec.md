@@ -249,27 +249,32 @@ reflejar la **procedencia** de la portada actual (**“Portada local”** vs Ani
 
 ### Requirement: Blur y badge de las portadas +18
 
-The system SHALL difuminar (**blur**) las miniaturas de portada marcadas como +18 y SHALL superponerles
-un **badge `+18`**, de forma **siempre activa e independiente** de la preferencia de búsqueda
-`showAdultCovers`. El blur SHALL aplicarse en los **candidatos** del modal de portada y en la **portada
-de la entry** (`card`) de la colección. Los modos `table` y `compact` —que no muestran portada— quedan
-fuera de alcance.
+The system SHALL difuminar (**blur**) las miniaturas de portada de los mangas marcados como +18 y SHALL
+superponerles un **badge `+18`**, de forma **siempre activa e independiente** de la preferencia de
+búsqueda `showAdultCovers`. El indicador SHALL provenir de la **entidad manga**, no del vínculo de
+portada. El blur SHALL aplicarse en los **candidatos** del modal de portada y en la **portada de la
+entry** (`card`) de la colección. Los modos `table` y `compact` —que no muestran portada— quedan fuera
+de alcance.
+
+#### Scenario: Card de la colección con portada +18
+
+- **WHEN** una entry pertenece a un manga marcado como +18 y tiene portada vinculada
+- **THEN** la portada de la card se muestra difuminada con el badge `+18`
+
+#### Scenario: Manga marcado +18 con portada local
+
+- **WHEN** un manga está marcado como +18 y su portada se subió desde el equipo (sin indicador de AniList)
+- **THEN** la portada se difumina igualmente y muestra el badge `+18`
 
 #### Scenario: Candidato +18 difuminado con badge
 
 - **WHEN** el modal de portada lista un candidato con contenido adulto
 - **THEN** su miniatura se muestra difuminada y con el badge `+18`, con la preferencia de búsqueda encendida o apagada
 
-#### Scenario: Card de la colección con portada +18
-
-- **WHEN** una entry tiene una portada vinculada cuyo indicador de contenido adulto es verdadero
-- **THEN** la portada de la card se muestra difuminada con el badge `+18`
-
 #### Scenario: Portada no adulta sin blur ni badge
 
 - **WHEN** una entry o un candidato no es de contenido adulto
 - **THEN** su portada se muestra nítida y sin badge
-
 ### Requirement: Revelado de las portadas +18
 
 The system SHALL permitir revelar (quitar el blur) una portada +18 según la preferencia
@@ -375,3 +380,21 @@ The system SHALL permitir editar una entry de la colección con el perfil activo
 
 - **WHEN** el usuario intenta crear una entry sin un perfil activo
 - **THEN** el modal muestra el error de perfil y no envía la entry
+
+### Requirement: Edición manual del flag +18 en el alta/edición de manga
+
+The system SHALL exponer un control (checkbox **“Contenido +18”**) en el modal de alta y edición de
+manga (`AddMangaModal`) que permita marcar o desmarcar el contenido adulto de la serie. El control
+SHALL precargarse con el valor del manga en edición y SHALL viajar en el payload de `manga:upsert`.
+
+#### Scenario: Marcar un manga nuevo como +18
+
+- **WHEN** el usuario crea un manga y activa “Contenido +18”
+- **THEN** el manga se guarda marcado como +18
+
+#### Scenario: Precarga al editar
+
+- **WHEN** el usuario abre la edición de un manga marcado como +18
+- **THEN** el checkbox aparece activado y, si lo desmarca, el manga queda sin marcar al guardar
+
+## MODIFIED Requirements
