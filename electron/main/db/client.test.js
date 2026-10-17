@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import Database from 'better-sqlite3';
 import { openDb, getCounts, SCHEMA_VERSION } from './client.js';
 
 describe('db/client', () => {
@@ -73,5 +74,45 @@ describe('db/client', () => {
     );
     db.prepare('DELETE FROM Profile WHERE Id = ?').run(profileId);
     assert.equal(getCounts(db).entries, 0);
+  });
+
+  it('base nueva: MangaExternalRef nace con la columna IsAdult', () => {
+    db = openDb(dir);
+    const col = db
+      .prepare('PRAGMA table_info(MangaExternalRef)')
+      .all()
+      .find((c) => c.name === 'IsAdult');
+    assert.ok(col, 'falta la columna IsAdult');
+    assert.equal(col.notnull, 1);
+    assert.equal(col.dflt_value, '0');
+  });
+
+  it('migra v3 → v4 agregando IsAdult con default 0, y reabrir es idempotente', () => {
+    const file = path.join(dir, 'mangacount.db');
+    // Base con el esquema previo (v3): se construye con el esquema actual y se
+    // quita la columna para simular una instalación anterior a la migración.
+    const legacy = new Database(file);
+    legacy.exec(fs.readFileSync(new URL('./schema.sqlite.sql', import.meta.url), 'utf8'));
+    legacy.exec('ALTER TABLE MangaExternalRef DROP COLUMN IsAdult');
+    const mangaId = legacy
+      .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
+      .get('legacy', 1).Id;
+    legacy
+      .prepare(
+        'INSERT INTO MangaExternalRef (MangaId, Provider, ExternalId, CoverFile) VALUES (?, ?, ?, ?)'
+      )
+      .run(mangaId, 'anilist', '42', 'legacy.png');
+    legacy.pragma('user_version = 3');
+    legacy.close();
+
+    db = openDb(dir);
+    assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
+    assert.equal(db.prepare('SELECT IsAdult FROM MangaExternalRef').get().IsAdult, 0);
+
+    // Reabrir no falla aunque la columna ya esté: `ensureColumn` es idempotente.
+    db.close();
+    db = openDb(dir);
+    assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
+    assert.equal(db.prepare('SELECT IsAdult FROM MangaExternalRef').get().IsAdult, 0);
   });
 });

@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '../test-utils'
+import { render, screen, waitFor, within } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('../../api/localAdapter.js', () => ({
@@ -282,6 +282,37 @@ describe('Sidebar Component', () => {
     expect(screen.getByText('Manga 2')).toBeInTheDocument()
   })
 
+  it('muestra completo un título de una sola palabra larga sin ocultar las acciones', () => {
+    const longName = 'Gokushufudo'
+    const { container } = render(
+      <Sidebar {...defaultProps} mangas={[createMockManga({ id: 1, name: longName })]} />
+    )
+
+    // jsdom no calcula layout: verificación estructural de que el nombre se
+    // renderiza completo (sin truncado por elipsis) dentro de su contenedor.
+    const info = container.querySelector('.manga-info')
+    expect(info).toBeTruthy()
+    const name = within(info).getByText(longName)
+    expect(name).toHaveClass('manga-name')
+    expect(name.textContent).toBe(longName)
+    expect(name.textContent).not.toContain('…')
+
+    // Los tres botones de acción del ítem coexisten (buscar portada / editar /
+    // eliminar) con sus aria-label/title.
+    const actions = container.querySelector('.manga-actions')
+    expect(actions.querySelectorAll('button')).toHaveLength(3)
+
+    expect(screen.getByRole('button', { name: `Buscar portada de ${longName}` })).toHaveAttribute(
+      'title',
+      'Buscar portada (AniList)'
+    )
+    expect(screen.getByTitle('Edit manga info')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: `Eliminar ${longName}` })).toHaveAttribute(
+      'title',
+      'Eliminar manga'
+    )
+  })
+
   it('filtra el Manga Library por título', async () => {
     const user = userEvent.setup()
     const mangas = [
@@ -354,6 +385,41 @@ describe('Sidebar Component', () => {
 
     await waitFor(() => expect(onImportSuccess).toHaveBeenCalledTimes(1))
     expect(screen.queryByText(/Portada — Berserk/)).not.toBeInTheDocument()
+  })
+
+  it('propaga showAdultCovers al modal de portada', async () => {
+    const user = userEvent.setup()
+    api.coverSearch.mockResolvedValue([
+      { id: 7, title: 'Berserk', coverUrl: 'u.jpg', isAdult: true },
+    ])
+
+    render(
+      <Sidebar
+        {...defaultProps}
+        mangas={[createMockManga({ id: 1, name: 'Berserk' })]}
+        showAdultCovers
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Buscar portada de Berserk' }))
+    const option = await screen.findByTitle('Vincular con Berserk')
+    expect(option.className).toContain('cover-candidate--reveal-hover')
+  })
+
+  it('con showAdultCovers apagado el candidato +18 no usa reveal por hover', async () => {
+    const user = userEvent.setup()
+    api.coverSearch.mockResolvedValue([
+      { id: 7, title: 'Berserk', coverUrl: 'u.jpg', isAdult: true },
+    ])
+
+    render(
+      <Sidebar {...defaultProps} mangas={[createMockManga({ id: 1, name: 'Berserk' })]} />
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Buscar portada de Berserk' }))
+    const option = await screen.findByTitle('Vincular con Berserk')
+    expect(option.className).toContain('cover-candidate--adult')
+    expect(option.className).not.toContain('cover-candidate--reveal-hover')
   })
 
   it('elimina un manga desde el Manga Library (con confirmación)', async () => {

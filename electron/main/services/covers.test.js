@@ -399,7 +399,8 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
     assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.webp`)), true);
 
-    assert.equal(coverMap(db)[manga.id], second.coverUrl);
+    assert.equal(coverMap(db)[manga.id].url, second.coverUrl);
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
     assert.equal(statusCover(db, manga.id).externalId, '12');
   });
 
@@ -801,7 +802,8 @@ describe('services/covers: un solo cover activo (procedencia)', () => {
     assert.equal(status.provider, 'local');
     assert.equal(status.externalId, '');
     assert.equal(status.coverUrl, linked.coverUrl);
-    assert.equal(coverMap(db)[manga.id], linked.coverUrl);
+    assert.equal(coverMap(db)[manga.id].url, linked.coverUrl);
+    assert.equal(coverMap(db)[manga.id].isAdult, false); // local: nunca adulto
 
     assert.deepEqual(await unlinkCover(db, dir, manga.id), { ok: true });
     assert.equal(statusCover(db, manga.id), null);
@@ -822,5 +824,64 @@ describe('services/covers: un solo cover activo (procedencia)', () => {
     });
     assert.equal(out, linked.coverUrl);
     assert.equal(statusCover(db, manga.id).provider, 'local');
+  });
+});
+
+describe('services/covers: indicador +18 persistido', () => {
+  let dir;
+  let db;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), 'mc-covers-adult-'));
+    db = openDb(dir);
+  });
+
+  afterEach(() => {
+    db?.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('linkCover persiste isAdult del candidato (true y false)', async () => {
+    const adult = createManga(db, { name: 'Adult', volumes: 1 });
+    const safe = createManga(db, { name: 'Safe', volumes: 1 });
+
+    await linkCover(db, dir, {
+      mangaId: adult.id,
+      candidate: { id: 1, coverUrl: 'https://x/a.png', isAdult: true },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    await linkCover(db, dir, {
+      mangaId: safe.id,
+      candidate: { id: 2, coverUrl: 'https://x/b.png', isAdult: false },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+
+    assert.equal(getRef(db, adult.id, 'anilist').isAdult, true);
+    assert.equal(getRef(db, safe.id, 'anilist').isAdult, false);
+
+    const map = coverMap(db);
+    assert.deepEqual(map[adult.id], { url: `mangacount://covers/${adult.id}.png`, isAdult: true });
+    assert.deepEqual(map[safe.id], { url: `mangacount://covers/${safe.id}.png`, isAdult: false });
+  });
+
+  it('linkCover sin isAdult (undefined) lo guarda como falso', async () => {
+    const manga = createManga(db, { name: 'NoFlag', volumes: 1 });
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 3, coverUrl: 'https://x/c.png' },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    assert.equal(getRef(db, manga.id, 'anilist').isAdult, false);
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
+  });
+
+  it('linkLocalCover guarda isAdult en false', async () => {
+    const manga = createManga(db, { name: 'Local', volumes: 1 });
+    const src = path.join(dir, 'l.png');
+    fs.writeFileSync(src, imageBuffer('png'));
+    await linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: src });
+
+    assert.equal(getRef(db, manga.id, 'local').isAdult, false);
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
   });
 });

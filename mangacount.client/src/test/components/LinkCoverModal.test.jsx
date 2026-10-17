@@ -303,4 +303,57 @@ describe('LinkCoverModal', () => {
     expect(await screen.findByText('Portada de AniList')).toBeInTheDocument()
     expect(document.querySelector('.link-cover-current-thumb')).not.toBeInTheDocument()
   })
+
+  it('candidato +18 con la preferencia OFF: difuminado y reveal por click antes de vincular', async () => {
+    api.coverSearch.mockResolvedValue([
+      { id: 1, title: 'Berserk', altTitles: [], coverUrl: 'u', isAdult: true },
+    ])
+    api.coverLink.mockResolvedValue({ coverUrl: 'mangacount://covers/5.jpg' })
+    const onLinked = vi.fn()
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={onLinked} />)
+
+    const option = await screen.findByTitle('Vincular con Berserk')
+    expect(option.className).toContain('cover-candidate--adult')
+    expect(option.className).not.toContain('cover-candidate--reveal-hover')
+
+    // 1er click: revela sin vincular.
+    await userEvent.click(option)
+    await waitFor(() => expect(option.className).toContain('cover-candidate--revealed'))
+    expect(api.coverLink).not.toHaveBeenCalled()
+
+    // 2do click: ejecuta la vinculación real.
+    await userEvent.click(option)
+    await waitFor(() =>
+      expect(api.coverLink).toHaveBeenCalledWith(5, expect.objectContaining({ id: 1 }))
+    )
+    expect(onLinked).toHaveBeenCalledWith(5, 'mangacount://covers/5.jpg')
+  })
+
+  it('candidato +18 con la preferencia ON: difuminado, reveal por hover y vincula al click', async () => {
+    api.coverSearch.mockResolvedValue([
+      { id: 1, title: 'Berserk', altTitles: [], coverUrl: 'u', isAdult: true },
+    ])
+    api.coverLink.mockResolvedValue({ coverUrl: 'mangacount://covers/5.jpg' })
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} showAdultCovers />)
+
+    const option = await screen.findByTitle('Vincular con Berserk')
+    expect(option.className).toContain('cover-candidate--adult')
+    expect(option.className).toContain('cover-candidate--reveal-hover')
+
+    await userEvent.click(option)
+    await waitFor(() =>
+      expect(api.coverLink).toHaveBeenCalledWith(5, expect.objectContaining({ id: 1 }))
+    )
+  })
+
+  it('candidato no adulto: sin blur ni badge', async () => {
+    api.coverSearch.mockResolvedValue([
+      { id: 2, title: 'Vinland Saga', altTitles: [], coverUrl: 'v', isAdult: false },
+    ])
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    const option = await screen.findByTitle('Vincular con Vinland Saga')
+    expect(option.className).not.toContain('cover-candidate--adult')
+    expect(screen.queryByText('+18')).not.toBeInTheDocument()
+  })
 })

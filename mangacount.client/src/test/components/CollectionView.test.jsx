@@ -322,7 +322,7 @@ describe('CollectionView: vistas table/compact/cards', () => {
   })
 
   it('cards: usa la portada del mapa cuando existe', async () => {
-    coverAll.mockResolvedValue({ 1: 'cover-url.jpg' })
+    coverAll.mockResolvedValue({ 1: { url: 'cover-url.jpg', isAdult: false } })
     const user = userEvent.setup()
     const onRefresh = vi.fn()
     const entry = mkEntry({ id: 1, quantity: 5, priority: true, pending: 'P' })
@@ -611,5 +611,73 @@ describe('CollectionView: portadas automáticas', () => {
     rerender(<CollectionView entries={[e1]} {...props} />)
     await Promise.resolve()
     expect(coverAuto).not.toHaveBeenCalled()
+  })
+})
+
+describe('CollectionView: portadas +18 (blur y reveal)', () => {
+  const adultEntry = () => mkEntry({ id: 1, manga: mkManga({ id: 1, name: 'Adult' }) })
+
+  it('card +18: aplica la clase de blur y el badge +18', async () => {
+    coverAll.mockResolvedValue({ 1: { url: 'adult.jpg', isAdult: true } })
+    const { container } = render(<CollectionView entries={[adultEntry()]} mangas={[]} selectedProfile={null} />)
+
+    await waitFor(() => expect(container.querySelector('.card-cover-img')).toBeTruthy())
+    expect(container.querySelector('.card-cover').className).toContain('card-cover--adult')
+    expect(container.querySelector('.card-cover-adult')).toHaveTextContent('+18')
+  })
+
+  it('card no adulta: sin blur ni badge', async () => {
+    coverAll.mockResolvedValue({ 1: { url: 'safe.jpg', isAdult: false } })
+    const { container } = render(<CollectionView entries={[adultEntry()]} mangas={[]} selectedProfile={null} />)
+
+    await waitFor(() => expect(container.querySelector('.card-cover-img')).toBeTruthy())
+    expect(container.querySelector('.card-cover').className).not.toContain('card-cover--adult')
+    expect(container.querySelector('.card-cover-adult')).toBeNull()
+  })
+
+  it('con la preferencia ON el reveal es por hover', async () => {
+    coverAll.mockResolvedValue({ 1: { url: 'adult.jpg', isAdult: true } })
+    const { container } = render(
+      <CollectionView entries={[adultEntry()]} mangas={[]} selectedProfile={null} showAdultCovers />
+    )
+
+    await waitFor(() => expect(container.querySelector('.card-cover-img')).toBeTruthy())
+    const cover = container.querySelector('.card-cover')
+    expect(cover.className).toContain('card-cover--reveal-hover')
+    expect(cover.className).not.toContain('card-cover--revealed')
+  })
+
+  it('con la preferencia OFF el click revela y vuelve a difuminar sin abrir la card', async () => {
+    coverAll.mockResolvedValue({ 1: { url: 'adult.jpg', isAdult: true } })
+    const user = userEvent.setup()
+    const onRefresh = vi.fn()
+    const { container } = render(
+      <CollectionView entries={[adultEntry()]} mangas={[]} selectedProfile={null} onRefresh={onRefresh} />
+    )
+
+    await waitFor(() => expect(container.querySelector('.card-cover-img')).toBeTruthy())
+    const cover = () => container.querySelector('.card-cover')
+
+    await user.click(cover())
+    await waitFor(() => expect(cover().className).toContain('card-cover--revealed'))
+    // El click de reveal no dispara la acción real de la card.
+    expect(screen.queryByText('edit-entry-open')).not.toBeInTheDocument()
+
+    await user.click(cover())
+    expect(cover().className).not.toContain('card-cover--revealed')
+    expect(onRefresh).not.toHaveBeenCalled()
+  })
+
+  it('el auto-match (string) se pinta como portada no adulta', async () => {
+    coverAuto.mockResolvedValue('auto-cover.jpg')
+    const e1 = mkEntry({ id: 1, manga: mkManga({ id: 1, name: 'Alpha' }) })
+    const e2 = mkEntry({ id: 2, manga: mkManga({ id: 2, name: 'Beta' }) })
+    const props = { mangas: [], selectedProfile: null }
+    const { container, rerender } = render(<CollectionView entries={[e1]} {...props} />)
+
+    rerender(<CollectionView entries={[e1, e2]} {...props} />)
+    await waitFor(() => expect(container.querySelector('.card-cover-img')).toBeTruthy())
+    expect(container.querySelector('.card-cover-img').getAttribute('src')).toBe('auto-cover.jpg')
+    expect(container.querySelector('.card-cover').className).not.toContain('card-cover--adult')
   })
 })

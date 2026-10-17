@@ -87,14 +87,14 @@ describe('SettingsModal', () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
     expect(screen.getByText('Backup')).toBeInTheDocument()
-    expect(screen.getByText('Intercambio')).toBeInTheDocument()
+    expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument()
     expect(screen.getByText('Bot (Discord)')).toBeInTheDocument()
-    expect(screen.getByLabelText('Choose TSV File')).toBeInTheDocument()
+    expect(screen.getByLabelText('Elegir archivo TSV')).toBeInTheDocument()
   })
 
   it('incluye la Danger Zone con la Nuclear Option', async () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText(/Danger Zone/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/Zona de peligro/)).toBeInTheDocument())
     expect(screen.getByLabelText('Nuclear Option')).toBeInTheDocument()
   })
 
@@ -153,9 +153,9 @@ describe('SettingsModal', () => {
     const user = userEvent.setup()
     api.entryExport.mockResolvedValue('Titulo\nx')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+    await user.click(screen.getByRole('button', { name: 'Exportar TSV' }))
     await waitFor(() => expect(api.entryExport).toHaveBeenCalledWith(1))
   })
 
@@ -187,12 +187,12 @@ describe('SettingsModal', () => {
     const user = userEvent.setup()
     global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={() => {}} />)
-    await waitFor(() => expect(screen.getByLabelText('Choose TSV File')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByLabelText('Elegir archivo TSV')).toBeInTheDocument())
 
     const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
-    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
 
-    await waitFor(() => expect(screen.getByText('Import successful!')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('¡Importación exitosa!')).toBeInTheDocument())
     expect(global.fetch).toHaveBeenCalledWith('/api/entry/import/1', expect.objectContaining({ method: 'POST' }))
   })
 
@@ -287,7 +287,7 @@ describe('SettingsModal', () => {
   it('bulk de portadas: recorre sólo los mangas sin portada', async () => {
     const user = userEvent.setup()
     api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
-    api.coverAll.mockResolvedValue({ 1: 'mangacount://covers/1.jpg' }) // el 1 ya tiene
+    api.coverAll.mockResolvedValue({ 1: { url: 'mangacount://covers/1.jpg', isAdult: false } }) // el 1 ya tiene
     api.coverAuto.mockResolvedValue('mangacount://covers/2.jpg')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={vi.fn()} />)
 
@@ -586,74 +586,74 @@ describe('SettingsModal', () => {
   })
 
   // ---------------------------------------------------------------------------
-  // Intercambio
+  // Importar / Exportar (TSV)
   // ---------------------------------------------------------------------------
   it('rechaza archivos que no son TSV', async () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
     const file = new File(['x'], 'notes.txt', { type: 'text/plain' })
-    fireEvent.change(screen.getByLabelText('Choose TSV File'), { target: { files: [file] } })
+    fireEvent.change(screen.getByLabelText('Elegir archivo TSV'), { target: { files: [file] } })
 
-    expect(await screen.findByText('Please select a TSV file')).toBeInTheDocument()
+    expect(await screen.findByText('Seleccioná un archivo TSV')).toBeInTheDocument()
     expect(global.fetch).not.toHaveBeenCalled()
   })
 
   it('ignora el cambio de archivo sin archivo', async () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
-    fireEvent.change(screen.getByLabelText('Choose TSV File'), { target: { files: [] } })
+    fireEvent.change(screen.getByLabelText('Elegir archivo TSV'), { target: { files: [] } })
 
     expect(global.fetch).not.toHaveBeenCalled()
-    expect(screen.queryByText(/Import/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Importando|Importación/)).not.toBeInTheDocument()
   })
 
   it('muestra el mensaje del servidor si falla el import', async () => {
     const user = userEvent.setup()
     global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'bad format' }) })
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
     const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
-    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
 
-    expect(await screen.findByText('Import failed: bad format')).toBeInTheDocument()
+    expect(await screen.findByText('Falló la importación: bad format')).toBeInTheDocument()
   })
 
-  it('usa "Unknown error" cuando el servidor no informa detalle', async () => {
+  it('usa "error desconocido" cuando el servidor no informa detalle', async () => {
     const user = userEvent.setup()
     global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
     const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
-    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
 
-    expect(await screen.findByText('Import failed: Unknown error')).toBeInTheDocument()
+    expect(await screen.findByText('Falló la importación: error desconocido')).toBeInTheDocument()
   })
 
   it('muestra error si el import lanza', async () => {
     const user = userEvent.setup()
     global.fetch.mockRejectedValueOnce(new Error('net'))
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
     const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
-    await user.upload(screen.getByLabelText('Choose TSV File'), file)
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
 
-    expect(await screen.findByText('Import failed: net')).toBeInTheDocument()
+    expect(await screen.findByText('Falló la importación: net')).toBeInTheDocument()
   })
 
   it('muestra error si falla la exportación', async () => {
     const user = userEvent.setup()
     api.entryExport.mockRejectedValue(new Error('exp'))
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+    await user.click(screen.getByRole('button', { name: 'Exportar TSV' }))
 
-    expect(await screen.findByText('Export failed: exp')).toBeInTheDocument()
+    expect(await screen.findByText('Falló la exportación: exp')).toBeInTheDocument()
   })
 
   it('no intenta descargar si createObjectURL no está disponible', async () => {
@@ -663,11 +663,11 @@ describe('SettingsModal', () => {
     api.entryExport.mockResolvedValue('Titulo\tx')
     try {
       render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-      await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+      await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
-      await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+      await user.click(screen.getByRole('button', { name: 'Exportar TSV' }))
 
-      expect(await screen.findByText('Export ready!')).toBeInTheDocument()
+      expect(await screen.findByText('¡Exportación lista!')).toBeInTheDocument()
     } finally {
       global.URL.createObjectURL = originalCreate
     }
@@ -684,13 +684,13 @@ describe('SettingsModal', () => {
     api.entryExport.mockResolvedValue('Titulo\tx')
     try {
       render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
-      await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+      await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
-      await user.click(screen.getByRole('button', { name: 'Export TSV' }))
+      await user.click(screen.getByRole('button', { name: 'Exportar TSV' }))
 
       await waitFor(() => expect(createSpy).toHaveBeenCalled())
       expect(revokeSpy).toHaveBeenCalledWith('blob:mangacount')
-      expect(await screen.findByText('Export ready!')).toBeInTheDocument()
+      expect(await screen.findByText('¡Exportación lista!')).toBeInTheDocument()
     } finally {
       global.URL.createObjectURL = originalCreate
       global.URL.revokeObjectURL = originalRevoke
@@ -699,10 +699,10 @@ describe('SettingsModal', () => {
 
   it('deshabilita el intercambio sin perfil seleccionado', async () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={null} />)
-    await waitFor(() => expect(screen.getByText('Intercambio')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
-    expect(screen.getByText('Select a profile first')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Export TSV' })).toBeDisabled()
+    expect(screen.getByText('Elegí un perfil primero')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Exportar TSV' })).toBeDisabled()
   })
 
   // ---------------------------------------------------------------------------
@@ -834,7 +834,7 @@ describe('SettingsModal', () => {
   it('bulk de portadas: informa cuando todas ya están vinculadas', async () => {
     const user = userEvent.setup()
     api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }])
-    api.coverAll.mockResolvedValue({ 1: 'mangacount://covers/1.jpg' })
+    api.coverAll.mockResolvedValue({ 1: { url: 'mangacount://covers/1.jpg', isAdult: false } })
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
 
     await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))

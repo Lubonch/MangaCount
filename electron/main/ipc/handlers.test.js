@@ -187,7 +187,8 @@ describe('ipc handlers (ctx puro)', () => {
     });
     assert.equal(linked.coverUrl, `mangacount://covers/${manga.id}.png`);
     assert.equal((await handlers['cover:status'](ctx, manga.id)).coverUrl, linked.coverUrl);
-    assert.equal((await handlers['cover:all'](ctx))[manga.id], linked.coverUrl);
+    const all = await handlers['cover:all'](ctx);
+    assert.deepEqual(all[manga.id], { url: linked.coverUrl, isAdult: false });
     const refreshed = await handlers['cover:fetch'](ctx, {
       mangaId: manga.id,
       coverUrl: 'https://img/y.png',
