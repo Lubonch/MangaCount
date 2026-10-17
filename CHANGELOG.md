@@ -3,6 +3,21 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.2] - 2026-10-17
+
+### Added
+
+- **Flag +18 en la entidad manga**: el indicador de contenido adulto deja de depender del vínculo de
+  portada y pasa a `Manga.IsAdult` (migración **v5** con backfill desde el vínculo +18). Nueva casilla
+  **“Contenido +18”** en el alta/edición de manga; vincular una portada de AniList +18 promueve el flag
+  y una **portada local** ya no queda sin blur.
+
+### Security
+
+- **Portadas locales (`cover:local`)**: el canal solo acepta rutas devueltas por el diálogo nativo
+  (permiso de un solo uso otorgado por `dialog:pick-file`) y **re-chequea el tamaño** después de leer,
+  cerrando la ventana TOCTOU del cap de 8 MB.
+
 ## [2.2.1] - 2026-10-17
 
 ### Fixed
