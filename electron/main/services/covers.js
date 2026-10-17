@@ -15,12 +15,18 @@ import {
   listRefs,
   listRefsByManga,
 } from '../db/repositories/manga-external-refs.js';
-import { getMangaById } from '../db/repositories/mangas.js';
+import { getMangaById, setMangaIsAdult } from '../db/repositories/mangas.js';
 
 export const ANILIST_URL = 'https://graphql.anilist.co';
 export const PROVIDER = 'anilist';
 export const LOCAL_PROVIDER = 'local';
 export const MAX_COVER_BYTES = 8 * 1024 * 1024;
+
+// Cap único de tamaño. Se aplica dos veces en el flujo local: sobre el `stat` y
+// sobre la longitud real del buffer, para no confiar en el stat previo (TOCTOU).
+export function assertCoverSize(bytes) {
+  if (bytes > MAX_COVER_BYTES) throw new Error('imagen demasiado grande');
+}
 
 // Campos comunes. `isAdult` viaja para poder marcar candidatos +18 en la UI.
 const MEDIA_FIELDS = `
@@ -284,6 +290,9 @@ export async function linkCover(db, dataDir, { mangaId, candidate, fetchImpl } =
   if (previous?.coverFile && previous.coverFile !== fileName) {
     await removeCoverFile(dir, previous.coverFile);
   }
+  // El flag +18 vive en la entidad manga: un candidato adulto lo promueve, pero
+  // nunca lo apaga (apagarlo es una acción manual del usuario).
+  if (candidate.isAdult === true) setMangaIsAdult(db, id, true);
   return { ref, coverUrl: coverUrl(fileName) };
 }
 
@@ -297,9 +306,10 @@ export async function linkLocalCover(db, dataDir, { mangaId, sourcePath } = {}) 
   }
   const info = await stat(sourcePath);
   if (!info.isFile()) throw new Error('sourcePath no es un archivo');
-  if (info.size > MAX_COVER_BYTES) throw new Error('imagen demasiado grande');
+  assertCoverSize(info.size);
 
   const buffer = await readFile(sourcePath);
+  assertCoverSize(buffer.length);
   const ext = sniffImageExt(buffer);
   if (!ext) throw new Error('formato no soportado');
 
@@ -356,12 +366,14 @@ export function statusCover(db, mangaId) {
 
 // Mapa { mangaId: { url, isAdult } } para pintar las cards sin una llamada por
 // manga. Provider-agnóstico; el invariante "un solo ref por manga" da una sola
-// entrada, con el indicador de contenido adulto del vínculo activo.
+// entrada. El indicador de contenido adulto sale de la **entidad manga**
+// (`Manga.IsAdult`), no del vínculo de portada.
 export function coverMap(db) {
   const map = {};
   for (const ref of listRefs(db)) {
     if (ref.coverFile) {
-      map[ref.mangaId] = { url: coverUrl(ref.coverFile), isAdult: ref.isAdult === true };
+      const manga = getMangaById(db, ref.mangaId);
+      map[ref.mangaId] = { url: coverUrl(ref.coverFile), isAdult: manga?.isAdult === true };
     }
   }
   return map;

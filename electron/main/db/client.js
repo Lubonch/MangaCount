@@ -13,7 +13,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // (idempotente, aunque `user_version` se haya quedado atrás) y la columna nace
 // con DEFAULT 0 NOT NULL, así que las filas existentes quedan en "no adulto" sin
 // pérdida de datos ni backfill de AniList.
-export const SCHEMA_VERSION = 4;
+// v5 = mueve el flag +18 a la entidad manga: agrega `Manga.IsAdult` (fuente de verdad
+// para la UI) con el mismo `ensureColumn` idempotente y un backfill desde el
+// vínculo de portada +18. Aditivo: no borra ni renombra nada.
+export const SCHEMA_VERSION = 5;
 const SCHEMA_FILE = path.join(__dirname, 'schema.sqlite.sql');
 
 function applyPragmas(db) {
@@ -42,6 +45,12 @@ export function openDb(dataDir) {
       const schema = fs.readFileSync(SCHEMA_FILE, 'utf8');
       db.exec(schema);
       ensureColumn(db, 'MangaExternalRef', 'IsAdult', 'IsAdult INTEGER NOT NULL DEFAULT 0');
+      ensureColumn(db, 'Manga', 'IsAdult', 'IsAdult INTEGER NOT NULL DEFAULT 0');
+      // Backfill: los mangas cuyo vínculo de portada activo es +18 pasan a estar
+      // marcados. Idempotente (re-ejecutarlo no cambia nada).
+      db.exec(
+        'UPDATE Manga SET IsAdult = 1 WHERE Id IN (SELECT MangaId FROM MangaExternalRef WHERE IsAdult = 1)'
+      );
       db.pragma(`user_version = ${SCHEMA_VERSION}`);
     }
   } catch (err) {

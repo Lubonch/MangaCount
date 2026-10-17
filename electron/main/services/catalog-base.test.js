@@ -50,6 +50,20 @@ describe('services/catalog-base + canales', () => {
     assert.throws(() => saveOrUpdateManga(db, { name: '' }), /requerido/);
   });
 
+  it('manga: isAdult se propaga y se conserva si se omite en la edición', () => {
+    const created = saveOrUpdateManga(db, { name: 'adult', volumes: 1, isAdult: true });
+    assert.equal(created.isAdult, true);
+    // Editar sin isAdult conserva el flag (callers que no lo conocen).
+    const renamed = saveOrUpdateManga(db, { id: created.id, name: 'adult 2', volumes: 1 });
+    assert.equal(renamed.isAdult, true);
+    // Enviarlo explícitamente lo apaga.
+    assert.equal(
+      saveOrUpdateManga(db, { id: created.id, name: 'adult 2', volumes: 1, isAdult: false }).isAdult,
+      false
+    );
+    assert.equal(saveOrUpdateManga(db, { name: 'plain', volumes: 1 }).isAdult, false);
+  });
+
   it('preload expone los mismos canales registrados', async () => {
     const src = fs.readFileSync(
       new URL('../../preload.cjs', import.meta.url),

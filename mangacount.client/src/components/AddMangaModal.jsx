@@ -11,7 +11,8 @@ const AddMangaModal = ({
         name: '',
         volumes: '',
         formatId: '',
-        publisherId: ''
+        publisherId: '',
+        isAdult: false
     });
     const [formats, setFormats] = useState([]);
     const [publishers, setPublishers] = useState([]);
@@ -37,14 +38,16 @@ const AddMangaModal = ({
                 name: editManga.name,
                 volumes: editManga.volumes ? editManga.volumes.toString() : '',
                 formatId: editManga.formatId ? editManga.formatId.toString() : '',
-                publisherId: editManga.publisherId ? editManga.publisherId.toString() : ''
+                publisherId: editManga.publisherId ? editManga.publisherId.toString() : '',
+                isAdult: editManga.isAdult === true
             });
         } else {
             setFormData({
                 name: '',
                 volumes: '',
                 formatId: '',
-                publisherId: ''
+                publisherId: '',
+                isAdult: false
             });
         }
         setError('');
@@ -75,10 +78,10 @@ const AddMangaModal = ({
     };
 
     const handleInputChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: type === 'checkbox' ? checked : value
         }));
     };
 
@@ -159,7 +162,8 @@ const AddMangaModal = ({
                 name: formData.name.trim(),
                 volumes: formData.volumes ? parseInt(formData.volumes, 10) : 0,
                 formatId: parseInt(formData.formatId),
-                publisherId: parseInt(formData.publisherId)
+                publisherId: parseInt(formData.publisherId),
+                isAdult: formData.isAdult === true
             };
 
             const method = editManga ? 'PUT' : 'POST';
@@ -181,7 +185,8 @@ const AddMangaModal = ({
                         name: '',
                         volumes: '',
                         formatId: '',
-                        publisherId: ''
+                        publisherId: '',
+                        isAdult: false
                     });
                 }
             } else {
@@ -317,6 +322,19 @@ const AddMangaModal = ({
                                 <button type="button" onClick={() => setShowAddPublisher(false)}>Cancel</button>
                             </div>
                         )}
+                    </div>
+
+                    <div className="form-group checkbox-group">
+                        <label htmlFor="isAdult">
+                            <input
+                                type="checkbox"
+                                id="isAdult"
+                                name="isAdult"
+                                checked={formData.isAdult}
+                                onChange={handleInputChange}
+                            />
+                            Contenido +18
+                        </label>
                     </div>
 
                     {error && <div className="error-message">{error}</div>}

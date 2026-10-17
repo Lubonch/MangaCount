@@ -152,9 +152,23 @@ describe('AddMangaModal: alta', () => {
       volumes: 0,
       formatId: 1,
       publisherId: 1,
+      isAdult: false,
     })
     expect(screen.getByLabelText(/Manga Name/).value).toBe('')
   })
+
+  it('crea el manga marcado como +18', async () => {
+    const user = userEvent.setup()
+    catalogFetch()
+    const { props, container } = setup()
+    await waitCatalog()
+    await fillRequired(user)
+    await user.click(screen.getByLabelText(/Contenido \+18/))
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) })
+    submit(container)
+    await waitFor(() => expect(props.onSuccess).toHaveBeenCalled())
+    expect(bodyOf('/api/manga')).toMatchObject({ isAdult: true })
+  });
 
   it('crea el manga parseando los volúmenes', async () => {
     const user = userEvent.setup()
@@ -224,6 +238,20 @@ describe('AddMangaModal: edición', () => {
     // en edición no se limpia el formulario
     expect(screen.getByLabelText(/Manga Name/)).toHaveValue('Old')
   })
+
+  it('precarga el flag +18 y permite desmarcarlo', async () => {
+    const user = userEvent.setup()
+    catalogFetch()
+    const { props, container } = setup({ editManga: { ...editManga, isAdult: true } })
+    await waitCatalog()
+    expect(screen.getByLabelText(/Contenido \+18/)).toBeChecked()
+
+    await user.click(screen.getByLabelText(/Contenido \+18/))
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({}) })
+    submit(container)
+    await waitFor(() => expect(props.onSuccess).toHaveBeenCalled())
+    expect(bodyOf('/api/manga/3')).toMatchObject({ isAdult: false })
+  });
 
   it('precarga vacíos los campos opcionales ausentes', async () => {
     catalogFetch()

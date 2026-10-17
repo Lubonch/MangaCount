@@ -5,11 +5,12 @@ import { tmpdir } from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import { openDb } from '../db/client.js';
-import { createManga } from '../db/repositories/mangas.js';
+import { createManga, getMangaById, setMangaIsAdult } from '../db/repositories/mangas.js';
 import { upsertRef, getRef, listRefsByManga } from '../db/repositories/manga-external-refs.js';
 import {
   ANILIST_URL,
   MAX_COVER_BYTES,
+  assertCoverSize,
   normalizeTitle,
   pickAutoMatch,
   searchManga,
@@ -35,6 +36,13 @@ const imageResponse = (type, bytes = [1, 2, 3]) => ({
   status: 200,
   headers: { get: () => type },
   arrayBuffer: async () => new Uint8Array(bytes).buffer,
+});
+
+describe('services/covers: assertCoverSize', () => {
+  it('acepta el límite exacto y rechaza por encima', () => {
+    assert.doesNotThrow(() => assertCoverSize(MAX_COVER_BYTES));
+    assert.throws(() => assertCoverSize(MAX_COVER_BYTES + 1), /demasiado grande/);
+  });
 });
 
 describe('services/covers: normalizeTitle', () => {
@@ -402,6 +410,39 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     assert.equal(coverMap(db)[manga.id].url, second.coverUrl);
     assert.equal(coverMap(db)[manga.id].isAdult, false);
     assert.equal(statusCover(db, manga.id).externalId, '12');
+  });
+
+  it('linkCover promueve Manga.IsAdult con candidato +18 y nunca lo apaga', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 1, coverUrl: 'https://x/a.png', isAdult: true },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    assert.equal(getMangaById(db, manga.id).isAdult, true);
+    assert.equal(coverMap(db)[manga.id].isAdult, true);
+
+    // Vincular un candidato no adulto (otro ext) no apaga el flag.
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 2, coverUrl: 'https://x/b.jpg', isAdult: false },
+      fetchImpl: async () => imageResponse('image/jpeg'),
+    });
+    assert.equal(getMangaById(db, manga.id).isAdult, true);
+    assert.equal(coverMap(db)[manga.id].isAdult, true);
+  });
+
+  it('coverMap toma isAdult de la entidad manga (no del vínculo)', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 1, coverUrl: 'https://x/a.png' },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
+
+    setMangaIsAdult(db, manga.id, true);
+    assert.equal(coverMap(db)[manga.id].isAdult, true);
   });
 
   it('refreshCover valida mangaId, vínculo y url; luego actualiza', async () => {
