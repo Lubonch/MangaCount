@@ -291,25 +291,25 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.endsWith('.tsv')) {
-      setImportMessage('Please select a TSV file');
+      setImportMessage('Seleccioná un archivo TSV');
       return;
     }
     setIsImporting(true);
-    setImportMessage('Importing file...');
+    setImportMessage('Importando archivo…');
     try {
       const formData = new FormData();
       formData.append('file', file);
       const response = await fetch(`/api/entry/import/${selectedProfile.id}`, { method: 'POST', body: formData });
       if (response.ok) {
-        setImportMessage('Import successful!');
+        setImportMessage('¡Importación exitosa!');
         onImportSuccess?.();
         event.target.value = '';
       } else {
         const error = await response.json();
-        setImportMessage(`Import failed: ${error.message || 'Unknown error'}`);
+        setImportMessage(`Falló la importación: ${error.message || 'error desconocido'}`);
       }
     } catch (error) {
-      setImportMessage('Import failed: ' + error.message);
+      setImportMessage('Falló la importación: ' + error.message);
     } finally {
       setIsImporting(false);
     }
@@ -319,9 +319,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     try {
       const tsv = await entryExport(selectedProfile.id);
       downloadTsv(tsv, `mangacount-${selectedProfile.id}.tsv`);
-      setImportMessage('Export ready!');
+      setImportMessage('¡Exportación lista!');
     } catch (error) {
-      setImportMessage('Export failed: ' + error.message);
+      setImportMessage('Falló la exportación: ' + error.message);
     }
   };
 
@@ -528,7 +528,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
             <div className="settings-actions">
               <button type="button" aria-label="Guardar backup" onClick={saveBackup}>Guardar</button>
               <button type="button" aria-label="Backup ahora" onClick={runBackupNow} disabled={busy || !backup.destinationDir}>Backup ahora</button>
-              <button type="button" className="danger-button" aria-label="Restaurar" onClick={restore} disabled={busy}>Restaurar…</button>
+              <button type="button" className="settings-btn settings-btn--danger" aria-label="Restaurar" onClick={restore} disabled={busy}>Restaurar…</button>
             </div>
 
             {backupError && <p className="settings-message error">{backupError}</p>}
@@ -536,22 +536,27 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           </section>
 
           <section className="settings-section">
-            <h3>Intercambio</h3>
-            <div className="import-section">
+            <h3>Importar / Exportar (TSV)</h3>
+            <div className="settings-exchange">
               <input
                 type="file"
                 accept=".tsv"
                 onChange={handleImport}
                 disabled={isImporting || !selectedProfile}
-                className="file-input"
+                className="settings-file-input"
                 id="settings-tsv-import"
               />
-              <label htmlFor="settings-tsv-import" className="file-input-label">
-                {isImporting ? 'Importing...' : 'Choose TSV File'}
+              <label htmlFor="settings-tsv-import" className="settings-file-label">
+                {isImporting ? 'Importando…' : 'Elegir archivo TSV'}
               </label>
-              {!selectedProfile && <small className="import-note">Select a profile first</small>}
-              <button type="button" className="action-button" onClick={handleExport} disabled={!selectedProfile}>
-                Export TSV
+              {!selectedProfile && <small className="import-note">Elegí un perfil primero</small>}
+              <button
+                type="button"
+                className="settings-btn settings-btn--primary"
+                onClick={handleExport}
+                disabled={!selectedProfile}
+              >
+                Exportar TSV
               </button>
               {importMessage && <p className="settings-message">{importMessage}</p>}
             </div>
@@ -596,13 +601,18 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
               </label>
             </div>
             <div className="settings-actions">
-              <button type="button" className="action-button" onClick={runCoverBulk} disabled={coverBulk.running}>
+              <button
+                type="button"
+                className="settings-btn settings-btn--primary"
+                onClick={runCoverBulk}
+                disabled={coverBulk.running}
+              >
                 {coverBulk.running ? `Buscando… ${coverBulk.done}/${coverBulk.total}` : 'Traer portadas faltantes'}
               </button>
               {coverBulk.running && (
                 <button
                   type="button"
-                  className="danger-button"
+                  className="settings-btn settings-btn--danger"
                   onClick={() => {
                     coverBulkCancelRef.current = true;
                   }}
@@ -700,17 +710,17 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           </section>
 
           <section className="settings-section danger-zone">
-            <h3>⚠️ Danger Zone</h3>
+            <h3>⚠️ Zona de peligro</h3>
             <div className="danger-actions">
               <button
                 type="button"
-                className="danger-button nuke-button"
+                className="settings-btn settings-btn--danger nuke-button"
                 aria-label="Nuclear Option"
                 onClick={() => setShowNuke(true)}
               >
                 💥 Nuclear Option
               </button>
-              <small className="danger-warning">This will permanently delete ALL data!</small>
+              <small className="danger-warning">¡Esto borrará TODOS los datos de forma permanente!</small>
             </div>
           </section>
         </div>
