@@ -69,4 +69,4 @@
 - [ ] Verificación manual: un manga con portada +18 vinculada se ve difuminado con badge en la card y en
       los candidatos; el reveal cambia de hover a click al alternar el toggle de Settings y cerrar.
 - [ ] `ancleto-security` + verificación cruzada contra proposal/design/specs.
-- [ ] Al archivar, reconciliar los specs `mangas`/`frontend-web` afectados.
+- [x] Al archivar, reconciliar los specs `mangas`/`frontend-web` afectados.
