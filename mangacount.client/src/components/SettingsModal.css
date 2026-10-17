@@ -7,7 +7,7 @@
 }
 
 .settings-body {
-    padding: 16px 8px;
+    padding: var(--space-4);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -81,4 +81,94 @@
 
 .settings-message.success {
     color: var(--color-complete);
+}
+
+/* Botones propios del modal sobre design tokens (no reutilizan las clases del
+   Sidebar). Sin width:100% por defecto: el ancho lo da el contenido/acción. */
+.settings-btn {
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.settings-btn:hover:not(:disabled) {
+    background-color: var(--accent-soft);
+    border-color: var(--accent);
+}
+
+.settings-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.settings-btn:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.settings-btn--primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+}
+
+.settings-btn--primary:hover:not(:disabled) {
+    background-color: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.settings-btn--danger {
+    background-color: transparent;
+    border-color: var(--color-incomplete);
+    color: var(--color-incomplete);
+}
+
+.settings-btn--danger:hover:not(:disabled) {
+    background-color: var(--bg-incomplete);
+}
+
+/* Selector de archivo TSV propio del modal (reemplaza .file-input/.file-input-label). */
+.settings-file-input {
+    display: none;
+}
+
+.settings-file-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-2) var(--space-4);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out);
+}
+
+.settings-file-label:hover {
+    background-color: var(--accent-soft);
+    border-color: var(--accent);
+}
+
+.settings-file-input:disabled + .settings-file-label {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Bloque de import/export/portadas dentro de una sección (reemplaza .import-section). */
+.settings-exchange {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
 }

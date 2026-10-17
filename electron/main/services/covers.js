@@ -5,7 +5,7 @@
 // El vínculo guarda solo el ExternalId + nombre de archivo; el nombre local del
 // manga NO se toca.
 
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { mkdir, writeFile, rm, stat, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
   getRef,
@@ -13,11 +13,13 @@ import {
   setCoverFile,
   removeRef,
   listRefs,
+  listRefsByManga,
 } from '../db/repositories/manga-external-refs.js';
 import { getMangaById } from '../db/repositories/mangas.js';
 
 export const ANILIST_URL = 'https://graphql.anilist.co';
 export const PROVIDER = 'anilist';
+export const LOCAL_PROVIDER = 'local';
 export const MAX_COVER_BYTES = 8 * 1024 * 1024;
 
 // Campos comunes. `isAdult` viaja para poder marcar candidatos +18 en la UI.
@@ -145,6 +147,35 @@ export function extensionForContentType(contentType) {
   return null;
 }
 
+// Firma de cada formato soportado. La extensión se decide por el CONTENIDO
+// (magic bytes), nunca por la extensión declarada del archivo.
+const MAGIC_SIGNATURES = [
+  { ext: 'png', bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
+  { ext: 'jpg', bytes: [0xff, 0xd8, 0xff] },
+  { ext: 'gif', bytes: [0x47, 0x49, 0x46, 0x38] }, // 'GIF8'
+];
+const WEBP_RIFF = [0x52, 0x49, 0x46, 0x46]; // 'RIFF'
+const WEBP_TAG = Buffer.from([0x57, 0x45, 0x42, 0x50]); // 'WEBP'
+
+function startsWith(buffer, bytes) {
+  return buffer.length >= bytes.length && bytes.every((b, i) => buffer[i] === b);
+}
+
+// Detecta PNG/JPEG/GIF/WEBP por magic bytes. Devuelve la extensión real
+// (`png`/`jpg`/`gif`/`webp`) o `null` para cualquier otro contenido (SVG, texto,
+// binario), que debe rechazarse.
+export function sniffImageExt(buffer) {
+  const bytes = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer ?? []);
+  for (const sig of MAGIC_SIGNATURES) {
+    if (startsWith(bytes, sig.bytes)) return sig.ext;
+  }
+  // WEBP: 'RIFF' + tamaño (4 bytes) + 'WEBP'.
+  if (startsWith(bytes, WEBP_RIFF) && bytes.length >= 12 && bytes.subarray(8, 12).equals(WEBP_TAG)) {
+    return 'webp';
+  }
+  return null;
+}
+
 // Solo https: evita que el renderer haga que el main lea file:///etc/... u otros
 // esquemas (la URL del candidato la provee el renderer).
 export function isAllowedCoverUrl(url) {
@@ -216,6 +247,22 @@ function requireMangaId(mangaId) {
   return id;
 }
 
+// El vínculo activo de un manga. El invariante "un solo cover activo" garantiza
+// un único ref por manga (sin fijar provider), por lo que alcanza el primero.
+function getActiveRef(db, mangaId) {
+  return listRefsByManga(db, mangaId)[0] ?? null;
+}
+
+// Borra los refs del manga cuyo provider ≠ `keepProvider`, junto con sus
+// archivos. Al vincular (AniList o local) queda un solo cover activo.
+async function clearOtherRefs(db, dir, mangaId, keepProvider) {
+  for (const ref of listRefsByManga(db, mangaId)) {
+    if (ref.provider === keepProvider) continue;
+    if (ref.coverFile) await removeCoverFile(dir, ref.coverFile);
+    removeRef(db, mangaId, ref.provider);
+  }
+}
+
 // Descarga la portada del candidato, la guarda y deja el vínculo (AniList).
 export async function linkCover(db, dataDir, { mangaId, candidate, fetchImpl } = {}) {
   const id = requireMangaId(mangaId);
@@ -231,14 +278,50 @@ export async function linkCover(db, dataDir, { mangaId, candidate, fetchImpl } =
     provider: PROVIDER,
     externalId: candidate.id,
     coverFile: fileName,
+    isAdult: candidate.isAdult === true,
   });
+  await clearOtherRefs(db, dir, id, PROVIDER);
   if (previous?.coverFile && previous.coverFile !== fileName) {
     await removeCoverFile(dir, previous.coverFile);
   }
   return { ref, coverUrl: coverUrl(fileName) };
 }
 
-// Re-descarga/actualiza la portada de un manga ya vinculado.
+// Vincula una portada desde un archivo local del usuario: valida el tamaño
+// (sin leer si excede el cap), detecta el formato por magic bytes, la copia al
+// cache gestionado (`<mangaId>.<ext>`) y deja el vínculo local.
+export async function linkLocalCover(db, dataDir, { mangaId, sourcePath } = {}) {
+  const id = requireMangaId(mangaId);
+  if (typeof sourcePath !== 'string' || sourcePath.trim() === '') {
+    throw new Error('sourcePath inválido');
+  }
+  const info = await stat(sourcePath);
+  if (!info.isFile()) throw new Error('sourcePath no es un archivo');
+  if (info.size > MAX_COVER_BYTES) throw new Error('imagen demasiado grande');
+
+  const buffer = await readFile(sourcePath);
+  const ext = sniffImageExt(buffer);
+  if (!ext) throw new Error('formato no soportado');
+
+  const dir = coversDir(dataDir);
+  const previous = getRef(db, id, LOCAL_PROVIDER);
+  const fileName = await saveCoverFile(dir, id, buffer, ext);
+  const ref = upsertRef(db, {
+    mangaId: id,
+    provider: LOCAL_PROVIDER,
+    externalId: '',
+    coverFile: fileName,
+    isAdult: false,
+  });
+  await clearOtherRefs(db, dir, id, LOCAL_PROVIDER);
+  if (previous?.coverFile && previous.coverFile !== fileName) {
+    await removeCoverFile(dir, previous.coverFile);
+  }
+  return { ref, coverUrl: coverUrl(fileName) };
+}
+
+// Re-descarga/actualiza la portada de un manga ya vinculado. Solo aplica a
+// vínculos con URL remota (AniList): una portada local no se re-descarga.
 export async function refreshCover(db, dataDir, { mangaId, coverUrl: url, fetchImpl } = {}) {
   const id = requireMangaId(mangaId);
   if (!getRef(db, id, PROVIDER)) throw new Error('sin vínculo para ese manga');
@@ -252,15 +335,17 @@ export async function refreshCover(db, dataDir, { mangaId, coverUrl: url, fetchI
 
 export async function unlinkCover(db, dataDir, mangaId) {
   const id = requireMangaId(mangaId);
-  const ref = getRef(db, id, PROVIDER);
+  const ref = getActiveRef(db, id);
   if (!ref) return { ok: false };
   if (ref.coverFile) await removeCoverFile(coversDir(dataDir), ref.coverFile);
-  removeRef(db, id, PROVIDER);
+  removeRef(db, id, ref.provider);
   return { ok: true };
 }
 
+// Estado del portada vigente: provider-agnóstico (resuelve el vínculo del manga
+// sin fijar proveedor) para que la UI muestre la procedencia (AniList o local).
 export function statusCover(db, mangaId) {
-  const ref = getRef(db, requireMangaId(mangaId), PROVIDER);
+  const ref = getActiveRef(db, requireMangaId(mangaId));
   if (!ref) return null;
   return {
     provider: ref.provider,
@@ -269,21 +354,26 @@ export function statusCover(db, mangaId) {
   };
 }
 
-// Mapa { mangaId: url } para pintar las cards sin una llamada por manga.
+// Mapa { mangaId: { url, isAdult } } para pintar las cards sin una llamada por
+// manga. Provider-agnóstico; el invariante "un solo ref por manga" da una sola
+// entrada, con el indicador de contenido adulto del vínculo activo.
 export function coverMap(db) {
   const map = {};
   for (const ref of listRefs(db)) {
-    if (ref.coverFile) map[ref.mangaId] = coverUrl(ref.coverFile);
+    if (ref.coverFile) {
+      map[ref.mangaId] = { url: coverUrl(ref.coverFile), isAdult: ref.isAdult === true };
+    }
   }
   return map;
 }
 
 // Auto-match best-effort al agregar un manga: busca por el título local y
 // vincula SOLO si hay un único candidato idéntico (normalizado). Si es ambiguo
-// o no hay match, no hace nada. Nunca pisa un vínculo existente.
+// o no hay match, no hace nada. Nunca pisa un vínculo existente (cualquier
+// procedencia, p. ej. una portada local).
 export async function autoMatchCover(db, dataDir, mangaId, { fetchImpl, includeAdult = false } = {}) {
   const id = requireMangaId(mangaId);
-  const existing = getRef(db, id, PROVIDER);
+  const existing = getActiveRef(db, id);
   if (existing?.coverFile) return coverUrl(existing.coverFile);
   const manga = getMangaById(db, id);
   if (!manga?.name) return null;

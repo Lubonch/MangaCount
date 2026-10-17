@@ -3,6 +3,26 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.0] - 2026-10-16
+
+### Added
+
+- **Portadas locales**: botón **“Buscar en mi PC…”** en el modal de portada, que copia la imagen elegida
+  al cache de portadas (`<userData>/covers/`) validando por **magic bytes** (PNG/JPEG/WEBP/GIF; se ignora
+  la extensión) y con un **cap de 8 MB**. Un solo cover activo por manga, con **procedencia**
+  (`anilist`/`local`) registrada en el vínculo (al vincular se borran los otros refs). Sin cambio de esquema.
+- **Blur y badge +18**: la preferencia se **persiste** (`MangaExternalRef.IsAdult`, migración **v4**) y
+  `coverMap` pasa a `{ url, isAdult }`; las portadas +18 se muestran **difuminadas con badge** en la
+  colección y en los candidatos, con reveal al **hover** (pref ON) o al **click** (pref OFF).
+
+### Changed
+
+- **Settings**: clases propias del modal sobre los **design tokens** (fin de la reutilización de
+  `Sidebar.css`), padding consistente y modal **unificado a español**. La sección **“Intercambio”** pasa a
+  **“Importar / Exportar (TSV)”**.
+- **Sidebar**: los **títulos largos de una sola palabra** de la Biblioteca ya no desplazan los iconos
+  (`.manga-info` libera `min-width:0`; `.manga-name` envuelve con `overflow-wrap`).
+
 ## [2.1.0] - 2026-10-16
 
 ### Added

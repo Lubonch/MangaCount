@@ -160,14 +160,32 @@ describe('repositories', () => {
     const created = upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 30013 });
     assert.equal(created.externalId, '30013');
     assert.equal(created.coverFile, null);
+    assert.equal(created.isAdult, false); // default: no adulto
+
+    // El indicador viaja en el DTO y se normaliza a booleano (SQLite guarda 0/1).
+    const adult = upsertRef(db, {
+      mangaId: manga.id,
+      provider: 'anilist',
+      externalId: 30013,
+      isAdult: true,
+    });
+    assert.equal(adult.isAdult, true);
 
     const withCover = setCoverFile(db, manga.id, 'anilist', '3.jpg');
     assert.equal(withCover.coverFile, '3.jpg');
+    assert.equal(withCover.isAdult, true);
 
     // Upsert del mismo par actualiza, no duplica.
-    upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 30014, coverFile: 'x.png' });
+    const updated = upsertRef(db, {
+      mangaId: manga.id,
+      provider: 'anilist',
+      externalId: 30014,
+      coverFile: 'x.png',
+      isAdult: false,
+    });
     assert.equal(listRefsByManga(db, manga.id).length, 1);
     assert.equal(getRef(db, manga.id, 'anilist').externalId, '30014');
+    assert.equal(updated.isAdult, false);
 
     assert.equal(removeRef(db, manga.id, 'anilist'), true);
     assert.equal(removeRef(db, manga.id, 'anilist'), false);

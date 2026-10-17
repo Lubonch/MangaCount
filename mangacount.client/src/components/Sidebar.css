@@ -298,6 +298,7 @@
 
 .manga-info {
     flex: 1;
+    min-width: 0;
 }
 
 .manga-actions {
@@ -311,6 +312,8 @@
     font-weight: 500;
     margin-bottom: 4px;
     color: var(--sidebar-text);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .manga-volumes {

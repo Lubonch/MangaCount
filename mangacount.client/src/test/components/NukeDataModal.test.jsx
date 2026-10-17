@@ -28,7 +28,7 @@ async function renderAtStep(user, step) {
   render(<NukeDataModal isOpen onClose={() => {}} onSuccess={() => {}} />)
   await waitFor(() => expect(screen.getByText(/WARNING/)).toBeInTheDocument())
   for (let i = 1; i < step; i += 1) {
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
   }
 }
 
@@ -69,14 +69,14 @@ describe('NukeDataModal', () => {
     render(<NukeDataModal isOpen onClose={() => {}} onSuccess={() => {}} />)
     await waitFor(() => expect(screen.getByText(/WARNING/)).toBeInTheDocument())
 
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
     expect(screen.getByText(/absolutely sure/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByText(/WARNING/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
     expect(screen.getByText(/Final Confirmation/)).toBeInTheDocument()
   })
 
@@ -94,7 +94,7 @@ describe('NukeDataModal', () => {
     const onClose = vi.fn()
     render(<NukeDataModal isOpen onClose={onClose} onSuccess={() => {}} />)
     await waitFor(() => expect(screen.getByText(/Nuclear Option/)).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onClose).toHaveBeenCalled()
   })
 
@@ -102,7 +102,7 @@ describe('NukeDataModal', () => {
     const user = userEvent.setup()
     await renderAtStep(user, 3)
 
-    const nuke = screen.getByRole('button', { name: /NUKE DATABASE/ })
+    const nuke = screen.getByRole('button', { name: /BORRAR BASE DE DATOS/ })
     expect(nuke).toBeDisabled()
 
     await forceReactClick(nuke)
@@ -116,18 +116,18 @@ describe('NukeDataModal', () => {
     const onClose = vi.fn()
     render(<NukeDataModal isOpen onClose={onClose} onSuccess={onSuccess} />)
     await waitFor(() => expect(screen.getByText(/WARNING/)).toBeInTheDocument())
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
+    await user.click(screen.getByRole('button', { name: 'Continuar' }))
 
     await user.type(screen.getByRole('textbox'), 'DELETE ALL DATA')
-    await user.click(screen.getByRole('button', { name: /NUKE DATABASE/ }))
+    await user.click(screen.getByRole('button', { name: /BORRAR BASE DE DATOS/ }))
 
     await waitFor(() => expect(api.databaseNukeLocal).toHaveBeenCalledTimes(1))
     expect(onSuccess).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('muestra el estado "Deleting..." mientras borra', async () => {
+  it('muestra el estado "Borrando…" mientras borra', async () => {
     const user = userEvent.setup()
     let resolveNuke
     api.databaseNukeLocal.mockReturnValueOnce(
@@ -137,9 +137,9 @@ describe('NukeDataModal', () => {
     )
     await renderAtStep(user, 3)
     await user.type(screen.getByRole('textbox'), 'DELETE ALL DATA')
-    await user.click(screen.getByRole('button', { name: /NUKE DATABASE/ }))
+    await user.click(screen.getByRole('button', { name: /BORRAR BASE DE DATOS/ }))
 
-    expect(await screen.findByText('Deleting...')).toBeInTheDocument()
+    expect(await screen.findByText('Borrando…')).toBeInTheDocument()
 
     resolveNuke({ ok: true })
     await waitFor(() => expect(api.databaseNukeLocal).toHaveBeenCalled())
@@ -150,7 +150,7 @@ describe('NukeDataModal', () => {
     api.databaseNukeLocal.mockRejectedValueOnce(new Error('boom'))
     await renderAtStep(user, 3)
     await user.type(screen.getByRole('textbox'), 'DELETE ALL DATA')
-    await user.click(screen.getByRole('button', { name: /NUKE DATABASE/ }))
+    await user.click(screen.getByRole('button', { name: /BORRAR BASE DE DATOS/ }))
 
     expect(await screen.findByText('Error clearing local data: boom')).toBeInTheDocument()
   })

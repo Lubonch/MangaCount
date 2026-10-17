@@ -37,6 +37,7 @@ import { buildDiagnostics } from '../services/diagnostics.js';
 import {
   searchManga,
   linkCover,
+  linkLocalCover,
   refreshCover,
   unlinkCover,
   statusCover,
@@ -132,6 +133,8 @@ export const handlers = {
     searchManga(query, { includeAdult: loadResolvedPrefs(dataDir).showAdultCovers }),
   'cover:link': ({ db, dataDir }, { mangaId, candidate } = {}) =>
     linkCover(db, dataDir, { mangaId, candidate }),
+  'cover:local': ({ db, dataDir }, { mangaId, sourcePath } = {}) =>
+    linkLocalCover(db, dataDir, { mangaId, sourcePath }),
   'cover:fetch': ({ db, dataDir }, { mangaId, coverUrl } = {}) =>
     refreshCover(db, dataDir, { mangaId, coverUrl }),
   'cover:unlink': ({ db, dataDir }, mangaId) => unlinkCover(db, dataDir, mangaId),

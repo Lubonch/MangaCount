@@ -5,7 +5,7 @@ import AddMangaModal from './AddMangaModal';
 import { coverAll, coverAuto } from '../api/localAdapter';
 import './CollectionView.css';
 
-const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], selectedProfile }) => {
+const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], selectedProfile, showAdultCovers = false }) => {
     const [filter, setFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name');
     const [viewMode, setViewMode] = useState('cards');
@@ -23,8 +23,10 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
     const [editingEntry, setEditingEntry] = useState(null);
     const [editingManga, setEditingManga] = useState(null);
 
-    // Portadas: mapa { mangaId: url } (se pintan en las cards).
+    // Portadas: mapa { mangaId: { url, isAdult } } (se pintan en las cards).
     const [coverMap, setCoverMap] = useState({});
+    // Portadas +18 reveladas por click (solo con la preferencia apagada).
+    const [revealedCovers, setRevealedCovers] = useState({});
 
     useEffect(() => {
         let active = true;
@@ -38,13 +40,29 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         };
     }, [entries, selectedProfile]);
 
-    const handleCoverLinked = (mangaId, url) => {
+    // Acepta `{ url, isAdult }` (o `null` al desvincular). El auto-match sigue
+    // devolviendo solo la URL: en ese caso no hay dato de +18 (se asume false).
+    const handleCoverLinked = (mangaId, cover) => {
+        const url = typeof cover === 'string' ? cover : cover?.url;
+        const isAdult = typeof cover === 'object' && cover !== null && cover.isAdult === true;
         setCoverMap((prev) => {
             const next = { ...prev };
-            if (url) next[mangaId] = url;
+            if (url) next[mangaId] = { url, isAdult };
             else delete next[mangaId];
             return next;
         });
+        setRevealedCovers((prev) => {
+            if (!prev[mangaId]) return prev;
+            const next = { ...prev };
+            delete next[mangaId];
+            return next;
+        });
+    };
+
+    // Reveal por click: consume el evento para no disparar la acción de la card.
+    const handleCoverReveal = (event, mangaId) => {
+        event.stopPropagation();
+        setRevealedCovers((prev) => ({ ...prev, [mangaId]: !prev[mangaId] }));
     };
 
     // Auto-match best-effort al agregar: cuando aparece un manga nuevo, se
@@ -465,27 +483,46 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
             {sortedEntries.map(entry => {
                 const status = getEntryStatus(entry);
                 const completionPercent = getCompletionPercentage(entry);
-                
+                const cover = coverMap[entry.manga.id];
+                const isAdult = cover?.isAdult === true;
+                // Con el pref ON el reveal es por hover (momentáneo); con el pref
+                // OFF requiere click y queda hasta deshacerlo.
+                const revealOnHover = isAdult && showAdultCovers;
+                const revealed = isAdult && !showAdultCovers && revealedCovers[entry.manga.id] === true;
+                const coverClassName = [
+                    'card-cover',
+                    cover ? 'has-cover' : '',
+                    isAdult ? 'card-cover--adult' : '',
+                    revealOnHover ? 'card-cover--reveal-hover' : '',
+                    revealed ? 'card-cover--revealed' : '',
+                ].filter(Boolean).join(' ');
+
                 return (
                     <div key={entry.id} className={`entry-card ${status}`}>
                         <div
-                            className={`card-cover${coverMap[entry.manga.id] ? ' has-cover' : ''}`}
+                            className={coverClassName}
                             style={
-                                coverMap[entry.manga.id]
+                                cover
                                     ? undefined
                                     : { backgroundImage: coverGradient(entry.manga.name) }
                             }
+                            onClick={
+                                isAdult && !showAdultCovers
+                                    ? (event) => handleCoverReveal(event, entry.manga.id)
+                                    : undefined
+                            }
                         >
-                            {coverMap[entry.manga.id] ? (
+                            {cover ? (
                                 <img
                                     className="card-cover-img"
-                                    src={coverMap[entry.manga.id]}
+                                    src={cover.url}
                                     alt=""
                                     loading="lazy"
                                 />
                             ) : (
                                 <span className="card-cover-initials">{coverInitials(entry.manga.name)}</span>
                             )}
+                            {isAdult && <span className="card-cover-adult">+18</span>}
                             {completionPercent !== null && (
                                 <span className={`card-cover-badge ${status}`}>{completionPercent}%</span>
                             )}

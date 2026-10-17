@@ -41,9 +41,10 @@ vi.mock('../components/SettingsModal', () => ({
 }))
 
 vi.mock('../components/CollectionView', () => ({
-  default: ({ onRefresh }) => (
+  default: ({ onRefresh, showAdultCovers }) => (
     <div>
       Collection View Component
+      <span data-testid="adult-pref">{String(showAdultCovers)}</span>
       <button onClick={onRefresh}>refresh-collection</button>
     </div>
   ),
@@ -94,6 +95,8 @@ describe('App Component', () => {
     localStorage.getItem.mockReturnValue(undefined)
     mockRecommendManga.mockReset()
     api.isElectron.mockReturnValue(false)
+    // App lee la preferencia +18 al montar; sin esto el mock devolvería undefined.
+    api.appConfigGet.mockResolvedValue({})
   })
 
   it('renders loading spinner initially', () => {
@@ -628,6 +631,35 @@ describe('App Component', () => {
     await user.click(await screen.findByText('app-settings-close'))
 
     await waitFor(() => expect(screen.queryByText('app-settings-close')).not.toBeInTheDocument())
+  })
+
+  it('carga la preferencia +18 al montar y la refresca al cerrar Settings', async () => {
+    const user = userEvent.setup()
+    const profile = createMockProfile({ id: 1, name: 'Solo' })
+    api.appConfigGet
+      .mockResolvedValueOnce({ showAdultCovers: true })
+      .mockResolvedValueOnce({ showAdultCovers: false })
+
+    global.fetch.mockImplementation((url) => {
+      if (url === '/api/profile') return Promise.resolve(jsonResponse([profile]))
+      if (url === '/api/manga') return Promise.resolve(jsonResponse([]))
+      if (url === '/api/entry?profileId=1') return Promise.resolve(jsonResponse([]))
+      return Promise.reject(new Error('Unexpected ' + url))
+    })
+
+    render(<App />)
+
+    await waitFor(
+      () => expect(screen.getByTestId('adult-pref')).toHaveTextContent('true'),
+      { timeout: 5000 }
+    )
+
+    await user.click(screen.getByLabelText('Settings'))
+    await user.click(await screen.findByText('app-settings-close'))
+
+    // Relee la preferencia sin recargar la app.
+    await waitFor(() => expect(screen.getByTestId('adult-pref')).toHaveTextContent('false'))
+    expect(api.appConfigGet).toHaveBeenCalledTimes(2)
   })
 
   it('returns early when recommending without entries', async () => {

@@ -6,9 +6,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { openDb } from '../db/client.js';
 import { createManga } from '../db/repositories/mangas.js';
-import { upsertRef } from '../db/repositories/manga-external-refs.js';
+import { upsertRef, getRef, listRefsByManga } from '../db/repositories/manga-external-refs.js';
 import {
   ANILIST_URL,
+  MAX_COVER_BYTES,
   normalizeTitle,
   pickAutoMatch,
   searchManga,
@@ -16,10 +17,12 @@ import {
   fetchCover,
   isAllowedCoverUrl,
   extensionForContentType,
+  sniffImageExt,
   coverFileName,
   saveCoverFile,
   removeCoverFile,
   linkCover,
+  linkLocalCover,
   refreshCover,
   unlinkCover,
   statusCover,
@@ -396,7 +399,8 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
     assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.webp`)), true);
 
-    assert.equal(coverMap(db)[manga.id], second.coverUrl);
+    assert.equal(coverMap(db)[manga.id].url, second.coverUrl);
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
     assert.equal(statusCover(db, manga.id).externalId, '12');
   });
 
@@ -574,5 +578,310 @@ describe('services/covers: filtro +18 en la búsqueda', () => {
     const { fetchImpl, query } = captureQuery();
     await searchManga('x', { fetchImpl, includeAdult: true });
     assert.doesNotMatch(query(), /isAdult:\s*false/);
+  });
+});
+
+// --- Portadas locales ---
+
+const PREFIXES = {
+  png: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  jpg: [0xff, 0xd8, 0xff],
+  gif: [0x47, 0x49, 0x46, 0x38],
+  webp: [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50],
+};
+const imageBuffer = (kind, extra = '') =>
+  Buffer.concat([Buffer.from(PREFIXES[kind]), Buffer.from(extra)]);
+
+describe('services/covers: sniffImageExt (magic bytes)', () => {
+  it('detecta PNG/JPEG/GIF/WEBP por contenido', () => {
+    assert.equal(sniffImageExt(imageBuffer('png')), 'png');
+    assert.equal(sniffImageExt(imageBuffer('jpg')), 'jpg');
+    assert.equal(sniffImageExt(imageBuffer('gif')), 'gif');
+    assert.equal(sniffImageExt(imageBuffer('webp')), 'webp');
+  });
+
+  it('gana el contenido (aun con otra extensión declarada)', () => {
+    assert.equal(sniffImageExt(imageBuffer('png', 'resto')), 'png');
+    assert.equal(sniffImageExt(imageBuffer('webp', 'resto')), 'webp');
+  });
+
+  it('rechaza SVG, texto, binario, buffers cortos y null', () => {
+    assert.equal(sniffImageExt(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>')), null);
+    assert.equal(sniffImageExt(Buffer.from('esto no es una imagen')), null);
+    assert.equal(sniffImageExt(Buffer.from([0x00, 0x01, 0x02, 0x03])), null);
+    assert.equal(sniffImageExt(Buffer.from([0x89, 0x50])), null); // PNG truncado
+    assert.equal(sniffImageExt(Buffer.from('RIFF')), null); // RIFF sin 'WEBP'
+    assert.equal(sniffImageExt(Buffer.from('RIFF0000XXXX')), null); // RIFF con tag ajeno
+    assert.equal(sniffImageExt(null), null);
+    assert.equal(sniffImageExt(undefined), null);
+  });
+
+  it('acepta Uint8Array (no solo Buffer)', () => {
+    assert.equal(sniffImageExt(new Uint8Array(PREFIXES.png)), 'png');
+  });
+});
+
+describe('services/covers: linkLocalCover', () => {
+  let dir;
+  let db;
+
+  const writeSource = (name, buffer) => {
+    const p = path.join(dir, name);
+    fs.writeFileSync(p, buffer);
+    return p;
+  };
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), 'mc-covers-local-'));
+    db = openDb(dir);
+  });
+
+  afterEach(() => {
+    db?.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('valida mangaId y sourcePath', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await assert.rejects(
+      () => linkLocalCover(db, dir, { mangaId: 'abc', sourcePath: 'x' }),
+      /mangaId inválido/
+    );
+    await assert.rejects(() => linkLocalCover(db, dir, { mangaId: manga.id }), /sourcePath inválido/);
+    await assert.rejects(
+      () => linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: 123 }),
+      /sourcePath inválido/
+    );
+    await assert.rejects(
+      () => linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: '   ' }),
+      /sourcePath inválido/
+    );
+  });
+
+  it('rechaza inexistente, directorio y archivo demasiado grande (sin escribir)', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await assert.rejects(() =>
+      linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: path.join(dir, 'nope.png') })
+    );
+    await assert.rejects(
+      () => linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: dir }),
+      /no es un archivo/
+    );
+
+    const big = writeSource('big.png', Buffer.alloc(MAX_COVER_BYTES + 1));
+    await assert.rejects(
+      () => linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: big }),
+      /demasiado grande/
+    );
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
+  });
+
+  it('rechaza contenido no soportado sin escribir', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    const svg = writeSource('a.svg', Buffer.from('<svg></svg>'));
+    await assert.rejects(
+      () => linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: svg }),
+      /formato no soportado/
+    );
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.svg`)), false);
+  });
+
+  it('vincula la imagen local y reemplaza la anterior al re-vincular', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    const png = writeSource('uno.png', imageBuffer('png', 'datos'));
+    const res = await linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: png });
+    assert.equal(res.ref.provider, 'local');
+    assert.equal(res.ref.externalId, '');
+    assert.equal(res.coverUrl, `mangacount://covers/${manga.id}.png`);
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), true);
+
+    // Otra extensión -> reemplaza y borra la imagen anterior.
+    const jpg = writeSource('dos.jpg', imageBuffer('jpg', 'datos'));
+    const again = await linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: jpg });
+    assert.match(again.coverUrl, /\.jpg$/);
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.jpg`)), true);
+  });
+
+  it('re-vincular con la misma extensión no borra el archivo', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('a.png', imageBuffer('png', 'a')),
+    });
+    const res = await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('b.png', imageBuffer('png', 'bb')),
+    });
+    assert.equal(res.coverUrl, `mangacount://covers/${manga.id}.png`);
+    assert.ok(
+      fs.readFileSync(path.join(dir, 'covers', `${manga.id}.png`)).toString().endsWith('bb')
+    );
+  });
+});
+
+describe('services/covers: un solo cover activo (procedencia)', () => {
+  let dir;
+  let db;
+
+  const writeSource = (name, buffer) => {
+    const p = path.join(dir, name);
+    fs.writeFileSync(p, buffer);
+    return p;
+  };
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), 'mc-covers-active-'));
+    db = openDb(dir);
+  });
+
+  afterEach(() => {
+    db?.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('linkLocalCover borra el vínculo y el archivo de AniList', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 10, coverUrl: 'https://x/a.png' },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    assert.equal(getRef(db, manga.id, 'anilist')?.coverFile, `${manga.id}.png`);
+
+    await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('l.webp', imageBuffer('webp')),
+    });
+
+    assert.equal(getRef(db, manga.id, 'anilist'), null);
+    assert.equal(listRefsByManga(db, manga.id).length, 1);
+    assert.equal(statusCover(db, manga.id).provider, 'local');
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.webp`)), true);
+  });
+
+  it('linkCover borra el vínculo y el archivo local', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('l.png', imageBuffer('png')),
+    });
+    assert.equal(getRef(db, manga.id, 'local')?.coverFile, `${manga.id}.png`);
+
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 20, coverUrl: 'https://x/b.webp' },
+      fetchImpl: async () => imageResponse('image/webp'),
+    });
+    assert.equal(getRef(db, manga.id, 'local'), null);
+    assert.equal(listRefsByManga(db, manga.id).length, 1);
+    assert.equal(getRef(db, manga.id, 'anilist')?.coverFile, `${manga.id}.webp`);
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
+  });
+
+  it('borra refs ajenos sin archivo al vincular local', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 1 });
+    await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('l.png', imageBuffer('png')),
+    });
+    assert.equal(getRef(db, manga.id, 'anilist'), null);
+    assert.equal(listRefsByManga(db, manga.id).length, 1);
+  });
+
+  it('statusCover, unlinkCover y coverMap son provider-agnósticos', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    const linked = await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('l.gif', imageBuffer('gif')),
+    });
+
+    const status = statusCover(db, manga.id);
+    assert.equal(status.provider, 'local');
+    assert.equal(status.externalId, '');
+    assert.equal(status.coverUrl, linked.coverUrl);
+    assert.equal(coverMap(db)[manga.id].url, linked.coverUrl);
+    assert.equal(coverMap(db)[manga.id].isAdult, false); // local: nunca adulto
+
+    assert.deepEqual(await unlinkCover(db, dir, manga.id), { ok: true });
+    assert.equal(statusCover(db, manga.id), null);
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.gif`)), false);
+  });
+
+  it('autoMatchCover no pisa una portada local', async () => {
+    const manga = createManga(db, { name: 'Berserk', volumes: 41 });
+    const linked = await linkLocalCover(db, dir, {
+      mangaId: manga.id,
+      sourcePath: writeSource('l.png', imageBuffer('png')),
+    });
+
+    const out = await autoMatchCover(db, dir, manga.id, {
+      fetchImpl: () => {
+        throw new Error('no debería consultar la red');
+      },
+    });
+    assert.equal(out, linked.coverUrl);
+    assert.equal(statusCover(db, manga.id).provider, 'local');
+  });
+});
+
+describe('services/covers: indicador +18 persistido', () => {
+  let dir;
+  let db;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(tmpdir(), 'mc-covers-adult-'));
+    db = openDb(dir);
+  });
+
+  afterEach(() => {
+    db?.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('linkCover persiste isAdult del candidato (true y false)', async () => {
+    const adult = createManga(db, { name: 'Adult', volumes: 1 });
+    const safe = createManga(db, { name: 'Safe', volumes: 1 });
+
+    await linkCover(db, dir, {
+      mangaId: adult.id,
+      candidate: { id: 1, coverUrl: 'https://x/a.png', isAdult: true },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    await linkCover(db, dir, {
+      mangaId: safe.id,
+      candidate: { id: 2, coverUrl: 'https://x/b.png', isAdult: false },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+
+    assert.equal(getRef(db, adult.id, 'anilist').isAdult, true);
+    assert.equal(getRef(db, safe.id, 'anilist').isAdult, false);
+
+    const map = coverMap(db);
+    assert.deepEqual(map[adult.id], { url: `mangacount://covers/${adult.id}.png`, isAdult: true });
+    assert.deepEqual(map[safe.id], { url: `mangacount://covers/${safe.id}.png`, isAdult: false });
+  });
+
+  it('linkCover sin isAdult (undefined) lo guarda como falso', async () => {
+    const manga = createManga(db, { name: 'NoFlag', volumes: 1 });
+    await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: { id: 3, coverUrl: 'https://x/c.png' },
+      fetchImpl: async () => imageResponse('image/png'),
+    });
+    assert.equal(getRef(db, manga.id, 'anilist').isAdult, false);
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
+  });
+
+  it('linkLocalCover guarda isAdult en false', async () => {
+    const manga = createManga(db, { name: 'Local', volumes: 1 });
+    const src = path.join(dir, 'l.png');
+    fs.writeFileSync(src, imageBuffer('png'));
+    await linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: src });
+
+    assert.equal(getRef(db, manga.id, 'local').isAdult, false);
+    assert.equal(coverMap(db)[manga.id].isAdult, false);
   });
 });

@@ -718,6 +718,35 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    transition: filter var(--dur-fast) var(--ease-out);
+}
+
+/* Portada +18: blur siempre; el pref decide cómo se revela. */
+.card-cover--adult .card-cover-img {
+    filter: blur(12px);
+}
+
+.card-cover--revealed .card-cover-img,
+.card-cover--reveal-hover:hover .card-cover-img {
+    filter: none;
+}
+
+.card-cover-adult {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: var(--color-incomplete);
+    color: #fff;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-cover-img {
+        transition: none;
+    }
 }
 
 .card-cover-initials {

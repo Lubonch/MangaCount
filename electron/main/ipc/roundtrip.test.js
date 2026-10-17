@@ -150,7 +150,10 @@ describe('ipc roundtrip por canal', () => {
 
       const status = await api.coverStatus(manga.id);
       assert.equal(status.coverUrl, linked.coverUrl);
-      assert.equal((await api.coverAll())[manga.id], linked.coverUrl);
+      assert.deepEqual((await api.coverAll())[manga.id], {
+        url: linked.coverUrl,
+        isAdult: false,
+      });
 
       await api.coverUnlink(manga.id);
       assert.equal(await api.coverStatus(manga.id), null);

@@ -30,6 +30,7 @@ function App() {
     const [recommendationError, setRecommendationError] = useState(null);
     const [appVersion, setAppVersion] = useState(null);
     const [updateInfo, setUpdateInfo] = useState(null);
+    const [showAdultCovers, setShowAdultCovers] = useState(false);
     const recommendationRequestRef = useRef({ controller: null, requestId: 0 });
 
     useEffect(() => {
@@ -63,6 +64,31 @@ function App() {
             off?.();
         };
     }, []);
+
+    // Preferencia de contenido +18: define el modo de reveal de las portadas
+    // (hover con ON, click con OFF). Se relee al cerrar Settings.
+    useEffect(() => {
+        let cancelled = false;
+        appConfigGet()
+            .then((config) => {
+                if (!cancelled) setShowAdultCovers(config?.showAdultCovers === true);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const refreshAdultCoversPref = () => {
+        appConfigGet()
+            .then((config) => setShowAdultCovers(config?.showAdultCovers === true))
+            .catch(() => {});
+    };
+
+    const handleCloseSettings = () => {
+        setShowSettings(false);
+        refreshAdultCoversPref();
+    };
 
     const handleDownloadUpdate = () => {
         updateDownload().catch(() => {});
@@ -364,6 +390,7 @@ function App() {
                             onOpenSettings={() => setShowSettings(true)}
                             recommendationsLoading={recommendationsLoading}
                             refreshing={refreshing}
+                            showAdultCovers={showAdultCovers}
                         />
                         <main className="main-content">
                             <CollectionView 
@@ -372,6 +399,7 @@ function App() {
                                 selectedProfile={selectedProfile}
                                 loading={refreshing}
                                 onRefresh={() => loadData(true)}
+                                showAdultCovers={showAdultCovers}
                             />
                         </main>
                         <RecommendationModal
@@ -383,7 +411,7 @@ function App() {
                         />
                         <SettingsModal
                             isOpen={showSettings}
-                            onClose={() => setShowSettings(false)}
+                            onClose={handleCloseSettings}
                             selectedProfile={selectedProfile}
                             onImportSuccess={handleImportSuccess}
                             onDataReset={handleDataReset}

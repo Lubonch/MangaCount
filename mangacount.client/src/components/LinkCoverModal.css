@@ -78,6 +78,26 @@
     font-size: var(--text-xs);
 }
 
+/* Portada +18: blur siempre; el pref decide cómo se revela. */
+.cover-candidate img {
+    transition: filter var(--dur-fast) var(--ease-out);
+}
+
+.cover-candidate--adult img {
+    filter: blur(12px);
+}
+
+.cover-candidate--revealed img,
+.cover-candidate--reveal-hover:hover img {
+    filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cover-candidate img {
+        transition: none;
+    }
+}
+
 .cover-candidate-title {
     font-size: var(--text-sm);
     font-weight: 600;
@@ -106,4 +126,46 @@
 
 .link-cover-unlink {
     margin-right: auto;
+}
+
+.link-cover-current {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.link-cover-current-thumb {
+    width: 48px;
+    height: 68px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+}
+
+.link-cover-current-origin {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.link-cover-local-button {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.link-cover-local-button:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.link-cover-local-button:disabled {
+    opacity: 0.6;
+    cursor: default;
 }

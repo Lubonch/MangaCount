@@ -150,7 +150,7 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
 
                 <div className="modal-actions nuke-modal-actions">
                     <button type="button" onClick={onClose} className="cancel-button">
-                        Cancel
+                        Cancelar
                     </button>
                     
                     {step > 1 && step < TOTAL_STEPS && (
@@ -161,7 +161,7 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                     
                     {step < TOTAL_STEPS ? (
                         <button type="button" onClick={handleNext} className="next-button">
-                            Continue
+                            Continuar
                         </button>
                     ) : (
                         <button 
@@ -170,7 +170,7 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
                             disabled={confirmationText !== REQUIRED_TEXT || isLoading}
                             className="nuke-button"
                         >
-                            {isLoading ? 'Deleting...' : '💥 NUKE DATABASE'}
+                            {isLoading ? 'Borrando…' : '💥 BORRAR BASE DE DATOS'}
                         </button>
                     )}
                 </div>
