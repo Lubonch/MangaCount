@@ -230,6 +230,20 @@ describe('ipc handlers (ctx puro)', () => {
     );
   });
 
+  it('cover:local vincula una portada local y figura en channelNames', async () => {
+    assert.ok(channelNames().includes('cover:local'));
+    const manga = handlers['manga:upsert'](ctx, { name: 'local', volumes: 1 });
+    const src = path.join(dir, 'portada.png');
+    fs.writeFileSync(
+      src,
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+    );
+    const out = await handlers['cover:local'](ctx, { mangaId: manga.id, sourcePath: src });
+    assert.equal(out.ref.provider, 'local');
+    assert.equal(out.coverUrl, `mangacount://covers/${manga.id}.png`);
+    assert.equal((await handlers['cover:status'](ctx, manga.id)).provider, 'local');
+  });
+
   it('backup:list vacío sin destino y con backups listados', async () => {
     assert.equal(handlers['backup:config-get'](ctx).enabled, false);
     assert.deepEqual(handlers['backup:list'](ctx), []);

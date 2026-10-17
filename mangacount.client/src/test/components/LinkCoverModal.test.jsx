@@ -7,6 +7,8 @@ vi.mock('../../api/localAdapter.js', () => ({
   coverLink: vi.fn(),
   coverUnlink: vi.fn(),
   coverStatus: vi.fn(),
+  coverLocal: vi.fn(),
+  pickFile: vi.fn(),
 }))
 
 import * as api from '../../api/localAdapter.js'
@@ -206,5 +208,99 @@ describe('LinkCoverModal', () => {
 
     expect(await screen.findByText('+18')).toBeInTheDocument()
     expect(screen.getAllByText('+18')).toHaveLength(1) // solo el candidato adulto
+  })
+
+  it('vincula una imagen local desde "Buscar en mi PC…"', async () => {
+    api.coverSearch.mockResolvedValue([])
+    api.pickFile.mockResolvedValue('/home/u/foto.png')
+    api.coverLocal.mockResolvedValue({
+      ref: { provider: 'local' },
+      coverUrl: 'mangacount://covers/5.png',
+    })
+    const onLinked = vi.fn()
+    const onClose = vi.fn()
+    render(<LinkCoverModal manga={manga} onClose={onClose} onLinked={onLinked} />)
+
+    await userEvent.click(screen.getByText('Buscar en mi PC…'))
+
+    await waitFor(() =>
+      expect(api.pickFile).toHaveBeenCalledWith([
+        { name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] },
+      ])
+    )
+    await waitFor(() => expect(api.coverLocal).toHaveBeenCalledWith(5, '/home/u/foto.png'))
+    expect(onLinked).toHaveBeenCalledWith(5, 'mangacount://covers/5.png')
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('no vincula nada si se cancela el diálogo', async () => {
+    api.coverSearch.mockResolvedValue([])
+    api.pickFile.mockResolvedValue(null)
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    await userEvent.click(screen.getByText('Buscar en mi PC…'))
+
+    await waitFor(() => expect(api.pickFile).toHaveBeenCalled())
+    expect(api.coverLocal).not.toHaveBeenCalled()
+    expect(screen.queryByText(/No se pudo usar esa imagen/)).not.toBeInTheDocument()
+  })
+
+  it('muestra un error si falla la imagen local', async () => {
+    api.coverSearch.mockResolvedValue([])
+    api.pickFile.mockResolvedValue('/x/grande.png')
+    api.coverLocal.mockRejectedValue(new Error('demasiado grande'))
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    await userEvent.click(screen.getByText('Buscar en mi PC…'))
+
+    expect(
+      await screen.findByText(
+        'No se pudo usar esa imagen (formato no soportado o demasiado grande).'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('deshabilita el botón local mientras está ocupado', async () => {
+    api.coverSearch.mockResolvedValue([])
+    let resolvePick
+    api.pickFile.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePick = resolve
+      })
+    )
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    await userEvent.click(screen.getByText('Buscar en mi PC…'))
+
+    const busy = await screen.findByRole('button', { name: 'Leyendo…' })
+    expect(busy).toBeDisabled()
+    resolvePick(null)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Buscar en mi PC…' })).toBeEnabled()
+    )
+  })
+
+  it('muestra la procedencia local y el thumbnail de la portada actual', async () => {
+    api.coverSearch.mockResolvedValue([])
+    api.coverStatus.mockResolvedValue({
+      provider: 'local',
+      externalId: '',
+      coverUrl: 'mangacount://covers/5.png',
+    })
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    expect(await screen.findByText('Portada local')).toBeInTheDocument()
+    const thumb = document.querySelector('.link-cover-current-thumb')
+    expect(thumb).toBeInTheDocument()
+    expect(thumb).toHaveAttribute('src', 'mangacount://covers/5.png')
+  })
+
+  it('muestra la procedencia de AniList sin thumbnail si no hay imagen', async () => {
+    api.coverSearch.mockResolvedValue([])
+    api.coverStatus.mockResolvedValue({ provider: 'anilist', externalId: '1', coverUrl: null })
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+
+    expect(await screen.findByText('Portada de AniList')).toBeInTheDocument()
+    expect(document.querySelector('.link-cover-current-thumb')).not.toBeInTheDocument()
   })
 })

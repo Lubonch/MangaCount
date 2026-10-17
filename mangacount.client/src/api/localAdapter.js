@@ -86,6 +86,8 @@ export const coverSearch = (query) =>
   });
 export const coverLink = (mangaId, candidate) =>
   apiCall('cover:link', '/api/cover/link', json({ mangaId, candidate }), { mangaId, candidate });
+export const coverLocal = (mangaId, sourcePath) =>
+  apiCall('cover:local', '/api/cover/local', json({ mangaId, sourcePath }), { mangaId, sourcePath });
 export const coverFetch = (mangaId, coverUrl) =>
   apiCall('cover:fetch', '/api/cover/fetch', json({ mangaId, coverUrl }), { mangaId, coverUrl });
 export const coverUnlink = (mangaId) =>
