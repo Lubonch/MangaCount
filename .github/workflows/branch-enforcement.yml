@@ -1,0 +1,24 @@
+name: Branch enforcement
+
+# Protocolo de rama: los PRs hacia `main` deben venir de `develop`.
+# GitHub no permite restringir la rama de origen de un PR con reglas de rama,
+# así que este check (requerido por el ruleset "PR only") cierra ese hueco.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  require-develop-source:
+    name: Require develop source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check head branch
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "Los PRs a main deben venir de 'develop' (head: '${{ github.head_ref }}')."
+            exit 1
+          fi
+          echo "Origen válido: develop"
