@@ -16,8 +16,10 @@ import {
   restoreBackup,
   backupFileName,
   isBackupFileName,
+  setRemoteFs,
   DEFAULT_KEEP,
 } from './backup.js';
+import { fsOps } from './fs-worker.js';
 
 describe('services/backup', () => {
   let dataDir;
@@ -27,6 +29,8 @@ describe('services/backup', () => {
   const at = (minutes) => () => new Date(new Date(2026, 0, 2, 3, 0, 0).getTime() + minutes * 60000);
 
   beforeEach(() => {
+    // Sin worker real: las ops corren en proceso (mismo código que el worker).
+    setRemoteFs({ call: async (op, args) => fsOps[op](...args) });
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdata-'));
     destDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdest-'));
     db = openDb(dataDir);
@@ -75,12 +79,12 @@ describe('services/backup', () => {
     }
     fs.writeFileSync(path.join(destDir, 'backup-de-otro-programa.zip'), 'x');
 
-    const removed = pruneBackups(destDir, DEFAULT_KEEP);
+    const removed = await pruneBackups(destDir, DEFAULT_KEEP);
     assert.equal(removed.length, 1);
     assert.equal(removed[0], 'mangacount-backup-2026-01-02-0300.zip');
-    assert.equal(listBackupFiles(destDir).length, DEFAULT_KEEP);
+    assert.equal((await listBackupFiles(destDir)).length, DEFAULT_KEEP);
     assert.ok(fs.existsSync(path.join(destDir, 'backup-de-otro-programa.zip')));
-    assert.equal(listBackups(destDir).length, DEFAULT_KEEP);
+    assert.equal((await listBackups(destDir)).length, DEFAULT_KEEP);
   });
 
   it('rechaza un zip sin manifest', () => {
@@ -145,14 +149,14 @@ describe('services/backup', () => {
     await assert.rejects(() => createBackup(db, dataDir, ''), /destinationDir requerido/);
   });
 
-  it('listBackupFiles tolera destino nulo o inexistente', () => {
-    assert.deepEqual(listBackupFiles(null), []);
-    assert.deepEqual(listBackupFiles(path.join(destDir, 'no-existe')), []);
+  it('listBackupFiles tolera destino nulo o inexistente', async () => {
+    assert.deepEqual(await listBackupFiles(null), []);
+    assert.deepEqual(await listBackupFiles(path.join(destDir, 'no-existe')), []);
   });
 
   it('pruneBackups no poda cuando no se supera keep', async () => {
     await createBackup(db, dataDir, destDir, { now: at(0) });
-    assert.deepEqual(pruneBackups(destDir, 5), []);
+    assert.deepEqual(await pruneBackups(destDir, 5), []);
   });
 
   it('createBackup incluye subdirectorios de profiles y omite no-archivos', async () => {

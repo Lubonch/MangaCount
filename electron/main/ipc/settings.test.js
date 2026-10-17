@@ -7,6 +7,8 @@ import { openDb } from '../db/client.js';
 import { handlers } from './handlers.js';
 import { loadResolvedPrefs, loadPrefs } from '../services/prefs.js';
 import { listBackups } from '../services/backup.js';
+import { setRemoteFs } from '../services/backup.js';
+import { fsOps } from '../services/fs-worker.js';
 
 describe('ipc: settings (backup, bot, dialog)', () => {
   let dir;
@@ -16,6 +18,7 @@ describe('ipc: settings (backup, bot, dialog)', () => {
   const logged = [];
 
   beforeEach(() => {
+    setRemoteFs({ call: async (op, args) => fsOps[op](...args) });
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcset-'));
     destDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdest-'));
     db = openDb(dir);
@@ -72,7 +75,7 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     const result = await handlers['backup:create'](ctx);
     assert.ok(fs.existsSync(result.path));
     assert.equal(result.lastBackupStatus.ok, true);
-    assert.equal(listBackups(destDir).length, 1);
+    assert.equal((await listBackups(destDir)).length, 1);
     assert.equal(loadResolvedPrefs(dir).backup.lastBackupStatus.ok, true);
   });
 

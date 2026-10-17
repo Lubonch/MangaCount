@@ -56,6 +56,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true, diagnosticsCopy: true, showAdultCovers: false });
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
+  const [backupListStatus, setBackupListStatus] = useState('idle');
   const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], status: 'apagado', hasToken: false });
   const [token, setToken] = useState('');
   const [generalMessage, setGeneralMessage] = useState('');
@@ -81,10 +82,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     let cancelled = false;
     (async () => {
       try {
-        const [appConfig, backupConfig, backupFiles, botConfig, autostart, appMeta] = await Promise.all([
+        const [appConfig, backupConfig, botConfig, autostart, appMeta] = await Promise.all([
           appConfigGet(),
           backupConfigGet(),
-          backupList(),
           botConfigGet(),
           botAutostartGet(),
           appInfo(),
@@ -103,7 +103,8 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           ...backupConfig,
           triggers: { ...EMPTY_BACKUP.triggers, ...(backupConfig?.triggers ?? {}) },
         });
-        setBackups(Array.isArray(backupFiles) ? backupFiles : []);
+        setBackups([]);
+        setBackupListStatus('idle');
         setBot((b) => ({ ...b, ...botConfig }));
       } catch (err) {
         if (!cancelled) setGeneralMessage(`No se pudo cargar la configuración: ${err.message}`);
@@ -163,12 +164,29 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     }
   };
 
+  // La lista de backups se pide bajo demanda (no al abrir Settings): el destino
+  // puede ser un montaje de red lento.
+  const loadBackups = async () => {
+    setBackupListStatus('loading');
+    try {
+      const res = await backupList();
+      const status = res?.status ?? 'ok';
+      // Si el destino no responde, se conserva la última lista conocida.
+      setBackups((prev) => (status === 'unresponsive' ? prev : res?.backups ?? []));
+      setBackupListStatus(status);
+    } catch {
+      setBackupListStatus('error');
+    }
+  };
+
   const runBackupNow = async () => {
     setBusy(true);
     setBackupError('');
     try {
       await backupCreate(backup.destinationDir ?? undefined);
-      setBackups(await backupList());
+      const res = await backupList();
+      setBackups(res?.backups ?? []);
+      setBackupListStatus(res?.status ?? 'ok');
       setBackup(await backupConfigGet());
       setBackupMessage('Backup creado.');
     } catch (err) {
@@ -523,10 +541,19 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
             <p className="settings-hint">
               {backups.length} backups · último OK: {backup.lastBackupAt ?? '—'}
               {lastStatus && !lastStatus.ok ? ` · último error: ${lastStatus.error}` : ''}
+              {backupListStatus === 'unresponsive' ? ' · el destino no responde' : ''}
             </p>
 
             <div className="settings-actions">
               <button type="button" aria-label="Guardar backup" onClick={saveBackup}>Guardar</button>
+              <button
+                type="button"
+                aria-label="Refrescar backups"
+                onClick={loadBackups}
+                disabled={backupListStatus === 'loading'}
+              >
+                {backupListStatus === 'loading' ? 'Refrescando…' : 'Refrescar'}
+              </button>
               <button type="button" aria-label="Backup ahora" onClick={runBackupNow} disabled={busy || !backup.destinationDir}>Backup ahora</button>
               <button type="button" className="settings-btn settings-btn--danger" aria-label="Restaurar" onClick={restore} disabled={busy}>Restaurar…</button>
             </div>
