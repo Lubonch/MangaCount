@@ -278,6 +278,7 @@ export async function linkCover(db, dataDir, { mangaId, candidate, fetchImpl } =
     provider: PROVIDER,
     externalId: candidate.id,
     coverFile: fileName,
+    isAdult: candidate.isAdult === true,
   });
   await clearOtherRefs(db, dir, id, PROVIDER);
   if (previous?.coverFile && previous.coverFile !== fileName) {
@@ -310,6 +311,7 @@ export async function linkLocalCover(db, dataDir, { mangaId, sourcePath } = {}) 
     provider: LOCAL_PROVIDER,
     externalId: '',
     coverFile: fileName,
+    isAdult: false,
   });
   await clearOtherRefs(db, dir, id, LOCAL_PROVIDER);
   if (previous?.coverFile && previous.coverFile !== fileName) {
@@ -352,12 +354,15 @@ export function statusCover(db, mangaId) {
   };
 }
 
-// Mapa { mangaId: url } para pintar las cards sin una llamada por manga.
-// Provider-agnóstico; el invariante "un solo ref por manga" da una sola URL.
+// Mapa { mangaId: { url, isAdult } } para pintar las cards sin una llamada por
+// manga. Provider-agnóstico; el invariante "un solo ref por manga" da una sola
+// entrada, con el indicador de contenido adulto del vínculo activo.
 export function coverMap(db) {
   const map = {};
   for (const ref of listRefs(db)) {
-    if (ref.coverFile) map[ref.mangaId] = coverUrl(ref.coverFile);
+    if (ref.coverFile) {
+      map[ref.mangaId] = { url: coverUrl(ref.coverFile), isAdult: ref.isAdult === true };
+    }
   }
   return map;
 }

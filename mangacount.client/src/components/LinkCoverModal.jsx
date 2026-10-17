@@ -8,7 +8,7 @@ const IMAGE_FILTERS = [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', '
 // local), el usuario elige un candidato y se descarga/cachea la portada.
 // También permite elegir una imagen local del equipo (para mangas que no están
 // en AniList). Se guarda SOLO el vínculo; el nombre local no cambia.
-export default function LinkCoverModal({ manga, onClose, onLinked }) {
+export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCovers = false }) {
   const [query, setQuery] = useState(manga?.name ?? '');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,6 +16,8 @@ export default function LinkCoverModal({ manga, onClose, onLinked }) {
   const [localBusy, setLocalBusy] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState(null);
+  // Candidatos +18 revelados por click (solo con la preferencia apagada).
+  const [revealedCandidates, setRevealedCandidates] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -90,6 +92,29 @@ export default function LinkCoverModal({ manga, onClose, onLinked }) {
     }
   };
 
+  const isRevealed = (candidate) =>
+    candidate.isAdult === true && !showAdultCovers && revealedCandidates[candidate.id] === true;
+
+  const candidateClassName = (candidate) => {
+    const isAdult = candidate.isAdult === true;
+    return [
+      'cover-candidate',
+      isAdult ? 'cover-candidate--adult' : '',
+      isAdult && showAdultCovers ? 'cover-candidate--reveal-hover' : '',
+      isRevealed(candidate) ? 'cover-candidate--revealed' : '',
+    ].filter(Boolean).join(' ');
+  };
+
+  // Con el pref OFF el primer click revela y el segundo ejecuta la vinculación
+  // real; con el pref ON el hover ya revela y el click vincula directo.
+  const handleCandidateClick = (candidate) => {
+    if (candidate.isAdult === true && !showAdultCovers && !revealedCandidates[candidate.id]) {
+      setRevealedCandidates((prev) => ({ ...prev, [candidate.id]: true }));
+      return;
+    }
+    link(candidate);
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content link-cover-modal" onClick={(e) => e.stopPropagation()}>
@@ -140,8 +165,8 @@ export default function LinkCoverModal({ manga, onClose, onLinked }) {
           {results.map((candidate) => (
             <button
               key={candidate.id}
-              className="cover-candidate"
-              onClick={() => link(candidate)}
+              className={candidateClassName(candidate)}
+              onClick={() => handleCandidateClick(candidate)}
               disabled={busyId != null}
               title={`Vincular con ${candidate.title}`}
             >

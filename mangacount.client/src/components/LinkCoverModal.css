@@ -78,6 +78,26 @@
     font-size: var(--text-xs);
 }
 
+/* Portada +18: blur siempre; el pref decide cómo se revela. */
+.cover-candidate img {
+    transition: filter var(--dur-fast) var(--ease-out);
+}
+
+.cover-candidate--adult img {
+    filter: blur(12px);
+}
+
+.cover-candidate--revealed img,
+.cover-candidate--reveal-hover:hover img {
+    filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cover-candidate img {
+        transition: none;
+    }
+}
+
 .cover-candidate-title {
     font-size: var(--text-sm);
     font-weight: 600;

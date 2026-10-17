@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS MangaExternalRef (
     Provider VARCHAR(32) NOT NULL,
     ExternalId VARCHAR(64) NOT NULL,
     CoverFile VARCHAR(255),
+    IsAdult INTEGER NOT NULL DEFAULT 0,
     UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(MangaId, Provider)
 );

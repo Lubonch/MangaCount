@@ -346,7 +346,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       setCoverBulk({ running: false, done: 0, total: 0, message: 'No se pudo leer la colección.', cooldownLeft: 0 });
       return;
     }
-    const missing = mangas.filter((manga) => !covers[manga.id]);
+    const missing = mangas.filter((manga) => !covers[manga.id]?.url);
     if (missing.length === 0) {
       setCoverBulk({ running: false, done: 0, total: 0, message: 'Todas las portadas ya están vinculadas.', cooldownLeft: 0 });
       return;

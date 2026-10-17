@@ -16,7 +16,8 @@ const Sidebar = ({
     onRecommend = () => {},
     onOpenSettings = () => {},
     recommendationsLoading = false,
-    refreshing = false
+    refreshing = false,
+    showAdultCovers = false
 }) => {
     const [showAddEntry, setShowAddEntry] = useState(false);
     const [showAddManga, setShowAddManga] = useState(false);
@@ -257,6 +258,7 @@ const Sidebar = ({
                     manga={coverTarget}
                     onClose={() => setCoverTarget(null)}
                     onLinked={() => onImportSuccess?.()}
+                    showAdultCovers={showAdultCovers}
                 />
             )}
         </>
