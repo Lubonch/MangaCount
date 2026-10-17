@@ -15,6 +15,8 @@ import {
   pickAutoMatch,
   searchManga,
   searchMangaOnce,
+  searchMangaDexOnce,
+  MANGA_URL,
   fetchCover,
   isAllowedCoverUrl,
   extensionForContentType,
@@ -128,10 +130,116 @@ describe('services/covers: searchManga', () => {
       if (calls === 1) return { ok: false, status: 429, headers: { get: () => '2' } };
       return { ok: true, status: 200, json: async () => ({ data: { Page: { media: [] } } }) };
     };
-    const results = await searchManga('x', { fetchImpl, sleep: (ms) => slept.push(ms) });
+    const results = await searchManga('x', { fetchImpl, fallbackToMangaDex: false, sleep: (ms) => slept.push(ms) });
     assert.deepEqual(results, []);
     assert.equal(calls, 2);
     assert.deepEqual(slept, [2000]);
+  });
+
+  it('mapea los resultados de MangaDex (fetch fake)', async () => {
+    const fetchImpl = async (url) => {
+      assert.ok(String(url).startsWith(`${MANGA_URL}?`));
+      assert.ok(String(url).includes('includes%5B%5D=cover_art'));
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            {
+              id: 'abc-uuid',
+              attributes: {
+                title: { en: 'Some Manga', 'ja-ro': 'Sonota' },
+                altTitles: [{ ja: 'ソノタ' }],
+                contentRating: 'erotica',
+                year: 2020,
+                lastVolume: '5',
+              },
+              relationships: [{ type: 'cover_art', attributes: { fileName: 'cover.png' } }],
+            },
+          ],
+        }),
+      };
+    };
+    const results = await searchMangaDexOnce('Some Manga', { fetchImpl, includeAdult: true });
+    assert.equal(results.length, 1);
+    assert.equal(results[0].title, 'Some Manga');
+    assert.equal(results[0].coverUrl, 'https://uploads.mangadex.org/covers/abc-uuid/cover.png');
+    assert.equal(results[0].isAdult, true);
+    assert.equal(results[0].source, 'mangadex');
+    assert.equal(results[0].provider, 'mangadex');
+    assert.equal(results[0].volumes, 5);
+    assert.ok(results[0].altTitles.includes('ソノタ'));
+  });
+
+  it('no pide contenido adulto a MangaDex si la preferencia está apagada', async () => {
+    const seen = [];
+    const fetchImpl = async (url) => {
+      seen.push(String(url));
+      return { ok: true, status: 200, json: async () => ({ data: [] }) };
+    };
+    await searchMangaDexOnce('x', { fetchImpl, includeAdult: false });
+    assert.ok(!seen[0].includes('erotica'));
+    assert.ok(!seen[0].includes('pornographic'));
+    assert.ok(seen[0].includes('safe'));
+  });
+
+  it('cae a MangaDex solo si AniList no devuelve candidatos', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      if (url === ANILIST_URL) {
+        return { ok: true, status: 200, json: async () => ({ data: { Page: { media: [] } } }) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: [
+            {
+              id: 'md-1',
+              attributes: { title: { en: 'Fallback Title' }, contentRating: 'safe' },
+              relationships: [{ type: 'cover_art', attributes: { fileName: 'c.png' } }],
+            },
+          ],
+        }),
+      };
+    };
+    const results = await searchManga('Fallback Title', { fetchImpl });
+    assert.equal(calls.length, 2);
+    assert.equal(results[0].source, 'mangadex');
+  });
+
+  it('no consulta MangaDex si AniList devuelve resultados', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          data: {
+            Page: {
+              media: [
+                { id: 1, title: { romaji: 'Hit' }, coverImage: { large: 'https://img/hit.jpg' } },
+              ],
+            },
+          },
+        }),
+      };
+    };
+    const results = await searchManga('Hit', { fetchImpl });
+    assert.equal(calls.length, 1);
+    assert.equal(results[0].source, 'anilist');
+  });
+
+  it('si MangaDex falla en el fallback, devuelve vacío', async () => {
+    const fetchImpl = async (url) => {
+      if (url === ANILIST_URL) {
+        return { ok: true, status: 200, json: async () => ({ data: { Page: { media: [] } } }) };
+      }
+      throw new Error('red caída');
+    };
+    assert.deepEqual(await searchManga('x', { fetchImpl }), []);
   });
 });
 
@@ -250,7 +358,7 @@ describe('services/covers: ramas de normalización y búsqueda', () => {
       if (calls === 1) return { ok: false, status: 429, headers: { get: () => '0' } };
       return { ok: true, status: 200, json: async () => ({ data: { Page: { media: [] } } }) };
     };
-    assert.deepEqual(await searchManga('x', { fetchImpl }), []);
+    assert.deepEqual(await searchManga('x', { fetchImpl, fallbackToMangaDex: false }), []);
     assert.equal(calls, 2);
   });
 
@@ -432,6 +540,22 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     assert.equal(coverMap(db)[manga.id].isAdult, true);
   });
 
+  it('guarda la procedencia MangaDex del candidato', async () => {
+    const manga = createManga(db, { name: 'x', volumes: 1 });
+    const out = await linkCover(db, dir, {
+      mangaId: manga.id,
+      candidate: {
+        id: 'uuid-1',
+        provider: 'mangadex',
+        coverUrl: 'https://uploads.mangadex.org/covers/uuid-1/c.jpg',
+      },
+      fetchImpl: async () => imageResponse('image/jpeg'),
+    });
+    assert.equal(out.ref.provider, 'mangadex');
+    assert.equal(statusCover(db, manga.id).externalId, 'uuid-1');
+    assert.equal(coverMap(db)[manga.id].url, out.coverUrl);
+  });
+
   it('coverMap toma isAdult de la entidad manga (no del vínculo)', async () => {
     const manga = createManga(db, { name: 'x', volumes: 1 });
     await linkCover(db, dir, {
@@ -531,6 +655,47 @@ describe('services/covers: removeCoverFile sin archivo', () => {
 });
 
 describe('services/covers: autoMatchCover', () => {
+  it('cae a MangaDex cuando AniList no tiene match y vincula con esa procedencia', async () => {
+    const dir = fs.mkdtempSync(path.join(tmpdir(), 'mc-automd-'));
+    const db = openDb(dir);
+    try {
+      const manga = createManga(db, { name: 'Solo MD', volumes: 3 });
+      const fetchImpl = async (url, opts = {}) => {
+        if (opts.method === 'POST') {
+          return { ok: true, status: 200, json: async () => ({ data: { Page: { media: [] } } }) };
+        }
+        if (String(url).startsWith(`${MANGA_URL}?`)) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [
+                {
+                  id: 'md-uuid',
+                  attributes: { title: { en: 'Solo MD' }, contentRating: 'safe' },
+                  relationships: [{ type: 'cover_art', attributes: { fileName: 'c.jpg' } }],
+                },
+              ],
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => 'image/jpeg' },
+          arrayBuffer: async () => new Uint8Array([1, 2]).buffer,
+        };
+      };
+
+      const url = await autoMatchCover(db, dir, manga.id, { fetchImpl });
+      assert.equal(url, `mangacount://covers/${manga.id}.jpg`);
+      assert.equal(statusCover(db, manga.id).provider, 'mangadex');
+    } finally {
+      db.close();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('vincula con match único y no re-busca si ya está vinculado', async () => {
     const dir = fs.mkdtempSync(path.join(tmpdir(), 'mc-autocover-'));
     const db = openDb(dir);

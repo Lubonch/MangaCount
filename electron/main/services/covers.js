@@ -20,6 +20,8 @@ import { getMangaById, setMangaIsAdult } from '../db/repositories/mangas.js';
 export const ANILIST_URL = 'https://graphql.anilist.co';
 export const PROVIDER = 'anilist';
 export const LOCAL_PROVIDER = 'local';
+export const MANGA_PROVIDER = 'mangadex';
+export const MANGA_URL = 'https://api.mangadex.org/manga';
 export const MAX_COVER_BYTES = 8 * 1024 * 1024;
 
 // Cap único de tamaño. Se aplica dos veces en el flujo local: sobre el `stat` y
@@ -111,14 +113,73 @@ export async function searchMangaOnce(query, { fetchImpl = fetch, timeoutMs = 80
       volumes: m.volumes ?? null,
       year: m.startDate?.year ?? null,
       isAdult: m.isAdult === true,
+      source: PROVIDER,
+      provider: PROVIDER,
     }));
   } finally {
     clearTimeout(timer);
   }
 }
 
+// Búsqueda en MangaDex (REST pública, sin key). Se usa como **fallback** de
+// AniList. El contenido adulto sale de `contentRating`.
+const MD_RATINGS_SAFE = ['safe', 'suggestive'];
+const MD_RATINGS_ALL = ['safe', 'suggestive', 'erotica', 'pornographic'];
+
+export async function searchMangaDexOnce(
+  query,
+  { fetchImpl = fetch, timeoutMs = 8000, includeAdult = false, limit = 10 } = {}
+) {
+  const params = new URLSearchParams();
+  params.set('title', String(query ?? ''));
+  params.set('limit', String(limit));
+  params.append('includes[]', 'cover_art');
+  for (const rating of includeAdult ? MD_RATINGS_ALL : MD_RATINGS_SAFE) {
+    params.append('contentRating[]', rating);
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetchImpl(`${MANGA_URL}?${params.toString()}`, {
+      headers: { Accept: 'application/json', 'User-Agent': 'MangaCount' },
+      signal: controller.signal,
+    });
+    if (res.status === 429) throw rateLimitError(res);
+    if (!res.ok) throw new Error(`MangaDex ${res.status}`);
+    const data = await res.json();
+    return (data?.data ?? []).map((m) => {
+      const attrs = m.attributes ?? {};
+      const titles = attrs.title ?? {};
+      const altTitles = [titles.en, titles['ja-ro'], titles.ja].filter(Boolean);
+      for (const alt of attrs.altTitles ?? []) {
+        const value = Object.values(alt ?? {})[0];
+        if (value && !altTitles.includes(value)) altTitles.push(value);
+      }
+      const coverRel = (m.relationships ?? []).find((r) => r.type === 'cover_art');
+      const fileName = coverRel?.attributes?.fileName ?? null;
+      const rating = attrs.contentRating;
+      return {
+        id: m.id,
+        title: titles.en || titles['ja-ro'] || titles.ja || Object.values(titles)[0] || '',
+        altTitles,
+        coverUrl: fileName ? `https://uploads.mangadex.org/covers/${m.id}/${fileName}` : null,
+        format: null,
+        volumes: attrs.lastVolume ? Number.parseInt(attrs.lastVolume, 10) || null : null,
+        year: attrs.year ?? null,
+        isAdult: rating === 'erotica' || rating === 'pornographic',
+        source: MANGA_PROVIDER,
+        provider: MANGA_PROVIDER,
+      };
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Busca reintentando una vez ante 429 (respeta Retry-After). La espera es
-// inyectable para testearla sin demoras reales.
+// inyectable para testearla sin demoras reales. Si AniList no devuelve nada,
+// cae a MangaDex (best-effort: si el fallback falla, se devuelve vacío).
 export async function searchManga(
   query,
   {
@@ -126,13 +187,16 @@ export async function searchManga(
     timeoutMs = 8000,
     retries = 1,
     includeAdult = false,
+    fallbackToMangaDex = true,
     sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
   } = {}
 ) {
   let attempt = 0;
+  let anilist;
   for (;;) {
     try {
-      return await searchMangaOnce(query, { fetchImpl, timeoutMs, includeAdult });
+      anilist = await searchMangaOnce(query, { fetchImpl, timeoutMs, includeAdult });
+      break;
     } catch (err) {
       if (err?.code === 'RATE_LIMIT' && attempt < retries) {
         attempt += 1;
@@ -141,6 +205,12 @@ export async function searchManga(
       }
       throw err;
     }
+  }
+  if (anilist.length > 0 || !fallbackToMangaDex) return anilist;
+  try {
+    return await searchMangaDexOnce(query, { fetchImpl, timeoutMs, includeAdult });
+  } catch {
+    return [];
   }
 }
 
@@ -277,16 +347,17 @@ export async function linkCover(db, dataDir, { mangaId, candidate, fetchImpl } =
 
   const dir = coversDir(dataDir);
   const { buffer, ext } = await fetchCover(candidate.coverUrl, { fetchImpl });
-  const previous = getRef(db, id, PROVIDER);
+  const provider = candidate.provider ?? PROVIDER;
+  const previous = getRef(db, id, provider);
   const fileName = await saveCoverFile(dir, id, buffer, ext);
   const ref = upsertRef(db, {
     mangaId: id,
-    provider: PROVIDER,
+    provider,
     externalId: candidate.id,
     coverFile: fileName,
     isAdult: candidate.isAdult === true,
   });
-  await clearOtherRefs(db, dir, id, PROVIDER);
+  await clearOtherRefs(db, dir, id, provider);
   if (previous?.coverFile && previous.coverFile !== fileName) {
     await removeCoverFile(dir, previous.coverFile);
   }
@@ -389,8 +460,12 @@ export async function autoMatchCover(db, dataDir, mangaId, { fetchImpl, includeA
   if (existing?.coverFile) return coverUrl(existing.coverFile);
   const manga = getMangaById(db, id);
   if (!manga?.name) return null;
-  const candidates = await searchManga(manga.name, { fetchImpl, includeAdult });
-  const match = pickAutoMatch(manga.name, candidates);
+  const anilist = await searchManga(manga.name, { fetchImpl, includeAdult, fallbackToMangaDex: false });
+  let match = pickAutoMatch(manga.name, anilist);
+  if (!match) {
+    const mangadex = await searchMangaDexOnce(manga.name, { fetchImpl, includeAdult }).catch(() => []);
+    match = pickAutoMatch(manga.name, mangadex);
+  }
   if (!match?.coverUrl) return null;
   const linked = await linkCover(db, dataDir, { mangaId: id, candidate: match, fetchImpl });
   return linked.coverUrl;

@@ -147,6 +147,20 @@ describe('LinkCoverModal', () => {
     expect(screen.getByTitle('Vincular con Sin datos')).toBeInTheDocument()
   })
 
+  it('muestra la fuente del candidato (AniList / MangaDex)', async () => {
+    api.coverSearch.mockResolvedValue([
+      { ...candidate, id: 3, source: 'mangadex', provider: 'mangadex' },
+    ])
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+    expect(await screen.findByText('MangaDex')).toBeInTheDocument()
+  })
+
+  it('muestra AniList como fuente cuando el candidato la declara', async () => {
+    api.coverSearch.mockResolvedValue([{ ...candidate, id: 4, source: 'anilist' }])
+    render(<LinkCoverModal manga={manga} onClose={() => {}} onLinked={() => {}} />)
+    expect(await screen.findByText('AniList')).toBeInTheDocument()
+  })
+
   it('vincula sin callback onLinked', async () => {
     api.coverSearch.mockResolvedValue([candidate])
     api.coverLink.mockResolvedValue({ coverUrl: 'mangacount://covers/5.jpg' })
