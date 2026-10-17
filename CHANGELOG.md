@@ -3,6 +3,16 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.1] - 2026-10-17
+
+### Fixed
+
+- **Editar una entry ya no vuelve a pedir perfil**: `CollectionView` pasa el perfil activo al modal de
+  edición y `AddEntryModal` resuelve el `profileId` desde la propia entry (`editEntry.profileId`) con
+  fallback al perfil activo. Antes el submit quedaba bloqueado con *“Elegí un perfil antes de guardar”*
+  aunque hubiera un perfil seleccionado. El `+1` de la grilla no se veía afectado porque reenvía la
+  entry completa con su `profileId`.
+
 ## [2.2.0] - 2026-10-16
 
 ### Added
