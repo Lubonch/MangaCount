@@ -3,6 +3,16 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.3] - 2026-10-17
+
+### Fixed
+
+- **Backup con destino remoto lento**: abrir **Settings** ya no congela la app. El I/O del directorio de
+  destino corre en un **worker thread con timeout** (el snapshot de la base y el zip siguen locales) y la
+  lista de backups se carga **bajo demanda** con “Refrescar”, mostrando la última lista conocida y un
+  aviso si el destino no responde. El canal `backup:list` ahora devuelve `{ backups, status }`.
+- **Settings**: el botón **“Cerrar”** ya no queda pegado a la esquina del modal (padding propio del pie).
+
 ## [2.2.2] - 2026-10-17
 
 ### Added
