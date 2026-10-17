@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openDb } from '../db/client.js';
 import { loadResolvedPrefs } from '../services/prefs.js';
+import { createLocalFileGrants } from '../services/local-file-grants.js';
 import { handlers, channelNames, registerHandlers } from './handlers.js';
 
 const imageResponse = (type = 'image/png', bytes = [1, 2, 3]) => ({
@@ -28,7 +29,7 @@ describe('ipc handlers (ctx puro)', () => {
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mchand-'));
     db = openDb(dir);
-    ctx = { db, dataDir: dir };
+    ctx = { db, dataDir: dir, localFileGrants: createLocalFileGrants() };
     realFetch = globalThis.fetch;
   });
 
@@ -239,10 +240,58 @@ describe('ipc handlers (ctx puro)', () => {
       src,
       Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
     );
+    ctx.localFileGrants.grant(src);
     const out = await handlers['cover:local'](ctx, { mangaId: manga.id, sourcePath: src });
     assert.equal(out.ref.provider, 'local');
     assert.equal(out.coverUrl, `mangacount://covers/${manga.id}.png`);
     assert.equal((await handlers['cover:status'](ctx, manga.id)).provider, 'local');
+  });
+
+  it('cover:local rechaza rutas no elegidas por el diálogo y no escribe', async () => {
+    const manga = handlers['manga:upsert'](ctx, { name: 'sin grant', volumes: 1 });
+    const src = path.join(dir, 'portada.png');
+    fs.writeFileSync(
+      src,
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+    );
+
+    assert.throws(
+      () => handlers['cover:local'](ctx, { mangaId: manga.id, sourcePath: src }),
+      /no autorizado/
+    );
+    assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), false);
+  });
+
+  it('dialog:pick-file otorga un permiso de un solo uso para cover:local', async () => {
+    const manga = handlers['manga:upsert'](ctx, { name: 'grant', volumes: 1 });
+    const src = path.join(dir, 'portada.png');
+    fs.writeFileSync(
+      src,
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+    );
+    const c = { ...ctx, dialog: { pickFile: async () => src } };
+
+    assert.equal(await handlers['dialog:pick-file'](c), src);
+    const out = await handlers['cover:local'](c, { mangaId: manga.id, sourcePath: src });
+    assert.equal(out.ref.provider, 'local');
+    assert.throws(
+      () => handlers['cover:local'](c, { mangaId: manga.id, sourcePath: src }),
+      /no autorizado/
+    );
+  });
+
+  it('cover:local es fail-closed sin registro de permisos', async () => {
+    const manga = handlers['manga:upsert'](ctx, { name: 'failclosed', volumes: 1 });
+    const src = path.join(dir, 'portada.png');
+    fs.writeFileSync(
+      src,
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+    );
+
+    assert.throws(
+      () => handlers['cover:local']({ db, dataDir: dir }, { mangaId: manga.id, sourcePath: src }),
+      /no autorizado/
+    );
   });
 
   it('backup:list vacío sin destino y con backups listados', async () => {

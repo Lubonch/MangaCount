@@ -10,6 +10,7 @@ import { createLogger } from './services/logger.js';
 import { PROFILE_IMAGE_SCHEME } from './services/files.js';
 import { loadResolvedPrefs } from './services/prefs.js';
 import { createSecrets } from './services/secrets.js';
+import { createLocalFileGrants } from './services/local-file-grants.js';
 import { getAutostart, setAutostart, AUTOSTART_ARGS } from './services/autostart.js';
 import { startAutoBackup } from './services/auto-backup.js';
 import { createDiscordBot } from './services/discord-bot.js';
@@ -184,6 +185,7 @@ function initBackend() {
   log.info(`MangaCount v${app.getVersion()} · ${process.platform}/${process.arch} · ${app.getLocale()}`);
   ensureDesktopIntegration();
   const db = openDb(dataDir);
+  const localFileGrants = createLocalFileGrants();
   const ctx = {
     db,
     dataDir,
@@ -191,6 +193,7 @@ function initBackend() {
     clipboard,
     shell,
     logger: log,
+    localFileGrants,
     secrets: createSecrets({ dataDir, safeStorage }),
     autostart: {
       get: () => getAutostart({ app }),

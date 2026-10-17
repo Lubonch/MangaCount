@@ -12,7 +12,7 @@ import {
   setProfilePicture,
   deleteProfile,
 } from './profiles.js';
-import { listMangas, getMangaById, createManga, updateManga, deleteManga } from './mangas.js';
+import { listMangas, getMangaById, createManga, updateManga, deleteManga, setMangaIsAdult } from './mangas.js';
 import {
   listEntries,
   getEntryById,
@@ -64,6 +64,17 @@ describe('repositories', () => {
     const updated = updateManga(db, { ...created, volumes: 42 });
     assert.equal(updated.volumes, 42);
     assert.equal(listMangas(db).length, 1);
+  });
+
+  it('mangas: isAdult en el DTO, alta/edición y setMangaIsAdult', () => {
+    const created = createManga(db, { name: 'adult', volumes: 1, isAdult: true });
+    assert.equal(created.isAdult, true);
+    assert.equal(getMangaById(db, created.id).isAdult, true);
+    assert.equal(listMangas(db).find((m) => m.id === created.id).isAdult, true);
+
+    assert.equal(updateManga(db, { ...created, isAdult: false }).isAdult, false);
+    assert.equal(setMangaIsAdult(db, created.id, true).isAdult, true);
+    assert.equal(createManga(db, { name: 'plain', volumes: 1 }).isAdult, false);
   });
 
   it('mangas: volúmenes vacío/null/inválido -> 0 (serie en publicación)', () => {

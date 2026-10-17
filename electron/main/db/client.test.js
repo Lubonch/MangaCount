@@ -115,4 +115,53 @@ describe('db/client', () => {
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
     assert.equal(db.prepare('SELECT IsAdult FROM MangaExternalRef').get().IsAdult, 0);
   });
+
+  it('base nueva: Manga nace con la columna IsAdult', () => {
+    db = openDb(dir);
+    const col = db
+      .prepare('PRAGMA table_info(Manga)')
+      .all()
+      .find((c) => c.name === 'IsAdult');
+    assert.ok(col, 'falta la columna IsAdult');
+    assert.equal(col.notnull, 1);
+    assert.equal(col.dflt_value, '0');
+  });
+
+  it('migra v4 → v5: agrega Manga.IsAdult y hace backfill desde el vínculo +18', () => {
+    const file = path.join(dir, 'mangacount.db');
+    // Base con el esquema previo (v4): quita Manga.IsAdult y deja un vínculo +18.
+    const legacy = new Database(file);
+    legacy.exec(fs.readFileSync(new URL('./schema.sqlite.sql', import.meta.url), 'utf8'));
+    legacy.exec('ALTER TABLE Manga DROP COLUMN IsAdult');
+    const adult = legacy
+      .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
+      .get('adult', 1).Id;
+    const plain = legacy
+      .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
+      .get('plain', 1).Id;
+    legacy
+      .prepare(
+        'INSERT INTO MangaExternalRef (MangaId, Provider, ExternalId, CoverFile, IsAdult) VALUES (?, ?, ?, ?, 1)'
+      )
+      .run(adult, 'anilist', '42', 'adult.png');
+    legacy
+      .prepare(
+        'INSERT INTO MangaExternalRef (MangaId, Provider, ExternalId, CoverFile, IsAdult) VALUES (?, ?, ?, ?, 0)'
+      )
+      .run(plain, 'anilist', '43', 'plain.png');
+    legacy.pragma('user_version = 4');
+    legacy.close();
+
+    db = openDb(dir);
+    assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
+    const row = (id) => db.prepare('SELECT IsAdult FROM Manga WHERE Id = ?').get(id).IsAdult;
+    assert.equal(row(adult), 1);
+    assert.equal(row(plain), 0);
+
+    // Reabrir es idempotente: el backfill no rompe ni cambia nada.
+    db.close();
+    db = openDb(dir);
+    assert.equal(row(adult), 1);
+    assert.equal(row(plain), 0);
+  });
 });

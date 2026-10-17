@@ -133,8 +133,12 @@ export const handlers = {
     searchManga(query, { includeAdult: loadResolvedPrefs(dataDir).showAdultCovers }),
   'cover:link': ({ db, dataDir }, { mangaId, candidate } = {}) =>
     linkCover(db, dataDir, { mangaId, candidate }),
-  'cover:local': ({ db, dataDir }, { mangaId, sourcePath } = {}) =>
-    linkLocalCover(db, dataDir, { mangaId, sourcePath }),
+  'cover:local': ({ db, dataDir, localFileGrants }, { mangaId, sourcePath } = {}) => {
+    if (!localFileGrants?.consume(sourcePath)) {
+      throw new Error('sourcePath no autorizado (elegí el archivo con el diálogo)');
+    }
+    return linkLocalCover(db, dataDir, { mangaId, sourcePath });
+  },
   'cover:fetch': ({ db, dataDir }, { mangaId, coverUrl } = {}) =>
     refreshCover(db, dataDir, { mangaId, coverUrl }),
   'cover:unlink': ({ db, dataDir }, mangaId) => unlinkCover(db, dataDir, mangaId),
@@ -304,8 +308,12 @@ export const handlers = {
   // Diálogos nativos de archivo.
   'dialog:pick-directory': async (ctx) =>
     ctx.dialog?.pickDirectory ? ctx.dialog.pickDirectory() : null,
-  'dialog:pick-file': async (ctx, filters) =>
-    ctx.dialog?.pickFile ? ctx.dialog.pickFile(filters) : null,
+  'dialog:pick-file': async (ctx, filters) => {
+    if (!ctx.dialog?.pickFile) return null;
+    const picked = await ctx.dialog.pickFile(filters);
+    if (picked) ctx.localFileGrants?.grant(picked);
+    return picked;
+  },
 };
 
 export function channelNames() {
