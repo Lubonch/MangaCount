@@ -281,6 +281,20 @@ npm run lint:renderer
 npm run build:renderer
 ```
 
+### Protocolo de rama
+
+`main` es la rama de release y **solo se actualiza por PR desde `develop`**:
+
+- No se pushea directo a `main` (tampoco force-push ni borrado).
+- Los PRs hacia `main` **deben** tener `develop` como rama de origen: el workflow
+  [`branch-enforcement.yml`](.github/workflows/branch-enforcement.yml) falla si no.
+- El merge exige los checks de CI en verde (`Tests`, `Dependency Audit`) y el check
+  `Require develop source`.
+- El flujo normal es: trabajar en una rama → mergear a `develop` → PR `develop → main` → release.
+
+**Hotfix**: si hiciera falta saltear el protocolo, se desactiva el ruleset **“PR only”** en
+*Settings → Rules* (acción manual y excepcional) y se vuelve a activar al terminar.
+
 ## Licencia
 
 MIT. Ver [`LICENSE`](LICENSE).
