@@ -4,7 +4,6 @@
 
 [![Tests](https://github.com/Lubonch/MangaCount/actions/workflows/test.yml/badge.svg)](https://github.com/Lubonch/MangaCount/actions/workflows/test.yml)
 [![Dependency Audit](https://github.com/Lubonch/MangaCount/actions/workflows/audit.yml/badge.svg)](https://github.com/Lubonch/MangaCount/actions/workflows/audit.yml)
-[![Release](https://github.com/Lubonch/MangaCount/actions/workflows/release.yml/badge.svg)](https://github.com/Lubonch/MangaCount/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/Lubonch/MangaCount?label=release)](https://github.com/Lubonch/MangaCount/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-4b5563)](#descargar-e-instalar)
