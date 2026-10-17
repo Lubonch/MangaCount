@@ -11,6 +11,8 @@ import path from 'node:path';
 import { openDb } from '../db/client.js';
 import { loadResolvedPrefs } from '../services/prefs.js';
 import { createLocalFileGrants } from '../services/local-file-grants.js';
+import { setRemoteFs } from '../services/backup.js';
+import { fsOps } from '../services/fs-worker.js';
 import { handlers, channelNames, registerHandlers } from './handlers.js';
 
 const imageResponse = (type = 'image/png', bytes = [1, 2, 3]) => ({
@@ -30,6 +32,7 @@ describe('ipc handlers (ctx puro)', () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mchand-'));
     db = openDb(dir);
     ctx = { db, dataDir: dir, localFileGrants: createLocalFileGrants() };
+    setRemoteFs({ call: async (op, args) => fsOps[op](...args) });
     realFetch = globalThis.fetch;
   });
 
@@ -294,15 +297,24 @@ describe('ipc handlers (ctx puro)', () => {
     );
   });
 
-  it('backup:list vacío sin destino y con backups listados', async () => {
+  it('backup:list sin destino, con backups y destino que no responde', async () => {
     assert.equal(handlers['backup:config-get'](ctx).enabled, false);
-    assert.deepEqual(handlers['backup:list'](ctx), []);
+    assert.deepEqual(await handlers['backup:list'](ctx), { backups: [], status: 'unset' });
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'mchbdest-'));
     try {
       handlers['backup:config-set'](ctx, { destinationDir: dest });
       await handlers['backup:create'](ctx);
-      assert.equal(handlers['backup:list'](ctx).length, 1);
+      const listed = await handlers['backup:list'](ctx);
+      assert.equal(listed.status, 'ok');
+      assert.equal(listed.backups.length, 1);
+
+      // Destino que no responde: devuelve la última lista y status unresponsive.
+      setRemoteFs({ call: async () => { const e = new Error('timeout'); e.timedOut = true; throw e; } });
+      const unresponsive = await handlers['backup:list'](ctx);
+      assert.equal(unresponsive.status, 'unresponsive');
+      assert.equal(unresponsive.backups.length, 1);
     } finally {
+      setRemoteFs({ call: async (op, args) => fsOps[op](...args) });
       fs.rmSync(dest, { recursive: true, force: true });
     }
   });

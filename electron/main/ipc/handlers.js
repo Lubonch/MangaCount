@@ -23,6 +23,8 @@ import {
   createBackup,
   restoreBackup,
   listBackups,
+  cachedBackups,
+  DESTINATION_TIMEOUT,
   pruneBackups,
   DEFAULT_KEEP,
 } from '../services/backup.js';
@@ -163,9 +165,17 @@ export const handlers = {
     savePrefs(dataDir, { ...prefs, backup });
     return backup;
   },
-  'backup:list': ({ dataDir }) => {
+  'backup:list': async ({ dataDir }) => {
     const { backup } = loadResolvedPrefs(dataDir);
-    return backup.destinationDir ? listBackups(backup.destinationDir) : [];
+    if (!backup.destinationDir) return { backups: [], status: 'unset' };
+    try {
+      return { backups: await listBackups(backup.destinationDir), status: 'ok' };
+    } catch (err) {
+      if (err?.code === DESTINATION_TIMEOUT) {
+        return { backups: cachedBackups(backup.destinationDir), status: 'unresponsive' };
+      }
+      throw err;
+    }
   },
   'backup:create': async (ctx, destinationDir) => {
     const { db, dataDir, logger } = ctx;
@@ -175,7 +185,7 @@ export const handlers = {
     const at = new Date().toISOString();
     try {
       const result = await createBackup(db, dataDir, dest);
-      pruneBackups(dest, DEFAULT_KEEP);
+      await pruneBackups(dest, DEFAULT_KEEP);
       const lastBackupStatus = { ok: true, at };
       savePrefs(dataDir, {
         ...prefs,

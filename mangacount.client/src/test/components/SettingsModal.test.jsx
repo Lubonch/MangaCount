@@ -149,6 +149,37 @@ describe('SettingsModal', () => {
     await waitFor(() => expect(api.backupCreate).toHaveBeenCalledWith('/mnt/backup'))
   })
 
+  it('no pide la lista de backups al abrir Settings', async () => {
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+    expect(api.backupList).not.toHaveBeenCalled()
+  })
+
+  it('Refrescar carga la lista de backups bajo demanda', async () => {
+    const user = userEvent.setup()
+    api.backupList.mockResolvedValue({
+      backups: [
+        { fileName: 'mangacount-backup-2026-01-02-0300.zip', size: 10, createdAt: '2026-01-02T03:00:00.000Z' },
+      ],
+      status: 'ok',
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Refrescar backups'))
+    expect(await screen.findByText(/1 backups/)).toBeInTheDocument()
+  })
+
+  it('avisa cuando el destino de backup no responde', async () => {
+    const user = userEvent.setup()
+    api.backupList.mockResolvedValue({ backups: [], status: 'unresponsive' })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Backup')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Refrescar backups'))
+    expect(await screen.findByText(/el destino no responde/)).toBeInTheDocument()
+  })
+
   it('exporta TSV del perfil activo', async () => {
     const user = userEvent.setup()
     api.entryExport.mockResolvedValue('Titulo\nx')

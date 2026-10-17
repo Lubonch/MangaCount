@@ -11,6 +11,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { openDb, SCHEMA_VERSION } from '../db/client.js';
+import { createRemoteFs, LIST_TIMEOUT_MS, WRITE_TIMEOUT_MS } from './remote-fs.js';
 
 export const APP_NAME = 'MangaCount';
 export const BACKUP_PREFIX = 'mangacount-backup-';
@@ -18,6 +19,41 @@ export const DEFAULT_KEEP = 5;
 const DB_FILE = 'mangacount.db';
 const PROFILES_DIR = 'profiles';
 const MANIFEST = 'manifest.json';
+
+// Error marcado para que el handler distinga "destino que no responde".
+export const DESTINATION_TIMEOUT = 'DESTINATION_TIMEOUT';
+
+// Instancia perezosa del worker: no se crea si nunca se toca un destino.
+let defaultRemoteFs = null;
+const getRemoteFs = () => (defaultRemoteFs ??= createRemoteFs());
+
+// Seam para tests: reemplaza el worker por una implementación en proceso.
+export function setRemoteFs(instance) {
+  defaultRemoteFs = instance;
+}
+
+// Última lista conocida por destino, para devolverla si el destino deja de responder.
+const lastLists = new Map();
+export function cachedBackups(destinationDir) {
+  return lastLists.get(destinationDir) ?? [];
+}
+
+const mapTimeout = (err) => {
+  if (err?.timedOut) {
+    const timeout = new Error('El destino no responde');
+    timeout.code = DESTINATION_TIMEOUT;
+    return timeout;
+  }
+  return err;
+};
+
+const callDest = async (remoteFs, op, args, timeoutMs) => {
+  try {
+    return await remoteFs.call(op, args, { timeoutMs });
+  } catch (err) {
+    throw mapTimeout(err);
+  }
+};
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -49,9 +85,13 @@ function walkFiles(dir, base = dir) {
 
 // Crea un backup completo en `destinationDir` y devuelve { path, fileName, createdAt }.
 // Snapshot a un temporal, zip en memoria y move atómico dentro del destino.
-export async function createBackup(db, dataDir, destinationDir, { now = () => new Date() } = {}) {
+export async function createBackup(
+  db,
+  dataDir,
+  destinationDir,
+  { now = () => new Date(), remoteFs = getRemoteFs() } = {}
+) {
   if (!destinationDir) throw new Error('destinationDir requerido');
-  fs.mkdirSync(destinationDir, { recursive: true });
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mcbackup-'));
   try {
     const tmpDb = path.join(tmp, DB_FILE);
@@ -70,8 +110,9 @@ export async function createBackup(db, dataDir, destinationDir, { now = () => ne
     const fileName = backupFileName(now());
     const finalPath = path.join(destinationDir, fileName);
     const tmpZip = `${finalPath}.tmp`;
-    fs.writeFileSync(tmpZip, zipped);
-    fs.renameSync(tmpZip, finalPath);
+    await callDest(remoteFs, 'mkdir', [destinationDir], WRITE_TIMEOUT_MS);
+    await callDest(remoteFs, 'writeFile', [tmpZip, zipped], WRITE_TIMEOUT_MS);
+    await callDest(remoteFs, 'rename', [tmpZip, finalPath], WRITE_TIMEOUT_MS);
 
     return { path: finalPath, fileName, createdAt };
   } finally {
@@ -79,32 +120,27 @@ export async function createBackup(db, dataDir, destinationDir, { now = () => ne
   }
 }
 
-export function listBackupFiles(destinationDir) {
-  if (!destinationDir || !fs.existsSync(destinationDir)) return [];
-  return fs.readdirSync(destinationDir).filter(isBackupFileName);
+export async function listBackupFiles(destinationDir, { remoteFs = getRemoteFs() } = {}) {
+  if (!destinationDir) return [];
+  return callDest(remoteFs, 'listBackupFiles', [destinationDir], LIST_TIMEOUT_MS);
 }
 
-export function listBackups(destinationDir) {
-  return listBackupFiles(destinationDir)
-    .sort()
-    .map((fileName) => {
-      const stat = fs.statSync(path.join(destinationDir, fileName));
-      return {
-        fileName,
-        path: path.join(destinationDir, fileName),
-        size: stat.size,
-        createdAt: stat.mtime.toISOString(),
-      };
-    });
+export async function listBackups(destinationDir, { remoteFs = getRemoteFs() } = {}) {
+  if (!destinationDir) return [];
+  const backups = await callDest(remoteFs, 'listBackups', [destinationDir], LIST_TIMEOUT_MS);
+  lastLists.set(destinationDir, backups);
+  return backups;
 }
 
 // Conserva los `keep` más recientes (el nombre ordena cronológicamente) podando
 // solo los archivos propios; devuelve los nombres eliminados.
-export function pruneBackups(destinationDir, keep = DEFAULT_KEEP) {
-  const files = listBackupFiles(destinationDir).sort();
+export async function pruneBackups(destinationDir, keep = DEFAULT_KEEP, { remoteFs = getRemoteFs() } = {}) {
+  const files = (await listBackupFiles(destinationDir, { remoteFs })).sort();
   if (files.length <= keep) return [];
   const remove = files.slice(0, files.length - keep);
-  for (const name of remove) fs.rmSync(path.join(destinationDir, name), { force: true });
+  for (const name of remove) {
+    await callDest(remoteFs, 'rm', [path.join(destinationDir, name)], WRITE_TIMEOUT_MS);
+  }
   return remove;
 }
 
