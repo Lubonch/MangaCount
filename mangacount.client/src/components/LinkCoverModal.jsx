@@ -176,6 +176,11 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
                 <span className="cover-candidate-placeholder">Sin portada</span>
               )}
               {candidate.isAdult && <span className="cover-candidate-adult">+18</span>}
+              {candidate.source && (
+                <span className="cover-candidate-source">
+                  {candidate.source === 'mangadex' ? 'MangaDex' : 'AniList'}
+                </span>
+              )}
               <span className="cover-candidate-title">{candidate.title}</span>
               <span className="cover-candidate-meta">
                 {[candidate.format, candidate.year, candidate.volumes ? `${candidate.volumes} vol.` : null]
