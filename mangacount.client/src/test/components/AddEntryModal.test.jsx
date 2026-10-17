@@ -223,6 +223,25 @@ describe('AddEntryModal: edición', () => {
     expect(bodyOf('/api/entry')).toMatchObject({ id: 9, quantity: 2, pending: null, priority: false })
   })
 
+  it('edita con el profileId de la entry aunque no haya perfil activo', async () => {
+    const { props, container } = setup({
+      selectedProfile: undefined,
+      editEntry: {
+        id: 4,
+        mangaId: 1,
+        profileId: 9,
+        quantity: 2,
+        pending: '',
+        priority: false,
+        manga: { volumes: 10 },
+      },
+    })
+    submit(container)
+    await waitFor(() => expect(props.onSuccess).toHaveBeenCalledTimes(1))
+    expect(bodyOf('/api/entry')).toMatchObject({ id: 4, mangaId: 1, profileId: 9, quantity: 2 })
+    expect(screen.queryByText(/Elegí un perfil/)).not.toBeInTheDocument()
+  })
+
   it('muestra el mensaje de error del backend al editar', async () => {
     const { container } = setup({ editEntry })
     global.fetch.mockResolvedValue({ ok: false, json: async () => ({ message: 'Nah' }) })

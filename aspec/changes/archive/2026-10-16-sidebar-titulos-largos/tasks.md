@@ -19,12 +19,12 @@
 
 ## Fase 3 — Gates y verificación
 
-- [ ] `npm run lint:renderer` sin errores (mirar la línea resumen completa de ESLint).
-- [ ] `npm run test:renderer:coverage` en verde (≥90% stmts/branches/funcs/lines).
-- [ ] `npm run test:coverage` (main) en verde (≥90%).
-- [ ] `npm run build:renderer` sin errores.
+- [x] `npm run lint:renderer` sin errores (mirar la línea resumen completa de ESLint).
+- [x] `npm run test:renderer:coverage` en verde (≥90% stmts/branches/funcs/lines).
+- [x] `npm run test:coverage` (main) en verde (≥90%).
+- [x] `npm run build:renderer` sin errores.
 - [ ] Verificación visual de la Biblioteca (sidebar 260px, tema claro y oscuro): título de una sola
       palabra larga envuelve con los iconos alineados a la derecha; títulos cortos y de varias palabras
       sin cambios; sin scroll horizontal.
 - [ ] `ancleto-security` + verificación cruzada contra proposal/design/specs.
-- [ ] Al archivar, incorporar el requirement `ADDED` a `aspec/specs/frontend-web/spec.md`.
+- [x] Al archivar, incorporar el requirement `ADDED` a `aspec/specs/frontend-web/spec.md`.
