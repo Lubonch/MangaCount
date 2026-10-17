@@ -3,6 +3,15 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.4] - 2026-10-17
+
+### Added
+
+- **MangaDex como fuente secundaria de portadas**: si **AniList** no devuelve candidatos, la búsqueda
+  y el auto-match caen a **MangaDex** (API pública, sin key). Los candidatos muestran su **fuente**
+  (`AniList`/`MangaDex`), el contenido +18 se deriva del `contentRating` de MangaDex y el vínculo
+  guarda la **procedencia** elegida.
+
 ## [2.2.3] - 2026-10-17
 
 ### Fixed
