@@ -29,6 +29,9 @@ export const DEFAULT_PREFS = {
     allowedUserIds: [],
     pendingLimitEnabled: true,
     pendingLimit: 20,
+    ephemeralReplies: false,
+    confirmTtlMinutes: 5,
+    recommendLimit: 5,
   },
 };
 

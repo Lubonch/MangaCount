@@ -110,6 +110,26 @@ describe('ipc: settings (backup, bot, dialog)', () => {
     assert.equal(out.saved, true);
   });
 
+  it('bot:config-set valida los rangos de los límites', async () => {
+    await assert.rejects(() => handlers['bot:config-set'](ctx, { pendingLimit: 0 }), /1 y 500/);
+    await assert.rejects(() => handlers['bot:config-set'](ctx, { pendingLimit: 501 }), /1 y 500/);
+    await assert.rejects(() => handlers['bot:config-set'](ctx, { confirmTtlMinutes: 0 }), /1 y 60/);
+    await assert.rejects(() => handlers['bot:config-set'](ctx, { confirmTtlMinutes: 61 }), /1 y 60/);
+    await assert.rejects(() => handlers['bot:config-set'](ctx, { recommendLimit: 0 }), /1 y 10/);
+    await assert.rejects(() => handlers['bot:config-set'](ctx, { recommendLimit: 11 }), /1 y 10/);
+
+    const saved = await handlers['bot:config-set'](ctx, {
+      pendingLimit: 5,
+      confirmTtlMinutes: 10,
+      recommendLimit: 3,
+      ephemeralReplies: true,
+    });
+    assert.equal(saved.pendingLimit, 5);
+    assert.equal(saved.confirmTtlMinutes, 10);
+    assert.equal(saved.recommendLimit, 3);
+    assert.equal(saved.ephemeralReplies, true);
+  });
+
   it('bot:config-set reinicia el bot para aplicar la config en caliente', async () => {
     let restarted = 0;
     ctx.bot = {

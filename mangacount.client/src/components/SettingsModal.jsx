@@ -57,7 +57,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
   const [backupListStatus, setBackupListStatus] = useState('idle');
-  const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], pendingLimitEnabled: true, pendingLimit: 20, status: 'apagado', hasToken: false });
+  const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: false, confirmTtlMinutes: 5, recommendLimit: 5, status: 'apagado', hasToken: false });
   const [token, setToken] = useState('');
   const [generalMessage, setGeneralMessage] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
@@ -251,6 +251,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         allowedUserIds: bot.allowedUserIds,
         pendingLimitEnabled: bot.pendingLimitEnabled !== false,
         pendingLimit: Number(bot.pendingLimit) || 20,
+        ephemeralReplies: bot.ephemeralReplies === true,
+        confirmTtlMinutes: Number(bot.confirmTtlMinutes) || 5,
+        recommendLimit: Number(bot.recommendLimit) || 5,
       });
       setBotMessage('Configuración del bot guardada.');
       pollBotStatus();
@@ -729,6 +732,38 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 onChange={(e) => setBot((b) => ({ ...b, pendingLimit: Number(e.target.value) }))}
               />
             </label>
+
+            <label className="settings-check">
+              <input
+                type="checkbox"
+                checked={bot.ephemeralReplies === true}
+                onChange={(e) => setBot((b) => ({ ...b, ephemeralReplies: e.target.checked }))}
+              />
+              Respuestas efímeras
+            </label>
+
+            <div className="settings-field settings-inline">
+              <label>
+                Minutos para confirmar escrituras
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={bot.confirmTtlMinutes ?? 5}
+                  onChange={(e) => setBot((b) => ({ ...b, confirmTtlMinutes: Number(e.target.value) }))}
+                />
+              </label>
+              <label>
+                Recomendaciones por defecto
+                <input
+                  type="number"
+                  min="1"
+                  max="10"
+                  value={bot.recommendLimit ?? 5}
+                  onChange={(e) => setBot((b) => ({ ...b, recommendLimit: Number(e.target.value) }))}
+                />
+              </label>
+            </div>
 
             <p className="settings-hint">Estado: {bot.status}</p>
             <div className="settings-actions">

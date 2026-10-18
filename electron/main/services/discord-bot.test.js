@@ -328,6 +328,21 @@ describe('discord-bot: /recomendar espera el resultado', () => {
     assert.doesNotMatch(out, /No pude inferir/);
   });
 
+  it('usa recommendLimit como cantidad por defecto y respeta el limite explícito', async () => {
+    const calls = [];
+    const commands = createCommands({
+      db,
+      getConfig: () => ({ recommendLimit: 3 }),
+      getRecommendations: async (_db, _profileId, limit) => {
+        calls.push(limit);
+        return { isConfident: true, inferredCountry: 'Argentina', provider: 'local', blockedByImportCount: 0, items: [] };
+      },
+    });
+    await commands.recomendar({ session: { profileId: profile.id } });
+    await commands.recomendar({ session: { profileId: profile.id }, limite: 7 });
+    assert.deepEqual(calls, [3, 7]);
+  });
+
   it('muestra el desglose de mercado cuando no hay confianza', async () => {
     const commands = createCommands({
       db,
@@ -993,7 +1008,7 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false, ephemeralReplies: true }),
       getToken: () => 'tok',
       followUpDelayMs: 0,
       db,
@@ -1028,7 +1043,8 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     const replies = [];
     await clients[0].handlers.interactionCreate(chat({ reply: async (p) => replies.push(p) }));
     await flush();
-    assert.match(replies[0], /\/tomo/);
+    assert.match(replies[0].content, /\/tomo/);
+    assert.equal(replies[0].ephemeral, true);
   });
 
   it('reparte una respuesta larga en reply + followUps', async () => {
@@ -1048,7 +1064,7 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     for (let i = 0; i < 20 && followUps.length === 0; i += 1) await flush();
     assert.equal(replies.length, 1);
     assert.ok(followUps.length >= 1);
-    assert.match(followUps[followUps.length - 1], /\(\d+\/\d+\)/);
+    assert.match(followUps[followUps.length - 1].content, /\(\d+\/\d+\)/);
   });
 
   it('ignora interacciones no autorizadas', async () => {
@@ -1234,7 +1250,7 @@ describe('discord-bot: keepWarm', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     const bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false, ephemeralReplies: true }),
       getToken: () => 'tok',
       followUpDelayMs: 0,
       db,

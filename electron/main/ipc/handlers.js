@@ -225,6 +225,17 @@ export const handlers = {
       throw new Error('El límite de /pendientes debe ser un entero entre 1 y 500.');
     }
     bot.pendingLimit = pendingLimit;
+    const confirmTtlMinutes = Number(bot.confirmTtlMinutes);
+    if (!Number.isInteger(confirmTtlMinutes) || confirmTtlMinutes < 1 || confirmTtlMinutes > 60) {
+      throw new Error('Los minutos de confirmación deben ser un entero entre 1 y 60.');
+    }
+    bot.confirmTtlMinutes = confirmTtlMinutes;
+    const recommendLimit = Number(bot.recommendLimit);
+    if (!Number.isInteger(recommendLimit) || recommendLimit < 1 || recommendLimit > 10) {
+      throw new Error('Las recomendaciones por defecto deben ser un entero entre 1 y 10.');
+    }
+    bot.recommendLimit = recommendLimit;
+    bot.ephemeralReplies = bot.ephemeralReplies === true;
     savePrefs(ctx.dataDir, { ...prefs, bot });
     try {
       await ctx.bot?.restart?.();

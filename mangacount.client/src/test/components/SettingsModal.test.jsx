@@ -295,6 +295,37 @@ describe('SettingsModal', () => {
     expect(screen.getByLabelText('Series máximas en /pendientes')).toBeDisabled()
   })
 
+  it('configura efímeras, TTL y recomendaciones del bot', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: [],
+      pendingLimitEnabled: true,
+      pendingLimit: 20,
+      ephemeralReplies: false,
+      confirmTtlMinutes: 5,
+      recommendLimit: 5,
+      status: 'apagado',
+      hasToken: false,
+    })
+    api.botConfigSet.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Respuestas efímeras'))
+    const ttl = screen.getByLabelText('Minutos para confirmar escrituras')
+    await user.clear(ttl)
+    await user.type(ttl, '10')
+    await user.click(screen.getByLabelText('Guardar bot'))
+    await waitFor(() => expect(api.botConfigSet).toHaveBeenCalled())
+    expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({
+      ephemeralReplies: true,
+      confirmTtlMinutes: 10,
+      recommendLimit: 5,
+    })
+  })
+
   it('toggle de arranque en bandeja persiste', async () => {
     const user = userEvent.setup()
     api.appConfigSet.mockResolvedValue({ startInTray: false })

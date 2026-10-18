@@ -297,7 +297,7 @@ export function createCommands({
 
     async recomendar({ session, limite }) {
       const profileId = activeProfile(session).id;
-      const response = await recommend(resolveDb(), profileId, limite ?? 5);
+      const response = await recommend(resolveDb(), profileId, limite ?? getConfig()?.recommendLimit ?? 5);
       if (!response?.isConfident || !response?.inferredCountry) {
         const breakdown = response?.inference?.breakdown ?? [];
         const owned = entriesFor(profileId).filter((e) => (e.quantity ?? 0) > 0).length;
@@ -500,7 +500,10 @@ export function createDiscordBot({
     const userSession = session.get(args.userId);
     const reply = await dispatch(commands, args.name, { session: userSession, ...args });
     if (reply && typeof reply === 'object' && reply.kind === 'write') {
-      const pending = beginPendingWrite(userSession, reply);
+      const pending = beginPendingWrite(userSession, {
+        ...reply,
+        ttlMs: (Number(config.confirmTtlMinutes) || 5) * 60000,
+      });
       await interaction.reply({
         content: `¿Confirmás?\n${pending.summary}`,
         ephemeral: true,
@@ -508,11 +511,13 @@ export function createDiscordBot({
       });
       return;
     }
+    const ephemeral = config.ephemeralReplies === true;
+    const payload = (content) => (ephemeral ? { content, ephemeral: true } : content);
     const chunks = splitMessage(String(reply));
-    await interaction.reply(chunks[0]);
+    await interaction.reply(payload(chunks[0]));
     for (let i = 1; i < chunks.length; i += 1) {
       await sleep(followUpDelayMs);
-      await interaction.followUp(chunks[i]);
+      await interaction.followUp(payload(chunks[i]));
     }
   }
 
