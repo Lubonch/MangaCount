@@ -22,7 +22,7 @@ import {
   consumePendingWrite,
   readInteraction,
   registerGuildCommands,
-  SLASH_COMMANDS,
+  slashCommands,
 } from './discord-bot.js';
 
 describe('discord-bot: autorización', () => {
@@ -227,7 +227,7 @@ describe('discord-bot: ciclo de vida sin conexión', () => {
   });
 
   it('expone los slash commands de lectura y escritura', () => {
-    const names = SLASH_COMMANDS.map((c) => c.name);
+    const names = slashCommands().map((c) => c.name);
     for (const expected of [
       'perfil',
       'buscar',

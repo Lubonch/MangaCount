@@ -11,80 +11,88 @@ import { getRecommendations } from './recommendations.js';
 import { searchResult, pendingSummary, entryStatus } from './search.js';
 import { handlers } from '../ipc/handlers.js';
 import { splitMessage } from './discord-messages.js';
+import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const SLASH_COMMANDS = [
+// Traductor por defecto (tests): sigue el env `MANGACOUNT_LANG`/default.
+const fallbackTranslator = () => createAppTranslator(resolveLanguage({}));
+
+export function slashCommands(t = fallbackTranslator()) {
+  return [
   {
     name: 'perfil',
-    description: 'Ver o cambiar el perfil activo',
-    options: [{ type: 3, name: 'perfil', description: 'Nombre o id del perfil', required: false }],
+    description: t('bot.descPerfil'),
+    options: [{ type: 3, name: 'perfil', description: t('bot.optPerfil'), required: false }],
   },
   {
     name: 'buscar',
-    description: 'Buscar una serie en tu colección',
-    options: [{ type: 3, name: 'query', description: 'Título a buscar', required: true }],
+    description: t('bot.descBuscar'),
+    options: [{ type: 3, name: 'query', description: t('bot.optQuery'), required: true }],
   },
-  { name: 'pendientes', description: 'Series en curso y volúmenes faltantes' },
+  { name: 'pendientes', description: t('bot.descPendientes') },
   {
     name: 'recomendar',
-    description: 'Recomendaciones para el perfil activo',
+    description: t('bot.descRecomendar'),
     options: [
-      { type: 4, name: 'limite', description: 'Cantidad (1-10)', required: false, min_value: 1, max_value: 10 },
+      { type: 4, name: 'limite', description: t('bot.optLimite'), required: false, min_value: 1, max_value: 10 },
     ],
   },
   {
     name: 'tomo',
-    description: 'Sumar 1 tomo a una serie',
-    options: [{ type: 3, name: 'titulo', description: 'Título de la serie', required: true }],
+    description: t('bot.descTomo'),
+    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true }],
   },
   {
     name: 'actualizar',
-    description: 'Fijar la cantidad de tomos de una serie',
+    description: t('bot.descActualizar'),
     options: [
-      { type: 3, name: 'titulo', description: 'Título de la serie', required: true },
-      { type: 4, name: 'cantidad', description: 'Cantidad de tomos', required: true, min_value: 0, max_value: 9999 },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true },
+      { type: 4, name: 'cantidad', description: t('bot.optCantidad'), required: true, min_value: 0, max_value: 9999 },
     ],
   },
   {
     name: 'pending',
-    description: 'Fijar los tomos pendientes (no consecutivos)',
+    description: t('bot.descPending'),
     options: [
-      { type: 3, name: 'titulo', description: 'Título de la serie', required: true },
-      { type: 3, name: 'tomos', description: 'Ej: 5,7 (vacío = limpiar)', required: false },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true },
+      { type: 3, name: 'tomos', description: t('bot.optTomos'), required: false },
     ],
   },
   {
     name: 'prioridad',
-    description: 'Activar/desactivar la prioridad de una serie',
-    options: [{ type: 3, name: 'titulo', description: 'Título de la serie', required: true }],
+    description: t('bot.descPrioridad'),
+    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true }],
   },
   {
     name: 'nuevo',
-    description: 'Agregar una serie nueva a la colección',
+    description: t('bot.descNuevo'),
     options: [
-      { type: 3, name: 'titulo', description: 'Título', required: true },
-      { type: 4, name: 'total', description: 'Tomos totales (0 = desconocido)', required: false, min_value: 0 },
-      { type: 4, name: 'cantidad', description: 'Tomos que tenés', required: false, min_value: 0 },
-      { type: 3, name: 'formato', description: 'Formato', required: false },
-      { type: 3, name: 'editorial', description: 'Editorial', required: false },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true },
+      { type: 4, name: 'total', description: t('bot.optTotal'), required: false, min_value: 0 },
+      { type: 4, name: 'cantidad', description: t('bot.optOwned'), required: false, min_value: 0 },
+      { type: 3, name: 'formato', description: t('bot.optFormato'), required: false },
+      { type: 3, name: 'editorial', description: t('bot.optEditorial'), required: false },
     ],
   },
-  { name: 'ayuda', description: 'Lista de comandos disponibles' },
-];
+    { name: 'ayuda', description: t('bot.descAyuda') },
+  ];
+}
 
-export const AYUDA_TEXT = [
-  'Comandos de MangaCount:',
-  '• `/perfil [perfil]` — ver o cambiar el perfil activo',
-  '• `/buscar query:<título>` — buscar en la colección',
-  '• `/pendientes` — series en curso y qué falta',
-  '• `/recomendar [limite]` — recomendaciones del mercado local',
-  '• `/tomo titulo:<serie>` — sumar 1 tomo',
-  '• `/actualizar titulo:<serie> cantidad:<n>` — fijar cuántos tomos tenés',
-  '• `/pending titulo:<serie> tomos:<5,7>` — tomos pendientes no consecutivos',
-  '• `/prioridad titulo:<serie>` — activar/desactivar prioridad',
-  '• `/nuevo titulo:<serie> [total] [cantidad] [formato] [editorial]` — agregar una serie',
-].join('\n');
+export function ayudaText(t = fallbackTranslator()) {
+  return [
+    t('bot.helpTitle'),
+    t('bot.helpPerfil'),
+    t('bot.helpBuscar'),
+    t('bot.helpPendientes'),
+    t('bot.helpRecomendar'),
+    t('bot.helpTomo'),
+    t('bot.helpActualizar'),
+    t('bot.helpPending'),
+    t('bot.helpPrioridad'),
+    t('bot.helpNuevo'),
+  ].join('\n');
+}
 
 // Autorización por guild/user IDs; allowlist vacía no responde a nadie.
 export function isAuthorized(config, { userId, guildId } = {}) {
@@ -110,14 +118,14 @@ export function createSessionStore() {
   };
 }
 
-function formatEntryLine(entry) {
+function formatEntryLine(entry, t = fallbackTranslator()) {
   const status = entryStatus(entry);
   const describe =
     status.total > 0
       ? status.complete
-        ? '✅ Completo'
-        : `📖 ${status.quantity}/${status.total} vol. (${status.pending} pendientes)`
-      : `📖 ${status.quantity} vol. (en curso)`;
+        ? t('bot.formatComplete')
+        : t('bot.formatProgress', { quantity: status.quantity, total: status.total, pending: status.pending })
+      : t('bot.formatOngoing', { quantity: status.quantity });
   const meta = [entry.manga?.format?.name, entry.manga?.publisher?.name].filter(Boolean).join(' · ');
   const priority = entry.priority ? '⭐ ' : '';
   return `${priority}*${entry.manga.name}*\n  ${meta}\n  ${describe}`;
@@ -134,7 +142,7 @@ export function resolveSessionProfile(session, db) {
     session.profileId = profiles[0].id;
     return profiles[0];
   }
-  throw new Error('Elegí un perfil con /perfil (el perfil guardado ya no está disponible).');
+  throw new Error(fallbackTranslator()('bot.profileRequired'));
 }
 
 // Crea format/editorial por nombre si no existe (mismo criterio que el import:
@@ -149,19 +157,19 @@ function getOrCreateCatalog(kind, db, name) {
 
 // Ejecuta una acción de escritura reusando los handlers (validan el perfil).
 export function applyWrite(db, action) {
-  if (!action || typeof action !== 'object') throw new Error('Acción de escritura inválida.');
+  if (!action || typeof action !== 'object') throw new Error(fallbackTranslator()('bot.writeInvalid'));
   const ctx = { db };
   if (action.type === 'setQuantity') {
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, quantity: action.quantity });
     return {
-      summary: `*${action.entry.manga.name}*: ${action.entry.quantity} → ${action.quantity} tomos`,
+      summary: fallbackTranslator()('bot.summarySetQuantity', { name: action.entry.manga.name, from: action.entry.quantity, to: action.quantity }),
       entry: updated,
     };
   }
   if (action.type === 'setPending') {
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, pending: action.pending });
     return {
-      summary: `*${action.entry.manga.name}* · pending: ${action.pending || '—'}`,
+      summary: fallbackTranslator()('bot.summarySetPending', { name: action.entry.manga.name, value: action.pending || '—' }),
       entry: updated,
     };
   }
@@ -169,7 +177,7 @@ export function applyWrite(db, action) {
     const priority = !action.entry.priority;
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, priority });
     return {
-      summary: `*${action.entry.manga.name}* · prioridad: ${priority ? 'activada' : 'desactivada'}`,
+      summary: fallbackTranslator()('bot.summaryTogglePriority', { name: action.entry.manga.name, state: priority ? fallbackTranslator()('bot.priorityOn') : fallbackTranslator()('bot.priorityOff') }),
       entry: updated,
     };
   }
@@ -190,22 +198,22 @@ export function applyWrite(db, action) {
       profileId: action.profileId,
       quantity: action.quantity ?? 0,
     });
-    return { summary: `*${manga.name}* agregado (${action.quantity ?? 0} tomos)`, manga, entry };
+    return { summary: fallbackTranslator()('bot.summaryCreated', { name: manga.name, count: action.quantity ?? 0 }), manga, entry };
   }
   throw new Error(`Acción de escritura desconocida: ${action.type}`);
 }
 
 // Resuelve un título a una entrada única de la colección. No adivina: 0 o >1 → error.
-export function resolveEntry(entries, title) {
+export function resolveEntry(entries, title, t = fallbackTranslator()) {
   const q = String(title ?? '').trim().toLowerCase();
-  if (!q) return { error: 'Falta el título.' };
+  if (!q) return { error: t('bot.missingTitle') };
   const exact = entries.filter((e) => (e.manga?.name ?? '').toLowerCase() === q);
   const list = exact.length
     ? exact
     : entries.filter((e) => (e.manga?.name ?? '').toLowerCase().includes(q));
-  if (list.length === 0) return { error: `No encontré *${title}* en tu colección.` };
+  if (list.length === 0) return { error: t('bot.entryNotFound', { title }) };
   if (list.length > 1) {
-    return { error: `Encontré varias: ${list.map((e) => e.manga.name).join(', ')}. Sé más específico.` };
+    return { error: t('bot.entryAmbiguous', { list: list.map((e) => e.manga.name).join(', ') }) };
   }
   return { entry: list[0] };
 }
@@ -235,8 +243,10 @@ export function createCommands({
   db,
   getDb,
   getConfig = () => ({}),
+  getT = fallbackTranslator,
   getRecommendations: recommend = getRecommendations,
 } = {}) {
+  const t = (key, params) => getT()(key, params);
   const resolveDb = getDb ?? (() => db);
   const entriesFor = (profileId) => listEntries(resolveDb(), profileId);
 
@@ -247,17 +257,17 @@ export function createCommands({
   return {
     async perfil({ session, perfil }) {
       const list = listProfiles(resolveDb());
-      if (list.length === 0) return 'No hay perfiles creados en MangaCount.';
+      if (list.length === 0) return t('bot.noProfiles');
       if (perfil) {
         const found =
           list.find((p) => p.name.toLowerCase() === String(perfil).toLowerCase()) ??
           list.find((p) => String(p.id) === String(perfil));
-        if (!found) return `No existe un perfil "${perfil}".`;
+        if (!found) return t('bot.profileNotFound', { name: perfil });
         session.profileId = found.id;
-        return `Perfil activo: *${found.name}*.`;
+        return t('bot.profileActive', { name: found.name });
       }
       const lines = list.map((p) => `${p.id === session.profileId ? '▶️' : '•'} ${p.name}`).join('\n');
-      return `Perfiles:\n${lines}`;
+      return t('bot.profileList', { lines });
     },
 
     async buscar({ session, query }) {
@@ -265,25 +275,25 @@ export function createCommands({
       const { results, suggestions } = searchResult(entriesFor(profileId), query);
       if (results.length === 0) {
         const hint = suggestions.length
-          ? `\n¿Quizás quisiste decir?\n${suggestions.map((t) => `   • ${t}`).join('\n')}`
+          ? t('bot.searchHint', { list: suggestions.map((s) => `   • ${s}`).join('\n') })
           : '';
-        return `❌ No encontré *${query}* en tu colección.${hint}`;
+        return t('bot.searchNotFound', { query, hint });
       }
-      return `🔍 Resultados para "*${query}*":\n\n${results.map(formatEntryLine).join('\n\n')}`;
+      return t('bot.searchResults', { query, lines: results.map((e) => formatEntryLine(e, getT())).join('\n\n') });
     },
 
     async pendientes({ session }) {
       const profileId = activeProfile(session).id;
       const summary = pendingSummary(entriesFor(profileId));
-      if (summary.count === 0) return '🎉 ¡No tenés nada pendiente! Colección al día.';
+      if (summary.count === 0) return t('bot.nothingPending');
       const config = getConfig() ?? {};
       const limitEnabled = config.pendingLimitEnabled !== false;
       const limit = Number.isInteger(config.pendingLimit) ? config.pendingLimit : 20;
       const shown = limitEnabled ? summary.entries.slice(0, limit) : summary.entries;
       const lines = shown.map((e) => {
         const priority = e.priority ? '⭐ ' : '';
-        const parts = [`${e.quantity}/${e.manga.volumes} (faltan ${e.manga.volumes - e.quantity})`];
-        if (e.pending) parts.push(`pending: ${e.pending}`);
+        const parts = [t('bot.pendingDetail', { quantity: e.quantity, total: e.manga.volumes, missing: e.manga.volumes - e.quantity })];
+        if (e.pending) parts.push(t('bot.pendingNote', { value: e.pending }));
         const meta = [e.manga?.format?.name, e.manga?.publisher?.name].filter(
           (n) => n && n !== 'Unknown'
         );
@@ -291,8 +301,8 @@ export function createCommands({
         return `${priority}*${e.manga.name}*: ${parts.join(' · ')}`;
       });
       const rest = summary.count - shown.length;
-      const more = rest > 0 ? `\n\n…y ${rest} series más.` : '';
-      return `📋 Pendientes (${summary.count} series, ${summary.totalPending} vols.):\n\n${lines.join('\n')}${more}`;
+      const more = rest > 0 ? `\n\n${t('bot.pendingMore', { count: rest })}` : '';
+      return `${t('bot.pendingHeader', { count: summary.count, vols: summary.totalPending })}\n\n${lines.join('\n')}${more}`;
     },
 
     async recomendar({ session, limite }) {
@@ -305,23 +315,23 @@ export function createCommands({
         const noCountry = Math.max(owned - mapped, 0);
         const detected = breakdown.length
           ? breakdown
-              .map((b) => `   • ${b.country}: ${b.seriesCount} series (${b.volumeCount} vols.)`)
+              .map((b) => t('bot.recDetectedLine', { country: b.country, series: b.seriesCount, volumes: b.volumeCount }))
               .join('\n')
-          : '   (ninguna editorial reconocida)';
+          : t('bot.recNoPublisher');
         return (
-          'No pude inferir tu mercado local con suficiente confianza.\n' +
-          `Detecté por editorial:\n${detected}\n` +
-          `Series sin editorial reconocida: ${noCountry}.\n` +
-          'Sumá más series con editoriales conocidas (Ivrea, Ovni, Panini, …) y volvé a intentar.'
+          `${t('bot.recNoConfidence')}\n` +
+          `${t('bot.recDetected')}\n${detected}\n` +
+          `${t('bot.recUnmapped', { count: noCountry })}\n` +
+          t('bot.recAdvice')
         );
       }
       const items = response.items ?? [];
       if (items.length === 0) {
-        return `No encontré recomendaciones elegibles para ${response.inferredCountry}.`;
+        return t('bot.recNone', { country: response.inferredCountry });
       }
       const note =
         response.blockedByImportCount > 0
-          ? `\nSe excluyeron ${response.blockedByImportCount} opciones de importación.`
+          ? t('bot.recExcluded', { count: response.blockedByImportCount })
           : '';
       const lines = items
         .map((item, index) => {
@@ -332,17 +342,17 @@ export function createCommands({
         .join('\n\n');
       const profile = getProfileById(resolveDb(), profileId);
       return (
-        `Recomendaciones para *${profile?.name ?? ''}*\n` +
-        `País: ${response.inferredCountry}\n` +
-        `Proveedor: ${response.provider || 'local'}${note}\n\n${lines}`
+        `${t('bot.recHeader', { name: profile?.name ?? '' })}\n` +
+        `${t('bot.recCountry', { country: response.inferredCountry })}\n` +
+        `${t('bot.recProvider', { provider: response.provider || 'local' })}${note}\n\n${lines}`
       );
     },
     async tomo({ session, titulo }) {
       const profile = activeProfile(session);
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
-      return writeProposal(`*${e.manga.name}*: ${e.quantity} → ${e.quantity + 1} tomos`, {
+      return writeProposal(t('bot.summarySetQuantity', { name: e.manga.name, from: e.quantity, to: e.quantity + 1 }), {
         type: 'setQuantity',
         entry: e,
         quantity: e.quantity + 1,
@@ -352,11 +362,11 @@ export function createCommands({
     async actualizar({ session, titulo, cantidad }) {
       const profile = activeProfile(session);
       const n = Number.parseInt(cantidad, 10);
-      if (!Number.isInteger(n) || n < 0) return 'Cantidad inválida.';
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      if (!Number.isInteger(n) || n < 0) return t('bot.invalidQuantity');
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
-      return writeProposal(`*${e.manga.name}*: ${e.quantity} → ${n} tomos`, {
+      return writeProposal(t('bot.summarySetQuantity', { name: e.manga.name, from: e.quantity, to: n }), {
         type: 'setQuantity',
         entry: e,
         quantity: n,
@@ -365,11 +375,11 @@ export function createCommands({
 
     async pending({ session, titulo, tomos }) {
       const profile = activeProfile(session);
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
       const value = String(tomos ?? '').trim();
-      return writeProposal(`*${e.manga.name}* · pending: ${value || '—'}`, {
+      return writeProposal(t('bot.summarySetPending', { name: e.manga.name, value: value || '—' }), {
         type: 'setPending',
         entry: e,
         pending: value || null,
@@ -378,10 +388,10 @@ export function createCommands({
 
     async prioridad({ session, titulo }) {
       const profile = activeProfile(session);
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
-      return writeProposal(`*${e.manga.name}* · ${e.priority ? 'quitar' : 'activar'} prioridad`, {
+      return writeProposal(t('bot.proposalPriority', { name: e.manga.name, action: e.priority ? t('bot.removePriority') : t('bot.addPriority') }), {
         type: 'togglePriority',
         entry: e,
       });
@@ -390,12 +400,12 @@ export function createCommands({
     async nuevo({ session, titulo, total, cantidad, formato, editorial }) {
       const profile = activeProfile(session);
       const name = String(titulo ?? '').trim();
-      if (!name) return 'Falta el título.';
+      if (!name) return t('bot.missingTitle');
       const existing = entriesFor(profile.id).find(
         (e) => e.manga.name.toLowerCase() === name.toLowerCase()
       );
-      if (existing) return `Ya tenés *${existing.manga.name}*. Usá /tomo o /actualizar.`;
-      return writeProposal(`Agregar *${name}* (${cantidad ?? 0}/${total ?? '??'} tomos)`, {
+      if (existing) return t('bot.alreadyExists', { name: existing.manga.name });
+      return writeProposal(t('bot.proposalAdd', { name, quantity: cantidad ?? 0, total: total ?? '??' }), {
         type: 'createMangaEntry',
         name,
         total: total ?? null,
@@ -407,19 +417,19 @@ export function createCommands({
     },
 
     async ayuda() {
-      return AYUDA_TEXT;
+      return ayudaText(getT());
     },
   };
 }
 
 // Despacho nombre → función; los errores se convierten en respuesta, sin romper el bot.
-export async function dispatch(commands, name, args) {
+export async function dispatch(commands, name, args, t = fallbackTranslator()) {
   const fn = commands[name];
-  if (!fn) return 'Comando no disponible.';
+  if (!fn) return t('bot.unknownCommand');
   try {
     return await fn(args);
   } catch (err) {
-    return `⚠️ ${err?.message ?? 'No pude procesar el comando.'}`;
+    return t('bot.error', { message: err?.message ?? t('bot.dispatchError').replace('⚠️ ', '') });
   }
 }
 
@@ -442,10 +452,18 @@ export function readInteraction(interaction) {
   };
 }
 
-export async function registerGuildCommands({ token, applicationId, guildId, commands = SLASH_COMMANDS }) {
+export async function registerGuildCommands({
+  token,
+  applicationId,
+  guildId,
+  commands,
+  getT = fallbackTranslator,
+}) {
   const { REST, Routes } = await import('discord.js');
   const rest = new REST({ version: '10' }).setToken(token);
-  await rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: commands });
+  await rest.put(Routes.applicationGuildCommands(applicationId, guildId), {
+    body: commands ?? slashCommands(getT()),
+  });
 }
 
 // Cliente de Discord. `loadDiscord` es inyectable para no conectar en tests.
@@ -458,11 +476,12 @@ export function createDiscordBot({
   onStatusChange = () => {},
   loadDiscord,
   followUpDelayMs = 350,
+  getT = fallbackTranslator,
 } = {}) {
   let client = null;
   let status = 'apagado';
   const session = createSessionStore();
-  const commands = createCommands({ getDb, db, getConfig });
+  const commands = createCommands({ getDb, db, getConfig, getT });
   const load = loadDiscord ?? (() => import('discord.js'));
   const resolveDb = getDb ?? (() => db);
   let discordMod = null;
@@ -498,14 +517,14 @@ export function createDiscordBot({
     const args = readInteraction(interaction);
     if (!isAuthorized(config, args)) return;
     const userSession = session.get(args.userId);
-    const reply = await dispatch(commands, args.name, { session: userSession, ...args });
+    const reply = await dispatch(commands, args.name, { session: userSession, ...args }, getT());
     if (reply && typeof reply === 'object' && reply.kind === 'write') {
       const pending = beginPendingWrite(userSession, {
         ...reply,
         ttlMs: (Number(config.confirmTtlMinutes) || 5) * 60000,
       });
       await interaction.reply({
-        content: `¿Confirmás?\n${pending.summary}`,
+        content: getT()('bot.confirm', { summary: pending.summary }),
         ephemeral: true,
         components: confirmRow(pending.token),
       });
@@ -535,15 +554,15 @@ export function createDiscordBot({
       return;
     }
     if (action === 'cancel') {
-      await interaction.update({ content: 'Cancelado.', components: [] });
+      await interaction.update({ content: getT()('bot.cancelled'), components: [] });
       return;
     }
     try {
       const result = applyWrite(resolveDb(), consumed.pending.action);
       logger?.info?.(`bot write: ${result.summary}`);
-      await interaction.update({ content: `✅ ${result.summary}`, components: [] });
+      await interaction.update({ content: getT()('bot.applied', { summary: result.summary }), components: [] });
     } catch (err) {
-      await interaction.update({ content: `⚠️ ${err?.message ?? err}`, components: [] });
+      await interaction.update({ content: getT()('bot.error', { message: err?.message ?? err }), components: [] });
     }
   }
 
@@ -625,6 +644,7 @@ export function createDiscordBot({
             token,
             applicationId: ready.application.id,
             guildId: config.guildId,
+            getT,
           });
         } catch (err) {
           logger?.warn?.(`no se pudieron registrar los comandos: ${err?.message ?? err}`);

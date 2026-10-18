@@ -308,6 +308,7 @@ function startBot(ctx) {
     getConfig: () => loadResolvedPrefs(ctx.dataDir).bot,
     getToken: () => ctx.secrets.getToken(),
     getDb: () => ctx.db,
+    getT: () => getTranslator(ctx.dataDir),
     logger: ctx.logger,
     onStatusChange: (status) => {
       botStatus = status;
