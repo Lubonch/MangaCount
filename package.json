@@ -1,6 +1,6 @@
 {
   "name": "mangacount",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "MangaCount is a local-first desktop manga collection manager (Electron + SQLite) with a React renderer and a shared recommendation engine.",
   "private": true,
   "type": "module",
@@ -17,7 +17,8 @@
     "dist:win": "npm run build:renderer && electron-builder --win nsis --publish never",
     "rebuild:node": "npm rebuild better-sqlite3",
     "rebuild:electron": "electron-builder install-app-deps",
-    "release:sync": "node scripts/sync-pkgbuild-version.mjs"
+    "release:sync": "node scripts/sync-pkgbuild-version.mjs",
+    "smoke:package": "bash scripts/smoke-package.sh"
   },
   "repository": {
     "type": "git",
@@ -61,7 +62,8 @@
     },
     "files": [
       "electron/**/*",
-      "shared/recommendations/**/*",
+      "shared/**/*",
+      "!shared/**/*.test.js",
       "mangacount.client/dist/**/*",
       "package.json"
     ],

@@ -27,3 +27,15 @@ npm run test:renderer:coverage
 npm run lint:renderer
 npm run build:renderer
 ```
+
+**Antes de una release, además, construir y ejecutar la app empaquetada** (obligatorio):
+
+```bash
+npm run build:renderer && npx electron-builder --linux AppImage --publish never
+npm run smoke:package
+```
+
+`npm test` incluye `electron/packaging.test.js`, que falla si el main importa algo que el empaquetado
+(`build.files` de `package.json`) no incluye; el smoke corre el AppImage real y falla si la app no
+arranca. El job **`Packaged app smoke (AppImage boots)`** exige esto en los PRs hacia `main` (la 2.2.5
+llegó a producción rota por no hacerlo: el `app.asar` salió sin `shared/i18n`).

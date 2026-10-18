@@ -3,6 +3,21 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.6] - 2026-10-18
+
+### Fixed
+
+- **La app empaquetada no arrancaba**: el `app.asar` se construía **sin `shared/i18n/`**, que el proceso
+  main importa, así que la 2.2.5 moría al iniciar con `ERR_MODULE_NOT_FOUND` en todas las plataformas.
+  `build.files` pasa a incluir `shared/**/*` (excluyendo los tests) en vez de enumerar subdirectorios.
+
+### Added
+
+- **Verificación del paquete antes de una release**: `npm run smoke:package` construye y **ejecuta** el
+  AppImage y falla si la app no arranca, con el job `Packaged app smoke (AppImage boots)` exigido en los
+  PRs hacia `main`. Además, `npm test` incluye un test que falla si el main importa algo que el
+  empaquetado no incluye.
+
 ## [2.2.5] - 2026-10-18
 
 ### Added
