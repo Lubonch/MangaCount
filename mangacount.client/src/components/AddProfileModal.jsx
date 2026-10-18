@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './AddProfileModal.css';
+import { useT } from '../contexts/I18nContext';
 
 const AddProfileModal = ({ 
     isOpen, 
@@ -7,6 +8,7 @@ const AddProfileModal = ({
     onSuccess,
     editProfile = null 
 }) => {
+    const t = useT();
     const [formData, setFormData] = useState({
         name: '',
         profilePicture: null
@@ -61,7 +63,7 @@ const AddProfileModal = ({
         setError('');
 
         if (!formData.name.trim()) {
-            setError('Please enter a profile name');
+            setError(t('addProfile.errName'));
             setIsSubmitting(false);
             return;
         }
@@ -98,10 +100,10 @@ const AddProfileModal = ({
                 }
             } else {
                 const error = await response.json();
-                setError(`Failed to ${editProfile ? 'update' : 'create'} profile: ${error.message || 'Unknown error'}`);
+                setError(t(editProfile ? 'addProfile.errUpdate' : 'addProfile.errCreate', { message: error.message || t('addProfile.unknownError') }));
             }
         } catch (err) {
-            setError(`Error ${editProfile ? 'updating' : 'creating'} profile: ` + err.message);
+            setError(t(editProfile ? 'addProfile.errNetUpdate' : 'addProfile.errNetCreate', { message: err.message }));
         } finally {
             setIsSubmitting(false);
         }
@@ -142,13 +144,13 @@ const AddProfileModal = ({
         <div className="modal-overlay">
             <div className="modal-content">
                 <div className="modal-header">
-                    <h2>{isEditing ? 'Edit Profile' : 'Create New Profile'}</h2>
+                    <h2>{t(isEditing ? 'addProfile.titleEdit' : 'addProfile.titleCreate')}</h2>
                     <button className="close-button" onClick={onClose}>&times;</button>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="profile-form">
                     <div className="form-group profile-picture-group">
-                        <label>Profile Picture (optional)</label>
+                        <label>{t('addProfile.pictureLabel')}</label>
                         <div className="picture-input-container">
                             <div className="picture-preview">
                                 {previewImage ? (
@@ -168,7 +170,7 @@ const AddProfileModal = ({
                                     className="file-input"
                                 />
                                 <label htmlFor="profilePicture" className="file-input-label">
-                                    {previewImage ? 'Change Picture' : 'Upload Picture'}
+                                    {t(previewImage ? 'addProfile.changePicture' : 'addProfile.uploadPicture')}
                                 </label>
                                 {previewImage && (
                                     <button
@@ -184,34 +186,33 @@ const AddProfileModal = ({
                                 )}
                             </div>
                         </div>
-                        <small>Recommended: Square image, at least 200x200 pixels</small>
+                        <small>{t('addProfile.pictureHint')}</small>
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="name">Profile Name *</label>
+                        <label htmlFor="name">{t('addProfile.nameLabel')}</label>
                         <input
                             type="text"
                             id="name"
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            placeholder="e.g., Your Name, Brother's Collection"
+                            placeholder={t('addProfile.namePlaceholder')}
                             required
                         />
-                        <small>This name will be displayed on the profile selector</small>
+                        <small>{t('addProfile.nameHint')}</small>
                     </div>
 
                     {error && <div className="error-message">{error}</div>}
 
                     <div className="modal-actions">
                         <button type="button" onClick={onClose} className="cancel-button">
-                            Cancel
+                            {t('addProfile.cancel')}
                         </button>
                         <button type="submit" disabled={isSubmitting} className="submit-button">
-                            {isSubmitting ? 
-                                (isEditing ? 'Updating...' : 'Creating...') : 
-                                (isEditing ? 'Update Profile' : 'Create Profile')
-                            }
+                            {isSubmitting
+                                ? t(isEditing ? 'addProfile.submittingUpdate' : 'addProfile.submittingCreate')
+                                : t(isEditing ? 'addProfile.submitUpdate' : 'addProfile.submitCreate')}
                         </button>
                     </div>
                 </form>

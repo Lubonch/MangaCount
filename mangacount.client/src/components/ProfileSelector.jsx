@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import AddProfileModal from './AddProfileModal';
 import './ProfileSelector.css';
+import { useT } from '../contexts/I18nContext';
 
 const ProfileSelector = ({ 
     onProfileSelect, 
@@ -10,6 +11,7 @@ const ProfileSelector = ({
     onBackToMain,
     lastSelectedProfile = null
 }) => {
+    const t = useT();
     const [profiles, setProfiles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAddProfile, setShowAddProfile] = useState(false);
@@ -43,7 +45,7 @@ const ProfileSelector = ({
                 throw new Error('Failed to fetch profiles');
             }
         } catch (err) {
-            setError('Failed to load profiles');
+            setError(t('ps.loadFailed'));
             console.error('Error loading profiles:', err);
         } finally {
             setLoading(false);
@@ -75,11 +77,11 @@ const ProfileSelector = ({
         e.stopPropagation();
         
         if (profiles.length <= 1) {
-            alert('Cannot delete the last profile. You must have at least one profile.');
+            alert(t('ps.cantDeleteLast'));
             return;
         }
 
-        if (window.confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+        if (window.confirm(t('ps.confirmDelete'))) {
             try {
                 const response = await fetch(`/api/profile/${profileId}`, {
                     method: 'DELETE'
@@ -88,11 +90,11 @@ const ProfileSelector = ({
                 if (response.ok) {
                     loadProfiles();
                 } else {
-                    alert('Failed to delete profile');
+                    alert(t('ps.deleteFailed'));
                 }
             } catch (error) {
                 console.error('Error deleting profile:', error);
-                alert('Error deleting profile');
+                alert(t('ps.deleteError'));
             }
         }
     };
@@ -152,7 +154,7 @@ const ProfileSelector = ({
                 <div className="profile-selector-content">
                     <div className="loading-container">
                         <div className="loading-spinner"></div>
-                        <p>Loading profiles...</p>
+                        <p>{t('ps.loading')}</p>
                     </div>
                 </div>
             </div>
@@ -164,10 +166,10 @@ const ProfileSelector = ({
             <div className="profile-selector-fullscreen">
                 <div className="profile-selector-content">
                     <div className="error-container">
-                        <h2>⚠️ Error Loading Profiles</h2>
+                        <h2>{t('ps.errorTitle')}</h2>
                         <p>{error}</p>
                         <button onClick={loadProfiles} className="retry-btn">
-                            Try Again
+                            {t('ps.retry')}
                         </button>
                     </div>
                 </div>
@@ -206,15 +208,15 @@ const ProfileSelector = ({
                 <button 
                     className="back-to-collection-btn"
                     onClick={onBackToMain}
-                    title={`Back to ${lastSelectedProfile.name}'s collection`}
+                    title={t('ps.backToTitle', { name: lastSelectedProfile.name })}
                 >
-                    ← Back to {lastSelectedProfile.name}'s Collection
+                    {t('ps.backToLabel', { name: lastSelectedProfile.name })}
                 </button>
             )}
 
             <div className="profile-selector-content">
                 <div className="profile-selector-header">
-                    <h1 className="main-title">Choose whose manga collection to explore</h1>
+                    <h1 className="main-title">{t('ps.title')}</h1>
                 </div>
 
                 <div className="profiles-container">
@@ -271,7 +273,7 @@ const ProfileSelector = ({
                                         <button
                                             className="profile-action-btn edit-btn"
                                             onClick={(e) => handleEditProfile(e, profile)}
-                                            title="Edit profile"
+                                            title={t('ps.editProfile')}
                                         >
                                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                                 <path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/>
@@ -282,7 +284,7 @@ const ProfileSelector = ({
                                             <button
                                                 className="profile-action-btn delete-btn"
                                                 onClick={(e) => handleDeleteProfile(e, profile.id)}
-                                                title="Delete profile"
+                                                title={t('ps.deleteProfile')}
                                             >
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                                     <path d="M19 4h-3.5l-1-1h-5l-1 1H5v2h14M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6v12z"/>
@@ -302,7 +304,7 @@ const ProfileSelector = ({
                             <div className="profile-circle-avatar">
                                 <div className="add-circle-icon">+</div>
                             </div>
-                            <span className="profile-circle-name">Add New</span>
+                            <span className="profile-circle-name">{t('ps.addNew')}</span>
                         </div>
                     </div>
                 </div>

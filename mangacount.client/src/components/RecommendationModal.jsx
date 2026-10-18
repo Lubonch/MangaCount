@@ -1,3 +1,4 @@
+import { useT } from '../contexts/I18nContext';
 import './RecommendationModal.css';
 
 const RecommendationModal = ({
@@ -7,6 +8,7 @@ const RecommendationModal = ({
     recommendations = null,
     onClose,
 }) => {
+    const t = useT();
     if (!isOpen) {
         return null;
     }
@@ -29,30 +31,30 @@ const RecommendationModal = ({
             >
                 <div className="recommendation-header">
                     <div>
-                        <h2 id="recommendation-title">Recommendations</h2>
+                        <h2 id="recommendation-title">{t('rec.title')}</h2>
                         <p className="recommendation-subtitle">
-                            Country: {inferredCountry}
+                            {t('rec.country', { country: inferredCountry })}
                         </p>
-                        <p className="recommendation-provider">Provider: {provider}</p>
+                        <p className="recommendation-provider">{t('rec.provider', { provider })}</p>
                         {showImportNote && (
                             <p className="recommendation-meta">
-                                Showing {items.length} local picks. {blockedByImportCount} import {blockedByImportCount === 1 ? 'candidate was' : 'candidates were'} excluded.
+                                {t('rec.picks', { count: items.length, blocked: blockedByImportCount, word: t(blockedByImportCount === 1 ? 'rec.candidateWas' : 'rec.candidatesWere') })}
                             </p>
                         )}
                     </div>
                     <button
                         type="button"
                         className="recommendation-close"
-                        aria-label="Close Recommendations"
+                        aria-label={t('rec.closeAria')}
                         onClick={onClose}
                     >
-                        Close
+                        {t('rec.close')}
                     </button>
                 </div>
 
                 {isLoading && (
                     <div className="recommendation-state">
-                        <p>Building your recommendations...</p>
+                        <p>{t('rec.building')}</p>
                     </div>
                 )}
 
@@ -64,7 +66,7 @@ const RecommendationModal = ({
 
                 {!isLoading && !error && items.length === 0 && (
                     <div className="recommendation-state">
-                        <p>No eligible recommendations were found for your local market.</p>
+                        <p>{t('rec.none')}</p>
                     </div>
                 )}
 

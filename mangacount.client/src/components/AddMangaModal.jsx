@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './AddMangaModal.css';
+import { useT } from '../contexts/I18nContext';
 
 const AddMangaModal = ({ 
     isOpen, 
@@ -7,6 +8,7 @@ const AddMangaModal = ({
     onSuccess,
     editManga = null
 }) => {
+    const t = useT();
     const [formData, setFormData] = useState({
         name: '',
         volumes: '',
@@ -139,19 +141,19 @@ const AddMangaModal = ({
         setError('');
 
         if (!formData.name.trim()) {
-            setError('Please enter a manga name');
+            setError(t('addManga.errName'));
             setIsSubmitting(false);
             return;
         }
 
         if (!formData.formatId) {
-            setError('Please select a format');
+            setError(t('addManga.errFormat'));
             setIsSubmitting(false);
             return;
         }
 
         if (!formData.publisherId) {
-            setError('Please select a publisher');
+            setError(t('addManga.errPublisher'));
             setIsSubmitting(false);
             return;
         }
@@ -191,10 +193,10 @@ const AddMangaModal = ({
                 }
             } else {
                 const error = await response.json();
-                setError(`Failed to ${editManga ? 'update' : 'create'} manga: ${error.message || 'Unknown error'}`);
+                setError(t(editManga ? 'addManga.errUpdate' : 'addManga.errCreate', { message: error.message || t('addManga.unknownError') }));
             }
         } catch (err) {
-            setError(`Error ${editManga ? 'updating' : 'creating'} manga: ` + err.message);
+            setError(t(editManga ? 'addManga.errNetUpdate' : 'addManga.errNetCreate', { message: err.message }));
         } finally {
             setIsSubmitting(false);
         }
@@ -208,26 +210,26 @@ const AddMangaModal = ({
         <div className="modal-overlay">
             <div className="modal-content">
                 <div className="modal-header">
-                    <h2>{isEditing ? 'Edit Manga' : 'Add New Manga'}</h2>
+                    <h2>{t(isEditing ? 'addManga.titleEdit' : 'addManga.titleCreate')}</h2>
                     <button className="close-button" onClick={onClose}>&times;</button>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="manga-form">
                     <div className="form-group">
-                        <label htmlFor="name">Manga Name *</label>
+                        <label htmlFor="name">{t('addManga.nameLabel')}</label>
                         <input
                             type="text"
                             id="name"
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            placeholder="Enter manga title"
+                            placeholder={t('addManga.namePlaceholder')}
                             required
                         />
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="volumes">Total Volumes (optional)</label>
+                        <label htmlFor="volumes">{t('addManga.volumesLabel')}</label>
                         <input
                             type="number"
                             id="volumes"
@@ -235,13 +237,13 @@ const AddMangaModal = ({
                             value={formData.volumes}
                             onChange={handleInputChange}
                             min="1"
-                            placeholder="e.g., 42"
+                            placeholder={t('addManga.volumesPlaceholder')}
                         />
-                        <small>Leave empty if unknown or ongoing series</small>
+                        <small>{t('addManga.volumesHint')}</small>
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="formatId">Format *</label>
+                        <label htmlFor="formatId">{t('addManga.formatLabel')}</label>
                         <div className="select-with-add">
                             <select
                                 id="formatId"
@@ -250,7 +252,7 @@ const AddMangaModal = ({
                                 onChange={handleInputChange}
                                 required
                             >
-                                <option value="">Select Format</option>
+                                <option value="">{t('addManga.selectFormat')}</option>
                                 {formats.map(format => (
                                     <option key={format.id} value={format.id}>
                                         {format.name}
@@ -261,7 +263,7 @@ const AddMangaModal = ({
                                 type="button" 
                                 onClick={() => setShowAddFormat(true)}
                                 className="add-new-btn"
-                                title="Add new format"
+                                title={t('addManga.addFormatTitle')}
                             >
                                 +
                             </button>
@@ -273,17 +275,17 @@ const AddMangaModal = ({
                                     type="text"
                                     value={newFormatName}
                                     onChange={(e) => setNewFormatName(e.target.value)}
-                                    placeholder="New format name"
+                                    placeholder={t('addManga.newFormatName')}
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddFormat()}
                                 />
-                                <button type="button" onClick={handleAddFormat}>Add</button>
-                                <button type="button" onClick={() => setShowAddFormat(false)}>Cancel</button>
+                                <button type="button" onClick={handleAddFormat}>{t('addManga.add')}</button>
+                                <button type="button" onClick={() => setShowAddFormat(false)}>{t('addManga.cancel')}</button>
                             </div>
                         )}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="publisherId">Publisher *</label>
+                        <label htmlFor="publisherId">{t('addManga.publisherLabel')}</label>
                         <div className="select-with-add">
                             <select
                                 id="publisherId"
@@ -292,7 +294,7 @@ const AddMangaModal = ({
                                 onChange={handleInputChange}
                                 required
                             >
-                                <option value="">Select Publisher</option>
+                                <option value="">{t('addManga.selectPublisher')}</option>
                                 {publishers.map(publisher => (
                                     <option key={publisher.id} value={publisher.id}>
                                         {publisher.name}
@@ -303,7 +305,7 @@ const AddMangaModal = ({
                                 type="button" 
                                 onClick={() => setShowAddPublisher(true)}
                                 className="add-new-btn"
-                                title="Add new publisher"
+                                title={t('addManga.addPublisherTitle')}
                             >
                                 +
                             </button>
@@ -315,7 +317,7 @@ const AddMangaModal = ({
                                     type="text"
                                     value={newPublisherName}
                                     onChange={(e) => setNewPublisherName(e.target.value)}
-                                    placeholder="New publisher name"
+                                    placeholder={t('addManga.newPublisherName')}
                                     onKeyPress={(e) => e.key === 'Enter' && handleAddPublisher()}
                                 />
                                 <button type="button" onClick={handleAddPublisher}>Add</button>
@@ -333,7 +335,7 @@ const AddMangaModal = ({
                                 checked={formData.isAdult}
                                 onChange={handleInputChange}
                             />
-                            Contenido +18
+                            {t('addManga.isAdult')}
                         </label>
                     </div>
 
@@ -345,8 +347,8 @@ const AddMangaModal = ({
                         </button>
                         <button type="submit" disabled={isSubmitting} className="submit-button">
                             {isSubmitting ? 
-                                (isEditing ? 'Updating...' : 'Creating...') : 
-                                (isEditing ? 'Update Manga' : 'Create Manga')
+                                t(isEditing ? 'addManga.submittingUpdate' : 'addManga.submittingCreate') :
+                                t(isEditing ? 'addManga.submitUpdate' : 'addManga.submitCreate')
                             }
                         </button>
                     </div>
