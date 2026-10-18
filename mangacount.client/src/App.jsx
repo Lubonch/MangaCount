@@ -409,6 +409,7 @@ function App() {
                             isLoading={recommendationsLoading}
                             error={recommendationError}
                             recommendations={recommendationData}
+                            profileId={selectedProfile?.id}
                             onClose={handleRecommendationClose}
                         />
                         <SettingsModal

@@ -17,6 +17,10 @@ import {
 } from '../services/catalog-base.js';
 import { formats, publishers } from '../db/repositories/catalogs.js';
 import { getRecommendations } from '../services/recommendations.js';
+import { getAnilistRecommendations } from '../services/anilist-recommendations.js';
+import { dismiss } from '../db/repositories/recommendation-feedback.js';
+import { upsertRef } from '../db/repositories/manga-external-refs.js';
+import { createManga } from '../db/repositories/mangas.js';
 import { SUPPORTED_LANGUAGES } from '../../../shared/i18n/index.js';
 import { getTranslator } from '../services/i18n.js';
 import { saveProfilePicture } from '../services/files.js';
@@ -47,6 +51,7 @@ import {
   statusCover,
   coverMap,
   autoMatchCover,
+  PROVIDER,
 } from '../services/covers.js';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -64,6 +69,13 @@ function requireProfileExists(db, profileId, t = (key) => key) {
   if (!getProfileById(db, profileId)) {
     throw new Error(t('err.profileNotFound'));
   }
+}
+
+// Asegura que el perfil tenga un Entry del manga sin pisar uno existente (a
+// diferencia de `upsertEntry`, que sobreescribe la cantidad comprada).
+function ensureEntry(db, profileId, mangaId) {
+  const exists = listEntries(db, profileId).some((entry) => entry.mangaId === mangaId);
+  if (!exists) upsertEntry(db, { mangaId, profileId, quantity: 0 });
 }
 
 // Agrupa formatos/editoriales usados por la colección como {id, name, count}[],
@@ -100,8 +112,68 @@ export const handlers = {
   'format:create': ({ db }, { name }) => formats.create(db, name),
   'publisher:list': ({ db }) => publishers.list(db),
   'publisher:create': ({ db }, { name }) => publishers.create(db, name),
-  'recommendation:get': ({ db }, { profileId, limit } = {}) =>
-    getRecommendations(db, profileId, limit),
+  // Recomendaciones: AniList si está habilitado; si devuelve `null` (sin semillas
+  // resolubles o fallo total) cae al motor local con `provider: 'local'`.
+  'recommendation:get': async ({ db, dataDir }, { profileId, limit } = {}) => {
+    const prefs = dataDir ? loadResolvedPrefs(dataDir) : resolvePrefs({});
+    if (prefs.recommendations.enabled) {
+      const anilist = await getAnilistRecommendations(db, profileId, {
+        limit: limit ?? prefs.recommendations.limit,
+        seenTtlDays: prefs.recommendations.seenTtlDays,
+        includeAdult: prefs.showAdultCovers,
+      });
+      if (anilist) return anilist;
+    }
+    return getRecommendations(db, profileId, limit);
+  },
+  'recommendation:dismiss': ({ db, dataDir }, { profileId, provider = PROVIDER, externalId } = {}) => {
+    const t = getTranslator(dataDir);
+    requireProfileId(profileId, t);
+    if (externalId == null || externalId === '') throw new Error(t('err.externalIdRequired'));
+    dismiss(db, profileId, provider, externalId);
+    return { ok: true };
+  },
+  'recommendation:own': (
+    { db, dataDir },
+    { profileId, provider = PROVIDER, externalId, mangaId, title } = {}
+  ) => {
+    const t = getTranslator(dataDir);
+    requireProfileId(profileId, t);
+    requireProfileExists(db, profileId, t);
+    if (externalId == null || externalId === '') throw new Error(t('err.externalIdRequired'));
+    if (mangaId != null) {
+      const id = Number.parseInt(mangaId, 10);
+      const manga = getMangaById(db, id);
+      if (!manga) throw new Error(t('err.mangaIdInvalid'));
+      upsertRef(db, { mangaId: id, provider, externalId });
+      ensureEntry(db, profileId, id);
+      return manga;
+    }
+    const name = typeof title === 'string' ? title.trim() : '';
+    if (!name) throw new Error(t('err.mangaTitleRequired'));
+    const manga = createManga(db, { name });
+    upsertEntry(db, { mangaId: manga.id, profileId, quantity: 0 });
+    upsertRef(db, { mangaId: manga.id, provider, externalId });
+    return manga;
+  },
+  'recommendation:config-get': ({ dataDir }) => loadResolvedPrefs(dataDir).recommendations,
+  'recommendation:config-set': ({ dataDir }, config = {}) => {
+    const t = getTranslator(dataDir);
+    const prefs = resolvePrefs(loadPrefs(dataDir));
+    const limit = Number(config.limit ?? prefs.recommendations.limit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 25) throw new Error(t('err.recLimitRange'));
+    const seenTtlDays = Number(config.seenTtlDays ?? prefs.recommendations.seenTtlDays);
+    if (!Number.isInteger(seenTtlDays) || seenTtlDays < 1 || seenTtlDays > 365) {
+      throw new Error(t('err.seenTtlRange'));
+    }
+    const recommendations = {
+      enabled: config.enabled ?? prefs.recommendations.enabled,
+      limit,
+      seenTtlDays,
+    };
+    savePrefs(dataDir, { ...prefs, recommendations });
+    return recommendations;
+  },
   'profile:upload-picture': ({ db, dataDir }, { profileId, originalName, buffer }) =>
     saveProfilePicture(db, dataDir, profileId, {
       originalName,

@@ -16,7 +16,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // v5 = mueve el flag +18 a la entidad manga: agrega `Manga.IsAdult` (fuente de verdad
 // para la UI) con el mismo `ensureColumn` idempotente y un backfill desde el
 // vínculo de portada +18. Aditivo: no borra ni renombra nada.
-export const SCHEMA_VERSION = 5;
+// v6 = feedback del recomendador: agrega `RecommendationDismissal` y
+// `RecommendationSeen` (CREATE TABLE IF NOT EXISTS en el esquema, así que correr
+// el esquema en una base v5 existente las crea sin tocar datos).
+export const SCHEMA_VERSION = 6;
 const SCHEMA_FILE = path.join(__dirname, 'schema.sqlite.sql');
 
 function applyPragmas(db) {

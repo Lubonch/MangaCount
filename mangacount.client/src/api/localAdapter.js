@@ -78,6 +78,18 @@ export const recommendationGet = (profileId, limit = 10) =>
     undefined,
     { profileId, limit }
   );
+export const recommendationDismiss = ({ profileId, provider, externalId }) =>
+  apiCall('recommendation:dismiss', '/api/recommendation/dismiss', json({ profileId, provider, externalId }), {
+    profileId,
+    provider,
+    externalId,
+  });
+export const recommendationOwn = (payload) =>
+  apiCall('recommendation:own', '/api/recommendation/own', json(payload), payload);
+export const recommendationConfigGet = () =>
+  apiCall('recommendation:config-get', '/api/recommendation/config');
+export const recommendationConfigSet = (config) =>
+  apiCall('recommendation:config-set', '/api/recommendation/config', json(config), config);
 
 // Portadas + vínculo externo (AniList)
 export const coverSearch = (query) =>
@@ -204,6 +216,10 @@ const routes = [
   { method: 'GET', pattern: /^\/api\/publisher$/, build: () => ['publisher:list'] },
   { method: 'POST', pattern: /^\/api\/publisher$/, build: (_m, o) => ['publisher:create', jsonBody(o)] },
   { method: 'GET', pattern: /^\/api\/recommendation$/, build: (_m, _o, u) => ['recommendation:get', { profileId: Number(u.searchParams.get('profileId')), limit: Number(u.searchParams.get('limit') ?? 10) }] },
+  { method: 'POST', pattern: /^\/api\/recommendation\/dismiss$/, build: (_m, o) => ['recommendation:dismiss', jsonBody(o)] },
+  { method: 'POST', pattern: /^\/api\/recommendation\/own$/, build: (_m, o) => ['recommendation:own', jsonBody(o)] },
+  { method: 'GET', pattern: /^\/api\/recommendation\/config$/, build: () => ['recommendation:config-get'] },
+  { method: 'POST', pattern: /^\/api\/recommendation\/config$/, build: (_m, o) => ['recommendation:config-set', jsonBody(o)] },
   { method: 'GET', pattern: /^\/api\/database\/statistics$/, build: () => ['database:statistics'] },
   { method: 'POST', pattern: /^\/api\/database\/nuke$/, build: () => ['database:nuke-local'] },
 ];

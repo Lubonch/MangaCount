@@ -28,6 +28,8 @@ vi.mock('../../api/localAdapter.js', () => ({
   mangaList: vi.fn(),
   coverAll: vi.fn(),
   coverAuto: vi.fn(),
+  recommendationConfigGet: vi.fn(),
+  recommendationConfigSet: vi.fn(),
 }))
 
 vi.mock('../../components/NukeDataModal', () => ({
@@ -64,6 +66,7 @@ function setupDefaults() {
   api.backupList.mockResolvedValue([])
   api.botConfigGet.mockResolvedValue({ enabled: false, guildId: null, allowedUserIds: [], status: 'apagado', hasToken: false })
   api.botAutostartGet.mockResolvedValue({ enabled: false })
+  api.recommendationConfigGet.mockResolvedValue({ enabled: true, limit: 10, seenTtlDays: 30 })
 }
 
 describe('SettingsModal', () => {
@@ -1073,5 +1076,35 @@ describe('SettingsModal', () => {
     await user.click(await screen.findByLabelText(/Incluir resultados \+18/))
 
     await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ showAdultCovers: true }))
+  })
+
+  // ---------------------------------------------------------------------------
+  // Recomendaciones (AniList)
+  // ---------------------------------------------------------------------------
+  it('guarda la config de recomendaciones', async () => {
+    const user = userEvent.setup()
+    api.recommendationConfigSet.mockResolvedValue({ enabled: true, limit: 5, seenTtlDays: 60 })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Recomendaciones (AniList)')).toBeInTheDocument())
+
+    const limit = screen.getByLabelText('Cantidad de recomendaciones')
+    await user.clear(limit)
+    await user.type(limit, '5')
+    await user.click(screen.getByLabelText('Guardar recomendaciones'))
+
+    await waitFor(() => expect(api.recommendationConfigSet).toHaveBeenCalled())
+    expect(api.recommendationConfigSet.mock.calls[0][0]).toMatchObject({ enabled: true, limit: 5 })
+    expect(await screen.findByText('Configuración de recomendaciones guardada.')).toBeInTheDocument()
+  })
+
+  it('muestra error si falla guardar la config de recomendaciones', async () => {
+    const user = userEvent.setup()
+    api.recommendationConfigSet.mockRejectedValue(new Error('rec fail'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByLabelText('Guardar recomendaciones')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Guardar recomendaciones'))
+
+    expect(await screen.findByText('No se pudo guardar: rec fail')).toBeInTheDocument()
   })
 })

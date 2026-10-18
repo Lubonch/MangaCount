@@ -60,6 +60,27 @@ CREATE TABLE IF NOT EXISTS MangaExternalRef (
     UNIQUE(MangaId, Provider)
 );
 
+-- Feedback del recomendador (migración aditiva). `RecommendationDismissal` es el
+-- "No viable" (descarte permanente por perfil); `RecommendationSeen` es el "Ya
+-- visto" con vencimiento (TTL). El "Ya lo tengo" reusa `MangaExternalRef`.
+CREATE TABLE IF NOT EXISTS RecommendationDismissal (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProfileId INTEGER NOT NULL REFERENCES Profile(Id) ON DELETE CASCADE,
+    Provider VARCHAR(32) NOT NULL,
+    ExternalId VARCHAR(64) NOT NULL,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(ProfileId, Provider, ExternalId)
+);
+
+CREATE TABLE IF NOT EXISTS RecommendationSeen (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ProfileId INTEGER NOT NULL REFERENCES Profile(Id) ON DELETE CASCADE,
+    Provider VARCHAR(32) NOT NULL,
+    ExternalId VARCHAR(64) NOT NULL,
+    SeenAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(ProfileId, Provider, ExternalId)
+);
+
 -- Sin seeds: una instalación nueva arranca en estado cero (sin perfiles, sin
 -- editoriales ni formatos). El usuario crea el perfil y los catálogos que usa.
 
@@ -70,3 +91,5 @@ CREATE INDEX IF NOT EXISTS IX_Manga_Title ON Manga(Title);
 CREATE INDEX IF NOT EXISTS IX_Entry_IsComplete ON Entry(IsComplete);
 CREATE INDEX IF NOT EXISTS IX_Entry_IsPriority ON Entry(IsPriority);
 CREATE INDEX IF NOT EXISTS IX_MangaExternalRef_MangaId ON MangaExternalRef(MangaId);
+CREATE INDEX IF NOT EXISTS IX_RecommendationDismissal_ProfileId ON RecommendationDismissal(ProfileId);
+CREATE INDEX IF NOT EXISTS IX_RecommendationSeen_ProfileId ON RecommendationSeen(ProfileId);

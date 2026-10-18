@@ -28,6 +28,8 @@ import {
   mangaList,
   coverAll,
   coverAuto,
+  recommendationConfigGet,
+  recommendationConfigSet,
 } from '../api/localAdapter.js';
 
 const EMPTY_BACKUP = {
@@ -60,10 +62,12 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [backups, setBackups] = useState([]);
   const [backupListStatus, setBackupListStatus] = useState('idle');
   const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: false, confirmTtlMinutes: 5, recommendLimit: 5, status: 'apagado', hasToken: false });
+  const [recommendations, setRecommendations] = useState({ enabled: true, limit: 10, seenTtlDays: 30 });
   const [token, setToken] = useState('');
   const [generalMessage, setGeneralMessage] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
   const [botMessage, setBotMessage] = useState('');
+  const [recMessage, setRecMessage] = useState('');
   const [backupError, setBackupError] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
@@ -84,12 +88,13 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     let cancelled = false;
     (async () => {
       try {
-        const [appConfig, backupConfig, botConfig, autostart, appMeta] = await Promise.all([
+        const [appConfig, backupConfig, botConfig, autostart, appMeta, recConfig] = await Promise.all([
           appConfigGet(),
           backupConfigGet(),
           botConfigGet(),
           botAutostartGet(),
           appInfo(),
+          recommendationConfigGet(),
         ]);
         if (cancelled) return;
         setVersion(appMeta?.version ?? null);
@@ -108,6 +113,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         setBackups([]);
         setBackupListStatus('idle');
         setBot((b) => ({ ...b, ...botConfig }));
+        setRecommendations((r) => ({ ...r, ...(recConfig ?? {}) }));
       } catch (err) {
         if (!cancelled) setGeneralMessage(t('settings.loadFailed', { error: err.message }));
       }
@@ -273,8 +279,22 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     }
   };
 
-  const runUpdateCheck = async () => {
-    setCheckingUpdate(true);
+  const saveRecommendations = async () => {
+    setRecMessage('');
+    try {
+      const saved = await recommendationConfigSet({
+        enabled: recommendations.enabled !== false,
+        limit: Number(recommendations.limit) || 10,
+        seenTtlDays: Number(recommendations.seenTtlDays) || 30,
+      });
+      setRecommendations((prev) => ({ ...prev, ...saved }));
+      setRecMessage(t('settings.recSaved'));
+    } catch (err) {
+      setRecMessage(t('settings.recSaveFailed', { error: err.message }));
+    }
+  };
+
+  const runUpdateCheck = async () => {    setCheckingUpdate(true);
     setUpdateMessage('');
     try {
       const result = await checkUpdatesRequest();
@@ -681,6 +701,50 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 {coverBulk.cooldownLeft > 0 && t('settings.bulkCooldown', { clock: formatClock(coverBulk.cooldownLeft) })}
               </p>
             )}
+          </section>
+
+          <section className="settings-section">
+            <h3>{t('settings.rec')}</h3>
+            <label className="settings-check">
+              <input
+                type="checkbox"
+                checked={recommendations.enabled !== false}
+                onChange={(e) => setRecommendations((r) => ({ ...r, enabled: e.target.checked }))}
+              />
+              {t('settings.recEnabled')}
+            </label>
+
+            <div className="settings-field settings-inline">
+              <label>
+                {t('settings.recLimit')}
+                <input
+                  type="number"
+                  min="1"
+                  max="25"
+                  aria-label={t('settings.ariaRecLimit')}
+                  value={recommendations.limit ?? 10}
+                  onChange={(e) => setRecommendations((r) => ({ ...r, limit: Number(e.target.value) }))}
+                />
+              </label>
+              <label>
+                {t('settings.recSeenTtl')}
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  aria-label={t('settings.ariaRecSeenTtl')}
+                  value={recommendations.seenTtlDays ?? 30}
+                  onChange={(e) => setRecommendations((r) => ({ ...r, seenTtlDays: Number(e.target.value) }))}
+                />
+              </label>
+            </div>
+
+            <div className="settings-actions">
+              <button type="button" aria-label={t('settings.ariaSaveRec')} onClick={saveRecommendations}>
+                {t('settings.save')}
+              </button>
+            </div>
+            {recMessage && <p className="settings-message">{recMessage}</p>}
           </section>
 
           <section className="settings-section">

@@ -34,6 +34,11 @@ export const DEFAULT_PREFS = {
     confirmTtlMinutes: 5,
     recommendLimit: 5,
   },
+  recommendations: {
+    enabled: true,
+    limit: 10,
+    seenTtlDays: 30,
+  },
 };
 
 export function loadPrefs(dataDir) {
@@ -60,6 +65,7 @@ export function resolvePrefs(prefs = {}) {
       triggers: { ...DEFAULT_PREFS.backup.triggers, ...(prefs.backup?.triggers ?? {}) },
     },
     bot: { ...DEFAULT_PREFS.bot, ...(prefs.bot ?? {}) },
+    recommendations: { ...DEFAULT_PREFS.recommendations, ...(prefs.recommendations ?? {}) },
   };
 }
 

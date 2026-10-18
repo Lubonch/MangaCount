@@ -11,6 +11,8 @@ const channels = [
   'manga:list', 'manga:get', 'manga:upsert', 'manga:delete',
   'format:list', 'format:create', 'publisher:list', 'publisher:create',
   'recommendation:get',
+  'recommendation:dismiss', 'recommendation:own',
+  'recommendation:config-get', 'recommendation:config-set',
   'profile:upload-picture',
   'database:statistics', 'database:nuke-local',
   'backup:create', 'backup:restore', 'backup:list', 'backup:config-get', 'backup:config-set',

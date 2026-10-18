@@ -56,6 +56,90 @@
     cursor: pointer;
 }
 
+.recommendation-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.recommendation-refresh {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: 999px;
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+.recommendation-refresh:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.recommendation-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.recommendation-actions button {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.recommendation-exhausted,
+.recommendation-action-error {
+    margin-top: 12px;
+    color: var(--text-secondary);
+}
+
+.recommendation-action-error {
+    color: var(--color-incomplete);
+}
+
+.recommendation-picker {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.recommendation-picker input {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.recommendation-picker-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 8px;
+    display: grid;
+    gap: 6px;
+    max-height: 200px;
+    overflow: auto;
+}
+
+.recommendation-picker-list button {
+    width: 100%;
+    text-align: left;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.recommendation-picker-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .recommendation-close:hover {
     background: var(--bg-primary);
 }
