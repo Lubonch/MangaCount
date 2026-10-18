@@ -18,6 +18,13 @@ y versionado semántico.
   PRs hacia `main`. Además, `npm test` incluye un test que falla si el main importa algo que el
   empaquetado no incluye.
 
+### Changed
+
+- **Dependencias**: `electron` 44.7.0 → 44.7.2 y, en el renderer, `react`/`react-dom` 19.3.1,
+  `vitest` y `@vitest/coverage-v8` 5.0.5, `jsdom` 30.1.3 y `@testing-library/user-event` 14.6.8.
+- **Dependabot** ahora apunta a `develop`: sus PRs se abrían contra `main`, donde el protocolo de rama
+  los dejaba bloqueados sin poder mergearse.
+
 ## [2.2.5] - 2026-10-18
 
 ### Added
