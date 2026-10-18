@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from 'undici';
 import { openDb } from '../db/client.js';
+import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
 import { createProfile } from '../db/repositories/profiles.js';
 import { createManga } from '../db/repositories/mangas.js';
 import { upsertEntry, listEntries } from '../db/repositories/entries.js';
@@ -24,6 +25,10 @@ import {
   registerGuildCommands,
   slashCommands,
 } from './discord-bot.js';
+import { createPaginationStore, renderPage } from './discord-pagination.js';
+
+const t = createAppTranslator(resolveLanguage({}));
+const pageContent = (pagination, result) => renderPage(pagination.get(result.token), 1, t).content;
 
 describe('discord-bot: autorización', () => {
   const config = { guildId: 'g1', allowedUserIds: ['u1', 'u2'] };
@@ -57,6 +62,7 @@ describe('discord-bot: comandos', () => {
   let db;
   let profile;
   let commands;
+  let pagination;
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdisc-'));
@@ -64,7 +70,8 @@ describe('discord-bot: comandos', () => {
     profile = createProfile(db, 'Lucas');
     const manga = createManga(db, { name: 'Berserk', volumes: 41 });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 40, priority: true });
-    commands = createCommands({ db });
+    pagination = createPaginationStore();
+    commands = createCommands({ db, pagination });
   });
 
   afterEach(() => {
@@ -99,7 +106,8 @@ describe('discord-bot: comandos', () => {
   });
 
   it('lista pendientes con prioridad', async () => {
-    const reply = await commands.pendientes({ session: { profileId: profile.id } });
+    const result = await commands.pendientes({ session: { profileId: profile.id } });
+    const reply = pageContent(pagination, result);
     assert.match(reply, /Berserk/);
     assert.match(reply, /1 vols\./);
   });
@@ -110,19 +118,26 @@ describe('discord-bot: comandos', () => {
     const manga = createManga(db, { name: 'Vagabond', volumes: 37, formatId: format.id, publisherId: publisher.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 10, pending: '5,7' });
 
-    const reply = await commands.pendientes({ session: { profileId: profile.id } });
+    const result = await commands.pendientes({ session: { profileId: profile.id } });
+    const reply = pageContent(pagination, result);
     assert.match(reply, /Vagabond/);
     assert.match(reply, /pending: 5,7/);
     assert.ok(reply.includes(`${format.name} · ${publisher.name}`));
   });
 
-  it('/pendientes acota la salida (20 series + resto)', async () => {
+  it('/pendientes pagina con el tope por defecto', async () => {
     for (let i = 0; i < 25; i += 1) {
       const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
       upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
     }
-    const reply = await commands.pendientes({ session: { profileId: profile.id } });
-    assert.match(reply, /…y \d+ series más\./);
+    const result = await commands.pendientes({ session: { profileId: profile.id } });
+    const item = pagination.get(result.token);
+    const first = renderPage(item, 1, t);
+    assert.equal(first.pages, 2);
+    assert.match(first.content, /Página 1 de 2/);
+    assert.ok(!first.content.includes('Serie 24*'));
+    assert.ok(renderPage(item, 2, t).content.includes('Serie 24*'));
+    assert.equal(first.prevDisabled, true);
   });
 
   it('/pendientes respeta un tope configurado distinto de 20', async () => {
@@ -130,21 +145,25 @@ describe('discord-bot: comandos', () => {
       const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
       upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
     }
-    const custom = createCommands({ db, getConfig: () => ({ pendingLimitEnabled: true, pendingLimit: 5 }) });
-    const reply = await custom.pendientes({ session: { profileId: profile.id } });
-    assert.match(reply, /…y \d+ series más\./);
-    assert.ok(!reply.includes('Serie 5:'));
+    const store = createPaginationStore();
+    const custom = createCommands({ db, pagination: store, getConfig: () => ({ pendingLimitEnabled: true, pendingLimit: 5 }) });
+    const result = await custom.pendientes({ session: { profileId: profile.id } });
+    const first = renderPage(store.get(result.token), 1, t);
+    assert.match(first.content, /Página 1 de 6/);
+    assert.ok(!first.content.includes('Serie 5*'));
   });
 
-  it('/pendientes sin tope lista todas las series', async () => {
+  it('/pendientes sin tope lista todas las series en una página', async () => {
     for (let i = 0; i < 25; i += 1) {
       const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
       upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
     }
-    const full = createCommands({ db, getConfig: () => ({ pendingLimitEnabled: false }) });
-    const reply = await full.pendientes({ session: { profileId: profile.id } });
-    assert.ok(!reply.includes('series más'));
-    assert.ok(reply.includes('Serie 24*'));
+    const store = createPaginationStore();
+    const full = createCommands({ db, pagination: store, getConfig: () => ({ pendingLimitEnabled: false }) });
+    const result = await full.pendientes({ session: { profileId: profile.id } });
+    const page = renderPage(store.get(result.token), 1, t);
+    assert.equal(page.pages, 1);
+    assert.ok(page.content.includes('Serie 24*'));
   });
 
   it('despacho desconocido no rompe', async () => {
@@ -515,6 +534,7 @@ describe('discord-bot: comandos de escritura y bordes', () => {
   let profile;
   let session;
   let commands;
+  let pagination;
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcedge-'));
@@ -525,7 +545,8 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const deluxe = createManga(db, { name: 'Berserk Deluxe', volumes: 42 });
     upsertEntry(db, { mangaId: deluxe.id, profileId: profile.id, quantity: 10 });
     session = { profileId: profile.id };
-    commands = createCommands({ db });
+    pagination = createPaginationStore();
+    commands = createCommands({ db, pagination });
   });
 
   afterEach(() => {
@@ -744,7 +765,8 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const unknown = formats.create(db, 'Unknown');
     const manga = createManga(db, { name: 'Serie U', volumes: 10, formatId: unknown.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
-    const out = await commands.pendientes({ session });
+    const result = await commands.pendientes({ session });
+    const out = pageContent(pagination, result);
     assert.match(out, /Serie U/);
     assert.doesNotMatch(out, /Unknown/);
   });
@@ -911,6 +933,10 @@ function makeFakeDiscord({ restGet } = {}) {
       this.style = style;
       return this;
     }
+    setDisabled(disabled) {
+      this.disabled = disabled;
+      return this;
+    }
   }
   class ActionRowBuilder {
     addComponents(...components) {
@@ -1008,7 +1034,7 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false, ephemeralReplies: true }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: true }),
       getToken: () => 'tok',
       followUpDelayMs: 0,
       db,
@@ -1047,7 +1073,39 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     assert.equal(replies[0].ephemeral, true);
   });
 
-  it('reparte una respuesta larga en reply + followUps', async () => {
+  it('/pendientes responde paginado con botones', async () => {
+    for (let i = 0; i < 30; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'pendientes', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.equal(replies.length, 1);
+    assert.match(replies[0].content, /Página 1 de 2/);
+    assert.ok(replies[0].components?.length >= 1);
+
+    // Navegar a la página 2 con el botón Siguiente.
+    const nextId = replies[0].components[0].components[1].customId;
+    const updates = [];
+    await clients[0].handlers.interactionCreate(button(nextId, { update: async (p) => updates.push(p) }));
+    for (let i = 0; i < 20 && updates.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /Página 2 de 2/);
+    assert.equal(updates[0].components[0].components[1].disabled, true);
+  });
+
+  it('avisa cuando la paginación expiró', async () => {
+    const updates = [];
+    await clients[0].handlers.interactionCreate(
+      button('mc:pend:noexiste:2', { update: async (p) => updates.push(p) })
+    );
+    for (let i = 0; i < 20 && updates.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /expiró/i);
+  });
+
+  it('reparte en varios mensajes una respuesta larga de /buscar', async () => {
     for (let i = 0; i < 120; i += 1) {
       const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
       upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
@@ -1056,12 +1114,13 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     const followUps = [];
     await clients[0].handlers.interactionCreate(
       chat({
-        commandName: 'pendientes',
+        commandName: 'buscar',
+        options: { getString: (n) => (n === 'query' ? 'Serie' : null), getInteger: () => null },
         reply: async (p) => replies.push(p),
         followUp: async (p) => followUps.push(p),
       })
     );
-    for (let i = 0; i < 20 && followUps.length === 0; i += 1) await flush();
+    for (let i = 0; i < 40 && followUps.length === 0; i += 1) await flush();
     assert.equal(replies.length, 1);
     assert.ok(followUps.length >= 1);
     assert.match(followUps[followUps.length - 1].content, /\(\d+\/\d+\)/);
@@ -1250,7 +1309,7 @@ describe('discord-bot: keepWarm', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     const bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false, ephemeralReplies: true }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: true }),
       getToken: () => 'tok',
       followUpDelayMs: 0,
       db,

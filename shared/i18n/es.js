@@ -283,7 +283,7 @@ export default {
   'settings.guildId': "Guild ID",
   'settings.allowlist': "Usuarios permitidos (separados por coma)",
   'settings.limitPending': "Limitar /pendientes",
-  'settings.maxSeries': "Series máximas",
+  'settings.maxSeries': "Series por página",
   'settings.ephemeral': "Respuestas efímeras",
   'settings.confirmTtl': "Minutos para confirmar escrituras",
   'settings.recommendLimit': "Recomendaciones por defecto",
@@ -426,4 +426,12 @@ export default {
   'bot.proposalAdd': "Agregar *{name}* ({quantity}/{total} tomos)",
   'bot.entryNotFound': "❌ No encontré *{title}* en tu colección.",
   'bot.entryAmbiguous': "Encontré varias: {list}. Sé más específico.",
+
+  'bot.pagerFooter': "Página {page} de {pages} (Total: {total} series)",
+  'bot.pagerPrev': "⬅️ Anterior",
+  'bot.pagerNext': "Siguiente ➡️",
+  'bot.pagerExpired': "La paginación expiró; volvé a ejecutar /pendientes.",
+
+  'bot.confirmLabel': "Confirmar",
+  'bot.cancelLabel': "Cancelar",
 };

@@ -426,4 +426,12 @@ export default {
   'bot.proposalAdd': "Add *{name}* ({quantity}/{total} volumes)",
   'bot.entryNotFound': "❌ I could not find *{title}* in your collection.",
   'bot.entryAmbiguous': "Found several: {list}. Be more specific.",
+
+  'bot.pagerFooter': "Page {page} of {pages} (Total: {total} series)",
+  'bot.pagerPrev': "⬅️ Previous",
+  'bot.pagerNext': "Next ➡️",
+  'bot.pagerExpired': "The pagination expired; run /pendientes again.",
+
+  'bot.confirmLabel': "Confirm",
+  'bot.cancelLabel': "Cancel",
 };

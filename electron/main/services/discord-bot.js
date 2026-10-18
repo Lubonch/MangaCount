@@ -12,6 +12,7 @@ import { searchResult, pendingSummary, entryStatus } from './search.js';
 import { handlers } from '../ipc/handlers.js';
 import { splitMessage } from './discord-messages.js';
 import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
+import { createPaginationStore, renderPage } from './discord-pagination.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -244,6 +245,7 @@ export function createCommands({
   getDb,
   getConfig = () => ({}),
   getT = fallbackTranslator,
+  pagination = createPaginationStore(),
   getRecommendations: recommend = getRecommendations,
 } = {}) {
   const t = (key, params) => getT()(key, params);
@@ -282,15 +284,14 @@ export function createCommands({
       return t('bot.searchResults', { query, lines: results.map((e) => formatEntryLine(e, getT())).join('\n\n') });
     },
 
-    async pendientes({ session }) {
+    async pendientes({ session, userId }) {
       const profileId = activeProfile(session).id;
       const summary = pendingSummary(entriesFor(profileId));
       if (summary.count === 0) return t('bot.nothingPending');
       const config = getConfig() ?? {};
       const limitEnabled = config.pendingLimitEnabled !== false;
       const limit = Number.isInteger(config.pendingLimit) ? config.pendingLimit : 20;
-      const shown = limitEnabled ? summary.entries.slice(0, limit) : summary.entries;
-      const lines = shown.map((e) => {
+      const lines = summary.entries.map((e) => {
         const priority = e.priority ? '⭐ ' : '';
         const parts = [t('bot.pendingDetail', { quantity: e.quantity, total: e.manga.volumes, missing: e.manga.volumes - e.quantity })];
         if (e.pending) parts.push(t('bot.pendingNote', { value: e.pending }));
@@ -300,9 +301,14 @@ export function createCommands({
         if (meta.length) parts.push(meta.join(' · '));
         return `${priority}*${e.manga.name}*: ${parts.join(' · ')}`;
       });
-      const rest = summary.count - shown.length;
-      const more = rest > 0 ? `\n\n${t('bot.pendingMore', { count: rest })}` : '';
-      return `${t('bot.pendingHeader', { count: summary.count, vols: summary.totalPending })}\n\n${lines.join('\n')}${more}`;
+      const pageSize = limitEnabled ? limit : Math.max(summary.count, 1);
+      const token = pagination.create({
+        lines,
+        pageSize,
+        userId,
+        header: t('bot.pendingHeader', { count: summary.count, vols: summary.totalPending }),
+      });
+      return { kind: 'paged', token };
     },
 
     async recomendar({ session, limite }) {
@@ -481,7 +487,8 @@ export function createDiscordBot({
   let client = null;
   let status = 'apagado';
   const session = createSessionStore();
-  const commands = createCommands({ getDb, db, getConfig, getT });
+  const pagination = createPaginationStore();
+  const commands = createCommands({ getDb, db, getConfig, getT, pagination });
   const load = loadDiscord ?? (() => import('discord.js'));
   const resolveDb = getDb ?? (() => db);
   let discordMod = null;
@@ -493,6 +500,25 @@ export function createDiscordBot({
     onStatusChange(next);
   };
 
+  const buildPager = (page) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(page.prevId)
+          .setLabel(getT()('bot.pagerPrev'))
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(page.prevDisabled),
+        new ButtonBuilder()
+          .setCustomId(page.nextId)
+          .setLabel(getT()('bot.pagerNext'))
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(page.nextDisabled)
+      ),
+    ];
+  };
+
   const confirmRow = (token) => {
     if (!discordMod) return [];
     const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
@@ -500,11 +526,11 @@ export function createDiscordBot({
       new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId(`mc:confirm:${token}`)
-          .setLabel('Confirmar')
+          .setLabel(getT()('bot.confirmLabel'))
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
           .setCustomId(`mc:cancel:${token}`)
-          .setLabel('Cancelar')
+          .setLabel(getT()('bot.cancelLabel'))
           .setStyle(ButtonStyle.Secondary)
       ),
     ];
@@ -530,6 +556,21 @@ export function createDiscordBot({
       });
       return;
     }
+    if (reply && typeof reply === 'object' && reply.kind === 'paged') {
+      const item = pagination.get(reply.token);
+      if (!item) {
+        await interaction.reply(getT()('bot.pagerExpired'));
+        return;
+      }
+      const page = renderPage(item, 1, getT());
+      await interaction.reply({
+        content: page.content,
+        components: buildPager(page),
+        ephemeral: config.ephemeralReplies === true,
+      });
+      return;
+    }
+
     const ephemeral = config.ephemeralReplies === true;
     const payload = (content) => (ephemeral ? { content, ephemeral: true } : content);
     const chunks = splitMessage(String(reply));
@@ -544,6 +585,19 @@ export function createDiscordBot({
     const config = getConfig();
     const args = { userId: interaction.user?.id, guildId: interaction.guildId };
     if (!isAuthorized(config, args)) return;
+    const pend = /^mc:pend:([^:]+):(\d+)$/.exec(interaction.customId ?? '');
+    if (pend) {
+      const [, token, pageStr] = pend;
+      const item = pagination.get(token);
+      if (!item) {
+        await interaction.update({ content: getT()('bot.pagerExpired'), components: [] });
+        return;
+      }
+      const page = renderPage(item, Number(pageStr), getT());
+      await interaction.update({ content: page.content, components: buildPager(page) });
+      return;
+    }
+
     const match = /^mc:(confirm|cancel):(.+)$/.exec(interaction.customId ?? '');
     if (!match) return;
     const [, action, token] = match;

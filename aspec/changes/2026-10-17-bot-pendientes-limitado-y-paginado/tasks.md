@@ -19,27 +19,27 @@
 
 ## Fase 4 — Paginación por botones (pendiente)
 
-- [ ] Crear `electron/main/services/discord-pagination.js` (`createPaginationStore`, `renderPage`) y sus
+- [x] Crear `electron/main/services/discord-pagination.js` (`createPaginationStore`, `renderPage`) y sus
       tests (páginas, extremos, expiración, autorización).
-- [ ] `discord-bot.js`: `/pendientes` devuelve `{ kind: 'paged', token }` (tamaño de página =
+- [x] `discord-bot.js`: `/pendientes` devuelve `{ kind: 'paged', token }` (tamaño de página =
       `pendingLimit`, o una sola página si el tope está apagado).
-- [ ] `discord-bot.js`: `handleInteraction` responde la página 1 con botones.
-- [ ] `discord-bot.js`: `handleButton` maneja `mc:pend:<token>:<page>` (auth del invocador/allowlist,
+- [x] `discord-bot.js`: `handleInteraction` responde la página 1 con botones.
+- [x] `discord-bot.js`: `handleButton` maneja `mc:pend:<token>:<page>` (auth del invocador/allowlist,
       expiración con aviso, `interaction.update` sin mensajes nuevos).
-- [ ] Tests: paginación completa, botón de usuario no autorizado y token expirado.
-- [ ] Dejar de truncar con “y N series más.” en `/pendientes`.
+- [x] Tests: paginación completa, botón de usuario no autorizado y token expirado.
+- [x] Dejar de truncar con “y N series más.” en `/pendientes`.
 
 ## Fase 5 — Settings UI
 
 - [x] Checkbox “Limitar /pendientes” + campo de cantidad (1–500).
-- [ ] Renombrar el campo a **“Series por página”** (ahora es el tamaño de página) y ajustar el test.
+- [x] Renombrar el campo a **“Series por página”** (ahora es el tamaño de página) y ajustar el test.
 
 ## Fase 6 — Gates y verificación
 
-- [ ] `npm test` en verde.
-- [ ] `npm run test:coverage` en verde (main ≥90%).
-- [ ] `npm run test:renderer:coverage` en verde (≥90%).
-- [ ] `npm run lint:renderer` sin errores.
-- [ ] `npm run build:renderer` sin errores.
+- [x] `npm test` en verde.
+- [x] `npm run test:coverage` en verde (main ≥90%).
+- [x] `npm run test:renderer:coverage` en verde (≥90%).
+- [x] `npm run lint:renderer` sin errores.
+- [x] `npm run build:renderer` sin errores.
 - [ ] Verificación manual (si hay bot configurado): `/pendientes` con más de una página y navegación con
       los botones.
