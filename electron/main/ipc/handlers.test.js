@@ -493,6 +493,7 @@ describe('ipc handlers (ctx puro)', () => {
 
   it('app:config get/set con defaults y autostart activo', () => {
     assert.deepEqual(handlers['app:config-get'](ctx), {
+      language: 'en',
       startInTray: true,
       updateCheck: true,
       diagnosticsCopy: true,
@@ -505,7 +506,7 @@ describe('ipc handlers (ctx puro)', () => {
         diagnosticsCopy: false,
         showAdultCovers: true,
       }),
-      { startInTray: false, updateCheck: false, diagnosticsCopy: false, showAdultCovers: true }
+      { language: 'en', startInTray: false, updateCheck: false, diagnosticsCopy: false, showAdultCovers: true }
     );
     let autostart = false;
     const partial = handlers['app:config-set'](

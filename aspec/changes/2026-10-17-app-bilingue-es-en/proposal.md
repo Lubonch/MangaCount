@@ -20,7 +20,7 @@ Alcance real relevado:
 
 i18n por fases, con **diccionarios compartidos** entre renderer y main:
 
-1. **Infra + preferencia**: `shared/i18n/{en,es}.json` + `t(key, params)`; `app.language` en `prefs`
+1. **Infra + preferencia**: `shared/i18n/{en,es}.json` + `t(key, params)`; `prefs.language` en `prefs`
    (**default `en`**), expuesto por `app:config-get/set`; selector de idioma en Settings → General.
 2. **Renderer**: migrar los componentes a `t()` (JSX, atributos y errores) vía un `I18nProvider`.
 3. **Main**: traducir los 48 mensajes de error + tray + diálogos + update con el mismo diccionario.
@@ -38,7 +38,7 @@ validados); el **EN es nuevo** y queda para revisión del usuario.
 **In scope**
 
 - `shared/i18n/` (diccionarios + helper) y su consumo en renderer y main.
-- `prefs` (`app.language`, default `en`) + selector en Settings.
+- `prefs` (`prefs.language`, default `en`) + selector en Settings.
 - Migración de strings del renderer, main y bot.
 - `README.md` (EN) + `README.es.md` (ES).
 - Tests de i18n + pinneo del locale en los tests existentes.
@@ -57,7 +57,7 @@ validados); el **EN es nuevo** y queda para revisión del usuario.
 - **Strings olvidados** (quedan en español): mitigación → test de paridad de claves ES/EN y revisión por
   componente; un string hardcodeado se ve como “faltante” en el test de paridad si se agrega al diccionario.
 - **Mensajes del main traducidos tarde** (prefs cambia en caliente): mitigación → leer el idioma en cada
-  llamada (o invalidar el cache al cambiar `app.language`).
+  llamada (o invalidar el cache al cambiar `prefs.language`).
 - **Traducciones que no convencen**: mitigación → ES = strings actuales; EN nuevo revisado por el usuario
   antes de cerrar el change.
 - **README bilingüe desincronizado**: mitigación → mantener ambos con la misma estructura y un aviso de

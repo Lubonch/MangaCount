@@ -2,18 +2,18 @@
 
 ## Fase 1 — Infra i18n y preferencia
 
-- [ ] Crear `shared/i18n/{en,es}.json` (claves con namespace) y `shared/i18n/index.js`
+- [x] Crear `shared/i18n/{en,es}.js` (claves con namespace) y `shared/i18n/index.js`
       (`DEFAULT_LANGUAGE='en'`, `createTranslator`, `resolveLanguage`, `missingKeys`, interpolación `{n}`).
-- [ ] `prefs.js`: `app.language: 'en'` en los defaults (expuesto por `app:config-get/set`).
-- [ ] `shared/i18n/i18n.test.js`: interpolación, fallback a `en`, default y **paridad de claves** ES/EN.
+- [x] `prefs.js`: `prefs.language: 'en'` en los defaults (expuesto por `app:config-get/set`).
+- [x] `shared/i18n/i18n.test.js`: interpolación, fallback a `en`, default y **paridad de claves** ES/EN.
 
 ## Fase 2 — Renderer
 
-- [ ] `I18nContext.jsx`: provider que lee el idioma (de `appConfigGet`) y expone `useT()`; al cambiar la
+- [x] `I18nContext.jsx`: provider que lee el idioma (de `appConfigGet`) y expone `useT()`; al cambiar la
       preferencia se re-renderiza.
 - [ ] Migrar los componentes (JSX, `title`/`aria-label`/`placeholder`, mensajes de error) a `t()`.
-- [ ] Selector **Idioma** (`English`/`Español`) en Settings → General.
-- [ ] Tests: provider (default EN, cambio a ES) y componentes clave.
+- [x] Selector **Idioma** (`English`/`Español`) en Settings → General.
+- [x] Tests: provider (default EN, cambio a ES) y componentes clave.
 
 ## Fase 3 — Main
 
@@ -34,7 +34,7 @@
 
 ## Fase 6 — Verificación
 
-- [ ] Renderer: `setup.js` fija el idioma a `es` para no romper los asserts existentes.
+- [x] Renderer: `setup.js` fija el idioma a `es` para no romper los asserts existentes.
 - [ ] `npm test` en verde (main con `MANGACOUNT_LANG=es`).
 - [ ] `npm run test:coverage` en verde (main ≥90%).
 - [ ] `npm run test:renderer:coverage` en verde (≥90%).

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './SettingsModal.css';
 import NukeDataModal from './NukeDataModal';
+import { useI18n } from '../contexts/I18nContext';
 import {
   backupConfigGet,
   backupConfigSet,
@@ -53,6 +54,7 @@ function downloadTsv(text, filename) {  if (typeof URL?.createObjectURL !== 'fun
 }
 
 const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDataReset }) => {
+  const { language, setLanguage, t } = useI18n();
   const [general, setGeneral] = useState({ startInTray: true, autostart: false, updateCheck: true, diagnosticsCopy: true, showAdultCovers: false });
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
@@ -126,6 +128,15 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
 
   const backupInvalid =
     backup.enabled && (!backup.destinationDir || (!backup.triggers.onStartup && !backup.triggers.whileRunning));
+
+  const changeLanguage = async (next) => {
+    setLanguage(next);
+    try {
+      await appConfigSet({ language: next });
+    } catch (err) {
+      setGeneralMessage(err.message);
+    }
+  };
 
   const toggleGeneral = async (key, value) => {
     const next = { ...general, [key]: value };
@@ -438,6 +449,18 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         <div className="settings-body">
           <section className="settings-section">
             <h3>General</h3>
+
+            <label className="settings-field">
+              {t('language.label')}
+              <select
+                aria-label={t('language.label')}
+                value={language}
+                onChange={(e) => changeLanguage(e.target.value)}
+              >
+                <option value="en">{t('language.en')}</option>
+                <option value="es">{t('language.es')}</option>
+              </select>
+            </label>
             <label className="settings-check">
               <input
                 type="checkbox"

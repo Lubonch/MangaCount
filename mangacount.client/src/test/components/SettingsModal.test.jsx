@@ -326,6 +326,16 @@ describe('SettingsModal', () => {
     })
   })
 
+  it('cambia el idioma desde Settings', async () => {
+    const user = userEvent.setup()
+    api.appConfigSet.mockResolvedValue({ language: 'en' })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en')
+    await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ language: 'en' }))
+  })
+
   it('toggle de arranque en bandeja persiste', async () => {
     const user = userEvent.setup()
     api.appConfigSet.mockResolvedValue({ startInTray: false })

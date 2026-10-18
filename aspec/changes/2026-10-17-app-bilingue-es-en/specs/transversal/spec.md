@@ -3,7 +3,7 @@
 ### Requirement: Idioma de la interfaz (ES/EN)
 
 The system SHALL soportar **inglés y español** con **inglés por defecto**. La preferencia de idioma
-SHALL persistir en `userData` (`app.language`) y SHALL poder elegirse desde Settings. El idioma SHALL
+SHALL persistir en `userData` (`prefs.language`) y SHALL poder elegirse desde Settings. El idioma SHALL
 aplicarse a la **interfaz del renderer**, a los **mensajes del proceso main** visibles por IPC (errores,
 menú del tray, diálogos nativos, avisos de update) y a las **respuestas del bot**. Los textos SHALL usar
 interpolación simple y los diccionarios SHALL mantener **paridad de claves** entre ambos idiomas (sin

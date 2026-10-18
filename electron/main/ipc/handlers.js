@@ -17,6 +17,7 @@ import {
 } from '../services/catalog-base.js';
 import { formats, publishers } from '../db/repositories/catalogs.js';
 import { getRecommendations } from '../services/recommendations.js';
+import { SUPPORTED_LANGUAGES } from '../../../shared/i18n/index.js';
 import { saveProfilePicture } from '../services/files.js';
 import { databaseStatistics, nukeLocalData } from '../services/database.js';
 import {
@@ -265,6 +266,7 @@ export const handlers = {
   'app:config-get': ({ dataDir }) => {
     const prefs = loadResolvedPrefs(dataDir);
     return {
+      language: prefs.language,
       startInTray: prefs.startInTray,
       updateCheck: prefs.updateCheck,
       diagnosticsCopy: prefs.diagnosticsCopy,
@@ -273,8 +275,12 @@ export const handlers = {
   },
   'app:config-set': ({ dataDir, autostart }, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(dataDir));
+    if (config.language != null && !SUPPORTED_LANGUAGES.includes(config.language)) {
+      throw new Error(`Idioma no soportado: ${config.language}`);
+    }
     const next = {
       ...prefs,
+      language: config.language ?? prefs.language,
       startInTray: config.startInTray ?? prefs.startInTray,
       updateCheck: config.updateCheck ?? prefs.updateCheck,
       diagnosticsCopy: config.diagnosticsCopy ?? prefs.diagnosticsCopy,
@@ -285,6 +291,7 @@ export const handlers = {
     // entrada para que arranque (o no) oculto según la preferencia.
     if (autostart?.get?.()) autostart.set(true);
     return {
+      language: next.language,
       startInTray: next.startInTray,
       updateCheck: next.updateCheck,
       diagnosticsCopy: next.diagnosticsCopy,

@@ -1,6 +1,9 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
+// Los tests fijan el idioma en español (los asserts existentes están en ES).
+globalThis.__MANGACOUNT_LANG__ = 'es'
+
 // Mock fetch globally
 global.fetch = vi.fn()
 

@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test \"electron/**/*.test.js\"",
+    "test": "MANGACOUNT_LANG=es node --test \"electron/**/*.test.js\"",
     "test:coverage": "node --test --experimental-test-coverage --test-coverage-exclude=\"mangacount.client/**\" --test-coverage-exclude=\"**/*.test.js\" --test-coverage-lines=90 --test-coverage-branches=90 --test-coverage-functions=90 \"electron/**/*.test.js\"",
     "lint:renderer": "npm --prefix mangacount.client run lint",
     "test:renderer": "npm --prefix mangacount.client run test -- --run",

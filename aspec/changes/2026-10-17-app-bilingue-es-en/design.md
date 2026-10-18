@@ -20,7 +20,7 @@ nuevo.
     return (key, params) => interpolate(primary[key] ?? fallback[key] ?? key, params);
   }
   export function resolveLanguage({ explicit, env, prefs } = {}) {
-    // prioridad: explicit → MANGACOUNT_LANG (tests) → prefs.app.language → 'en'
+    // prioridad: explicit → MANGACOUNT_LANG (tests) → prefs.prefs.language → 'en'
   }
   export function missingKeys(a, b) { /* paridad de claves */ }
   ```
@@ -28,7 +28,7 @@ nuevo.
 
 ### 2. Preferencia (`prefs.js`)
 
-- `app.language: 'en'` en los defaults (junto a `startInTray`, `updateCheck`, …).
+- `prefs.language: 'en'` en los defaults (junto a `startInTray`, `updateCheck`, …).
 - Se expone por los canales ya existentes `app:config-get` / `app:config-set`.
 
 ### 3. Renderer
@@ -41,7 +41,7 @@ nuevo.
 
 ### 4. Main
 
-- `getTranslator(dataDir)`: lee `prefs.app.language` (cacheado por idioma; se invalida si cambia).
+- `getTranslator(dataDir)`: lee `prefs.prefs.language` (cacheado por idioma; se invalida si cambia).
 - Se usa en los `throw new Error(...)` visibles por IPC, el menú del tray, los diálogos y los mensajes
   de update.
 - El bot usa el mismo traductor para sus respuestas.
@@ -62,7 +62,7 @@ nuevo.
 ## Architecture
 
 ```
-prefs.app.language (default 'en')
+prefs.prefs.language (default 'en')
         │
         ├─ renderer: I18nProvider(app:config-get) ─► useT() ─► componentes
         ├─ main:     getTranslator(dataDir) ─► throws / tray / diálogos / update
