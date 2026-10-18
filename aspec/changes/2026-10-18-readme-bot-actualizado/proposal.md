@@ -7,7 +7,8 @@ nuevos ni las mejoras de UX (autocomplete, paginación, modales, botones, ajuste
 
 ## Proposed change
 
-Actualizar `README.md` (y `docs/desktop.md` si corresponde) para documentar:
+Actualizar el README **en ambos idiomas** (`README.md` en inglés —default— y `README.es.md` en español,
+cross-linkeados) para documentar:
 
 - **Comandos de consulta**: los existentes más `/huecos`, `/a-punto`, `/stats`, `/status`.
 - **Edición y administración**: los existentes más `/backup`.
@@ -27,7 +28,7 @@ Actualizar `README.md` (y `docs/desktop.md` si corresponde) para documentar:
 
 **Out of scope**
 
-- Traducción del README (va en `2026-10-17-app-bilingue-es-en`).
+- Traducir `docs/desktop.md` y `CHANGELOG.md` (quedan en español).
 - Documentar comandos no implementados.
 
 ## Risks

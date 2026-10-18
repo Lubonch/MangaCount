@@ -11,7 +11,9 @@
 
 ## Architecture
 
-Solo documentación: `README.md` (+ `docs/desktop.md` si hace falta).
+Solo documentación: `README.md` (EN, default) + `README.es.md` (ES), con un aviso arriba
+(`Read this in: [English](README.md) · [Español](README.es.md)`), misma estructura y badges; y
+`docs/desktop.md` si hace falta.
 
 ## Validation
 

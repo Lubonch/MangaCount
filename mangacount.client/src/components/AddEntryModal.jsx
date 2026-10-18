@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './AddEntryModal.css';
+import { useT } from '../contexts/I18nContext';
 
 const AddEntryModal = ({ 
     isOpen, 
@@ -9,6 +10,7 @@ const AddEntryModal = ({
     editEntry = null,
     selectedProfile // Add this prop
 }) => {
+    const t = useT();
     const [formData, setFormData] = useState({
         mangaId: '',
         quantity: '',
@@ -51,7 +53,7 @@ const AddEntryModal = ({
         setError('');
 
         if (!formData.mangaId || !formData.quantity) {
-            setError('Please select a manga and enter quantity');
+            setError(t('addEntry.errSelect'));
             setIsSubmitting(false);
             return;
         }
@@ -59,7 +61,7 @@ const AddEntryModal = ({
         const profileId = editEntry?.profileId ?? selectedProfile?.id;
 
         if (!profileId) {
-            setError('Elegí un perfil antes de guardar (volvé a la selección de perfiles).');
+            setError(t('addEntry.errProfile'));
             setIsSubmitting(false);
             return;
         }
@@ -98,10 +100,10 @@ const AddEntryModal = ({
                 }
             } else {
                 const error = await response.json();
-                setError(`Failed to ${editEntry ? 'update' : 'create'} entry: ${error.message || 'Unknown error'}`);
+                setError(t(editEntry ? 'addEntry.errUpdate' : 'addEntry.errCreate', { message: error.message || t('addEntry.unknownError') }));
             }
         } catch (err) {
-            setError(`Error ${editEntry ? 'updating' : 'creating'} entry: ` + err.message);
+            setError(t(editEntry ? 'addEntry.errNetUpdate' : 'addEntry.errNetCreate', { message: err.message }));
         } finally {
             setIsSubmitting(false);
         }
@@ -115,13 +117,13 @@ const AddEntryModal = ({
         <div className="modal-overlay">
             <div className="modal-content">
                 <div className="modal-header">
-                    <h2>{isEditing ? 'Edit Entry' : 'Add New Entry'}</h2>
+                    <h2>{t(isEditing ? 'addEntry.titleEdit' : 'addEntry.titleCreate')}</h2>
                     <button className="close-button" onClick={onClose}>&times;</button>
                 </div>
                 
                 <form onSubmit={handleSubmit} className="entry-form">
                     <div className="form-group">
-                        <label htmlFor="mangaId">Manga *</label>
+                        <label htmlFor="mangaId">{t('addEntry.mangaLabel')}</label>
                         <select
                             id="mangaId"
                             name="mangaId"
@@ -130,7 +132,7 @@ const AddEntryModal = ({
                             required
                             disabled={isEditing}
                         >
-                            <option value="">Select a manga</option>
+                            <option value="">{t('addEntry.selectManga')}</option>
                             {mangas.map(manga => (
                                 <option key={manga.id} value={manga.id}>
                                     {manga.name} {manga.volumes ? `(${manga.volumes} volumes)` : ''}
@@ -138,12 +140,12 @@ const AddEntryModal = ({
                             ))}
                         </select>
                         {isEditing && (
-                            <small>Cannot change manga for existing entry</small>
+                            <small>{t('addEntry.mangaLocked')}</small>
                         )}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="quantity">Quantity Owned *</label>
+                        <label htmlFor="quantity">{t('addEntry.quantityLabel')}</label>
                         <div className="quantity-input-group">
                             <input
                                 type="number"
@@ -184,21 +186,21 @@ const AddEntryModal = ({
                         </div>
                         {editEntry?.manga?.volumes > 0 && (
                             <small>
-                                {formData.quantity}/{editEntry.manga.volumes} volumes 
-                                ({Math.round((formData.quantity / editEntry.manga.volumes) * 100)}% complete)
+                                {t('addEntry.volumesCount', { owned: formData.quantity, total: editEntry.manga.volumes })}{' '}
+                                {t('addEntry.percentComplete', { percent: Math.round((formData.quantity / editEntry.manga.volumes) * 100) })}
                             </small>
                         )}
                     </div>
 
                     <div className="form-group">
-                        <label htmlFor="pending">Pending (optional)</label>
+                        <label htmlFor="pending">{t('addEntry.pendingLabel')}</label>
                         <input
                             type="text"
                             id="pending"
                             name="pending"
                             value={formData.pending}
                             onChange={handleInputChange}
-                            placeholder="e.g., Volumes 5-7, Next release"
+                            placeholder={t('addEntry.pendingPlaceholder')}
                         />
                     </div>
 
@@ -211,7 +213,7 @@ const AddEntryModal = ({
                                 checked={formData.priority}
                                 onChange={handleInputChange}
                             />
-                            Priority item
+                            {t('addEntry.priority')}
                         </label>
                     </div>
 
@@ -219,13 +221,12 @@ const AddEntryModal = ({
 
                     <div className="modal-actions">
                         <button type="button" onClick={onClose} className="cancel-button">
-                            Cancel
+                            {t('addEntry.cancel')}
                         </button>
                         <button type="submit" disabled={isSubmitting} className="submit-button">
-                            {isSubmitting ? 
-                                (isEditing ? 'Updating...' : 'Creating...') : 
-                                (isEditing ? 'Update Entry' : 'Create Entry')
-                            }
+                            {isSubmitting
+                                ? t(isEditing ? 'addEntry.submittingUpdate' : 'addEntry.submittingCreate')
+                                : t(isEditing ? 'addEntry.submitUpdate' : 'addEntry.submitCreate')}
                         </button>
                     </div>
                 </form>

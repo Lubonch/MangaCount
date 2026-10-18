@@ -48,8 +48,8 @@ nuevo.
 
 ### 5. Docs
 
-- `README.md` en inglés (default) y `README.es.md` en español, con un aviso arriba
-  (`Read this in: [English](README.md) · [Español](README.es.md)`), misma estructura y badges.
+El README bilingüe se movió a `2026-10-18-readme-bot-actualizado` (#126): ese change actualiza la sección
+del bot en `README.md` (EN) y `README.es.md` (ES) cuando las features estén en `main`.
 
 ### 6. Tests
 

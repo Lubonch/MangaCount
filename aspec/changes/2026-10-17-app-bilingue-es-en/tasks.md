@@ -27,10 +27,9 @@
       traducen).
 - [ ] Tests: respuesta en ES y en EN.
 
-## Fase 5 — Docs
+## Fase 5 — Docs (movida a #126)
 
-- [ ] `README.md` en inglés (default) y `README.es.md` en español, con aviso de idioma arriba y misma
-      estructura/badges.
+- [x] El README bilingüe se hace en `2026-10-18-readme-bot-actualizado` (#126), no en este change.
 
 ## Fase 6 — Verificación
 

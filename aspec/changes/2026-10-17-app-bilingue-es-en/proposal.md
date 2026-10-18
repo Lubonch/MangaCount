@@ -25,7 +25,6 @@ i18n por fases, con **diccionarios compartidos** entre renderer y main:
 2. **Renderer**: migrar los componentes a `t()` (JSX, atributos y errores) vía un `I18nProvider`.
 3. **Main**: traducir los 48 mensajes de error + tray + diálogos + update con el mismo diccionario.
 4. **Bot**: traducir las respuestas (descripciones y textos), no los nombres de comandos.
-5. **Docs**: `README.md` en **inglés** (default) + `README.es.md` en español, cross-linkeados.
 6. **Tests**: **pinear el locale a `es`** (setup del renderer + `MANGACOUNT_LANG=es` en el script de
    tests del main) para que los 36 archivos con asserts en español sigan pasando, y agregar tests de
    i18n (default EN, cambio de idioma, paridad de claves ES/EN).
@@ -40,11 +39,12 @@ validados); el **EN es nuevo** y queda para revisión del usuario.
 - `shared/i18n/` (diccionarios + helper) y su consumo en renderer y main.
 - `prefs` (`prefs.language`, default `en`) + selector en Settings.
 - Migración de strings del renderer, main y bot.
-- `README.md` (EN) + `README.es.md` (ES).
 - Tests de i18n + pinneo del locale en los tests existentes.
 
 **Out of scope**
 
+- **README bilingüe** (`README.md` EN + `README.es.md`): se hace en `2026-10-18-readme-bot-actualizado` (#126),
+  que documenta la sección del bot en ambos idiomas.
 - `docs/desktop.md` y `CHANGELOG.md` quedan en español (se pueden traducir en un change aparte).
 - Idiomas adicionales (pt, fr…) o detección automática por sistema operativo.
 - i18n de logs internos (no son user-facing).
