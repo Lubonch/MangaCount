@@ -309,6 +309,15 @@ function startBot(ctx) {
     getToken: () => ctx.secrets.getToken(),
     getDb: () => ctx.db,
     getT: () => getTranslator(ctx.dataDir),
+    runBackup: () => handlers['backup:create'](ctx),
+    getStatus: () => {
+      const prefs = loadResolvedPrefs(ctx.dataDir);
+      return {
+        version: app.getVersion(),
+        entries: handlers['database:statistics'](ctx)?.entries ?? null,
+        lastBackupAt: prefs.backup?.lastBackupAt ?? null,
+      };
+    },
     logger: ctx.logger,
     onStatusChange: (status) => {
       botStatus = status;

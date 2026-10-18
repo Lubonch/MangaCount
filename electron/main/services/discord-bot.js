@@ -84,7 +84,10 @@ export function slashCommands(t = fallbackTranslator()) {
       { type: 3, name: 'editorial', description: t('bot.optEditorial'), required: false },
     ],
   },
-    { name: 'ayuda', description: t('bot.descAyuda') },
+    { name: 'stats', description: t('bot.descStats') },
+  { name: 'backup', description: t('bot.descBackup') },
+  { name: 'status', description: t('bot.descStatus') },
+  { name: 'ayuda', description: t('bot.descAyuda') },
   ];
 }
 
@@ -96,6 +99,9 @@ export function ayudaText(t = fallbackTranslator()) {
     t('bot.helpPendientes'),
     t('bot.helpHuecos'),
     t('bot.helpAPunto'),
+    t('bot.helpStats'),
+    t('bot.helpBackup'),
+    t('bot.helpStatus'),
     t('bot.helpRecomendar'),
     t('bot.helpTomo'),
     t('bot.helpActualizar'),
@@ -256,6 +262,8 @@ export function createCommands({
   getConfig = () => ({}),
   getT = fallbackTranslator,
   pagination = createPaginationStore(),
+  runBackup = async () => ({ ok: false }),
+  getStatus = () => ({}),
   getRecommendations: recommend = getRecommendations,
 } = {}) {
   const t = (key, params) => getT()(key, params);
@@ -308,7 +316,11 @@ export function createCommands({
           : '';
         return t('bot.searchNotFound', { query, hint });
       }
-      return t('bot.searchResults', { query, lines: results.map((e) => formatEntryLine(e, getT())).join('\n\n') });
+      const content = t('bot.searchResults', { query, lines: results.map((e) => formatEntryLine(e, getT())).join('\n\n') });
+      if (results.length === 1) {
+        return { kind: 'entry', entryId: results[0].id, content };
+      }
+      return content;
     },
 
     async pendientes({ session, userId }) {
@@ -491,6 +503,47 @@ export function createCommands({
       });
     },
 
+    async stats({ session }) {
+      const profile = activeProfile(session);
+      const entries = entriesFor(profile.id);
+      const volumes = entries.reduce((acc, e) => acc + (e.quantity ?? 0), 0);
+      const complete = entries.filter((e) => entryStatus(e).complete).length;
+      const countBy = (pick) => {
+        const map = new Map();
+        for (const e of entries) {
+          const key = pick(e);
+          if (key && key !== 'Unknown') map.set(key, (map.get(key) ?? 0) + 1);
+        }
+        return [...map.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, count]) => `${name} (${count})`)
+          .join(', ');
+      };
+      return {
+        kind: 'stats',
+        title: t('bot.statsTitle', { name: profile.name }),
+        fields: [
+          t('bot.statsVolumes', { count: volumes }),
+          t('bot.statsSeries', { total: entries.length, complete, ongoing: entries.length - complete }),
+          t('bot.statsFormats', { list: countBy((e) => e.manga?.format?.name) || t('bot.none') }),
+          t('bot.statsPublishers', { list: countBy((e) => e.manga?.publisher?.name) || t('bot.none') }),
+        ],
+      };
+    },
+
+    async backup({ session }) {
+      const pending = beginPendingWrite(session, {
+        summary: t('bot.backupConfirm'),
+        action: { type: 'backup' },
+      });
+      return { kind: 'backup', token: pending.token };
+    },
+
+    async status() {
+      return { kind: 'status', data: getStatus() };
+    },
+
     async ayuda() {
       return ayudaText(getT());
     },
@@ -552,12 +605,14 @@ export function createDiscordBot({
   loadDiscord,
   followUpDelayMs = 350,
   getT = fallbackTranslator,
+  runBackup = async () => ({ ok: false }),
+  getStatus = () => ({}),
 } = {}) {
   let client = null;
   let status = 'apagado';
   const session = createSessionStore();
   const pagination = createPaginationStore();
-  const commands = createCommands({ getDb, db, getConfig, getT, pagination });
+  const commands = createCommands({ getDb, db, getConfig, getT, pagination, getStatus });
   const load = loadDiscord ?? (() => import('discord.js'));
   const resolveDb = getDb ?? (() => db);
   let discordMod = null;
@@ -584,6 +639,51 @@ export function createDiscordBot({
           .setLabel(getT()('bot.pagerNext'))
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(page.nextDisabled)
+      ),
+    ];
+  };
+
+  const embedOf = ({ title, fields }) => {
+    if (!discordMod?.EmbedBuilder) return null;
+    const embed = new discordMod.EmbedBuilder().setTitle(title);
+    if (fields?.length) embed.addFields(...fields.map((value) => ({ name: '\u200b', value })));
+    return embed;
+  };
+
+  const backupRow = (token) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`mc:backup:confirm:${token}`)
+          .setLabel(getT()('bot.confirmLabel'))
+          .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
+          .setCustomId(`mc:backup:cancel:${token}`)
+          .setLabel(getT()('bot.cancelLabel'))
+          .setStyle(ButtonStyle.Secondary)
+      ),
+    ];
+  };
+
+  const entryActions = (entryId) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`mc:entry:tomo:${entryId}`)
+          .setLabel(getT()('bot.actionAddVolume'))
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId(`mc:entry:prioridad:${entryId}`)
+          .setLabel(getT()('bot.actionTogglePriority'))
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId(`mc:entry:pending:${entryId}`)
+          .setLabel(getT()('bot.actionEditPending'))
+          .setStyle(ButtonStyle.Secondary)
       ),
     ];
   };
@@ -697,6 +797,42 @@ export function createDiscordBot({
       });
       return;
     }
+    if (reply && typeof reply === 'object' && reply.kind === 'stats') {
+      const embed = embedOf({ title: reply.title, fields: reply.fields });
+      await interaction.reply(
+        embed ? { embeds: [embed], ephemeral: config.ephemeralReplies === true } : reply.fields.join('\n')
+      );
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'status') {
+      const d = reply.data ?? {};
+      const fields = [
+        getT()('bot.statusVersion', { version: d.version ?? getT()('bot.none') }),
+        getT()('bot.statusDb', { count: d.entries ?? getT()('bot.none') }),
+        getT()('bot.statusLastBackup', { date: d.lastBackupAt ?? getT()('bot.none') }),
+      ];
+      const embed = embedOf({ title: getT()('bot.statusTitle'), fields });
+      await interaction.reply(
+        embed ? { embeds: [embed], ephemeral: config.ephemeralReplies === true } : fields.join('\n')
+      );
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'backup') {
+      await interaction.reply({
+        content: getT()('bot.backupConfirm'),
+        components: backupRow(reply.token),
+        ephemeral: true,
+      });
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'entry') {
+      await interaction.reply({
+        content: reply.content,
+        components: entryActions(reply.entryId),
+        ephemeral: config.ephemeralReplies === true,
+      });
+      return;
+    }
     if (reply && typeof reply === 'object' && reply.kind === 'modal') {
       await interaction.showModal(pendingModal(reply.entryId, reply.value));
       return;
@@ -741,6 +877,68 @@ export function createDiscordBot({
       try {
         const result = applyWrite(resolveDb(), consumed.pending.action);
         await interaction.showModal(pendingModal(result.entry?.id, result.entry?.pending ?? ''));
+      } catch (err) {
+        await interaction.update({
+          content: getT()('bot.error', { message: err?.message ?? err }),
+          components: [],
+        });
+      }
+      return;
+    }
+
+    const backupAction = /^mc:backup:(confirm|cancel):(.+)$/.exec(interaction.customId ?? '');
+    if (backupAction) {
+      const [, action, token] = backupAction;
+      const consumed = consumePendingWrite(userSession, token);
+      if (consumed.error) {
+        await interaction.update({ content: consumed.error, components: [] });
+        return;
+      }
+      if (action === 'cancel') {
+        await interaction.update({ content: getT()('bot.cancelled'), components: [] });
+        return;
+      }
+      await interaction.update({ content: getT()('bot.backupStarted'), components: [] });
+      try {
+        const result = await runBackup();
+        await interaction.editReply({
+          content: result?.fileName
+            ? getT()('bot.backupOk', { file: result.fileName })
+            : getT()('bot.backupOk', { file: getT()('bot.none') }),
+        });
+      } catch (err) {
+        await interaction.editReply({
+          content: getT()('bot.backupFailed', { error: err?.message ?? err }),
+        });
+      }
+      return;
+    }
+
+    const entryAction = /^mc:entry:(tomo|prioridad|pending):(\d+)$/.exec(interaction.customId ?? '');
+    if (entryAction) {
+      const [, action, idStr] = entryAction;
+      const entryId = Number(idStr);
+      const ctx = { db: resolveDb() };
+      const entry = handlers['entry:get-by-id'](ctx, entryId);
+      if (!entry) {
+        await interaction.update({ content: getT()('bot.entryNotFound', { title: entryId }), components: [] });
+        return;
+      }
+      if (action === 'pending') {
+        await interaction.showModal(pendingModal(entryId, entry.pending ?? ''));
+        return;
+      }
+      try {
+        const result = applyWrite(
+          resolveDb(),
+          action === 'tomo'
+            ? { type: 'setQuantity', entry, quantity: entry.quantity + 1 }
+            : { type: 'togglePriority', entry }
+        );
+        await interaction.update({
+          content: `${formatEntryLine(result.entry, getT())}\n\n${result.summary}`,
+          components: entryActions(entryId),
+        });
       } catch (err) {
         await interaction.update({
           content: getT()('bot.error', { message: err?.message ?? err }),

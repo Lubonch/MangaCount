@@ -94,10 +94,11 @@ describe('discord-bot: comandos', () => {
     assert.match(reply, /perfil/i);
   });
 
-  it('busca por título', async () => {
+  it('busca por título (match único devuelve entry con acciones)', async () => {
     const reply = await commands.buscar({ session: { profileId: profile.id }, query: 'berserk' });
-    assert.match(reply, /Berserk/);
-    assert.match(reply, /40\/41/);
+    assert.equal(reply.kind, 'entry');
+    assert.match(reply.content, /Berserk/);
+    assert.match(reply.content, /40\/41/);
   });
 
   it('sugiere cuando no encuentra', async () => {
@@ -969,6 +970,16 @@ function makeFakeDiscord({ restGet } = {}) {
       return this;
     }
   }
+  class EmbedBuilder {
+    setTitle(title) {
+      this.title = title;
+      return this;
+    }
+    addFields(...fields) {
+      this.fields = fields;
+      return this;
+    }
+  }
   class ModalBuilder {
     setCustomId(id) {
       this.customId = id;
@@ -1038,6 +1049,7 @@ function makeFakeDiscord({ restGet } = {}) {
       ActionRowBuilder,
       ButtonBuilder,
       ButtonStyle: { Primary: 1, Secondary: 2, Success: 3 },
+      EmbedBuilder,
       ModalBuilder,
       TextInputBuilder,
       TextInputStyle: { Short: 1, Paragraph: 2 },
@@ -1111,6 +1123,8 @@ describe('discord-bot: interacciones con discord inyectado', () => {
       getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: true }),
       getToken: () => 'tok',
       followUpDelayMs: 0,
+      runBackup: async () => ({ fileName: 'mangacount-backup-x.zip' }),
+      getStatus: () => ({ version: '2.2.5', entries: 7, lastBackupAt: '2026-10-18' }),
       db,
       logger: {
         error: (m) => errors.push(m),
@@ -1283,6 +1297,72 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     for (let i = 0; i < 20 && modals.length === 0; i += 1) await flush();
     assert.match(modals[0].customId, /^mc:pending:/);
     assert.equal(listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk').quantity, 41);
+  });
+
+  it('/buscar con match único muestra botones y el +1 actualiza', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'buscar',
+        options: { getString: (n) => (n === 'query' ? 'Berserk' : null), getInteger: () => null },
+        reply: async (p) => replies.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.equal(replies[0].components[0].components.length, 3);
+
+    const tomoId = replies[0].components[0].components[0].customId;
+    const updates = [];
+    await clients[0].handlers.interactionCreate(
+      button(tomoId, { update: async (p) => updates.push(p) })
+    );
+    for (let i = 0; i < 20 && updates.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /tomos/);
+    assert.equal(listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk').quantity, 41);
+  });
+
+  it('/stats responde un embed con los totales', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'stats', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.equal(replies[0].embeds[0].title, 'Estadísticas de P');
+    assert.ok(replies[0].embeds[0].fields.some((f) => f.value.includes('Series:')));
+  });
+
+  it('/status no expone datos sensibles', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'status', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    const fields = replies[0].embeds[0].fields.map((f) => f.value).join('\n');
+    assert.match(fields, /Versión: 2\.2\.5/);
+    assert.match(fields, /Entradas en la base: 7/);
+    assert.doesNotMatch(fields, /token|guild|\//i);
+  });
+
+  it('/backup pide confirmación y reporta el resultado', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'backup', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    const confirmId = replies[0].components[0].components[0].customId;
+    assert.match(confirmId, /^mc:backup:confirm:/);
+
+    const updates = [];
+    const edits = [];
+    await clients[0].handlers.interactionCreate(
+      button(confirmId, {
+        update: async (p) => updates.push(p),
+        editReply: async (p) => edits.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && edits.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /Backup iniciado/);
+    assert.match(edits[0].content, /mangacount-backup-x\.zip/);
   });
 
   it('ignora interacciones no autorizadas', async () => {
@@ -1471,6 +1551,8 @@ describe('discord-bot: keepWarm', () => {
       getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: true }),
       getToken: () => 'tok',
       followUpDelayMs: 0,
+      runBackup: async () => ({ fileName: 'mangacount-backup-x.zip' }),
+      getStatus: () => ({ version: '2.2.5', entries: 7, lastBackupAt: '2026-10-18' }),
       db,
       getDb: () => db,
       logger: { error() {}, warn() {}, info() {} },
