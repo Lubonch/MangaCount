@@ -27,6 +27,8 @@ export const DEFAULT_PREFS = {
     enabled: false,
     guildId: null,
     allowedUserIds: [],
+    pendingLimitEnabled: true,
+    pendingLimit: 20,
   },
 };
 

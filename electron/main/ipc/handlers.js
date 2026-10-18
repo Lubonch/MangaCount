@@ -219,6 +219,12 @@ export const handlers = {
   'bot:config-set': async (ctx, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(ctx.dataDir));
     const bot = { ...prefs.bot, ...config };
+    bot.pendingLimitEnabled = bot.pendingLimitEnabled !== false;
+    const pendingLimit = Number(bot.pendingLimit);
+    if (!Number.isInteger(pendingLimit) || pendingLimit < 1 || pendingLimit > 500) {
+      throw new Error('El límite de /pendientes debe ser un entero entre 1 y 500.');
+    }
+    bot.pendingLimit = pendingLimit;
     savePrefs(ctx.dataDir, { ...prefs, bot });
     try {
       await ctx.bot?.restart?.();

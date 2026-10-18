@@ -125,6 +125,28 @@ describe('discord-bot: comandos', () => {
     assert.match(reply, /…y \d+ series más\./);
   });
 
+  it('/pendientes respeta un tope configurado distinto de 20', async () => {
+    for (let i = 0; i < 25; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const custom = createCommands({ db, getConfig: () => ({ pendingLimitEnabled: true, pendingLimit: 5 }) });
+    const reply = await custom.pendientes({ session: { profileId: profile.id } });
+    assert.match(reply, /…y \d+ series más\./);
+    assert.ok(!reply.includes('Serie 5:'));
+  });
+
+  it('/pendientes sin tope lista todas las series', async () => {
+    for (let i = 0; i < 25; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const full = createCommands({ db, getConfig: () => ({ pendingLimitEnabled: false }) });
+    const reply = await full.pendientes({ session: { profileId: profile.id } });
+    assert.ok(!reply.includes('series más'));
+    assert.ok(reply.includes('Serie 24*'));
+  });
+
   it('despacho desconocido no rompe', async () => {
     assert.equal(await dispatch(commands, 'noexiste', {}), 'Comando no disponible.');
   });
@@ -971,8 +993,9 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'] }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false }),
       getToken: () => 'tok',
+      followUpDelayMs: 0,
       db,
       logger: {
         error: (m) => errors.push(m),
@@ -1006,6 +1029,26 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     await clients[0].handlers.interactionCreate(chat({ reply: async (p) => replies.push(p) }));
     await flush();
     assert.match(replies[0], /\/tomo/);
+  });
+
+  it('reparte una respuesta larga en reply + followUps', async () => {
+    for (let i = 0; i < 120; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const replies = [];
+    const followUps = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'pendientes',
+        reply: async (p) => replies.push(p),
+        followUp: async (p) => followUps.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && followUps.length === 0; i += 1) await flush();
+    assert.equal(replies.length, 1);
+    assert.ok(followUps.length >= 1);
+    assert.match(followUps[followUps.length - 1], /\(\d+\/\d+\)/);
   });
 
   it('ignora interacciones no autorizadas', async () => {
@@ -1191,8 +1234,9 @@ describe('discord-bot: keepWarm', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     const bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'] }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: false }),
       getToken: () => 'tok',
+      followUpDelayMs: 0,
       db,
       getDb: () => db,
       logger: { error() {}, warn() {}, info() {} },

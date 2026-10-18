@@ -57,7 +57,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [backup, setBackup] = useState(EMPTY_BACKUP);
   const [backups, setBackups] = useState([]);
   const [backupListStatus, setBackupListStatus] = useState('idle');
-  const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], status: 'apagado', hasToken: false });
+  const [bot, setBot] = useState({ enabled: false, guildId: '', allowedUserIds: [], pendingLimitEnabled: true, pendingLimit: 20, status: 'apagado', hasToken: false });
   const [token, setToken] = useState('');
   const [generalMessage, setGeneralMessage] = useState('');
   const [backupMessage, setBackupMessage] = useState('');
@@ -249,6 +249,8 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         enabled: bot.enabled,
         guildId: bot.guildId || null,
         allowedUserIds: bot.allowedUserIds,
+        pendingLimitEnabled: bot.pendingLimitEnabled !== false,
+        pendingLimit: Number(bot.pendingLimit) || 20,
       });
       setBotMessage('Configuración del bot guardada.');
       pollBotStatus();
@@ -703,6 +705,28 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                     allowedUserIds: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
                   }))
                 }
+              />
+            </label>
+
+            <label className="settings-check">
+              <input
+                type="checkbox"
+                checked={bot.pendingLimitEnabled !== false}
+                onChange={(e) => setBot((b) => ({ ...b, pendingLimitEnabled: e.target.checked }))}
+              />
+              Limitar /pendientes
+            </label>
+
+            <label className="settings-field">
+              Series máximas
+              <input
+                type="number"
+                min="1"
+                max="500"
+                aria-label="Series máximas en /pendientes"
+                value={bot.pendingLimit ?? 20}
+                disabled={bot.pendingLimitEnabled === false}
+                onChange={(e) => setBot((b) => ({ ...b, pendingLimit: Number(e.target.value) }))}
               />
             </label>
 

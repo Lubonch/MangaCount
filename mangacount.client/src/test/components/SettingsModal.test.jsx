@@ -253,6 +253,48 @@ describe('SettingsModal', () => {
     expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({ guildId: 'g1', allowedUserIds: ['u1'] })
   })
 
+  it('configura el límite de /pendientes', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: ['u1'],
+      pendingLimitEnabled: true,
+      pendingLimit: 20,
+      status: 'apagado',
+      hasToken: false,
+    })
+    api.botConfigSet.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    const limitInput = screen.getByLabelText('Series máximas en /pendientes')
+    expect(limitInput).toHaveValue(20)
+    await user.clear(limitInput)
+    await user.type(limitInput, '5')
+    await user.click(screen.getByLabelText('Guardar bot'))
+    await waitFor(() => expect(api.botConfigSet).toHaveBeenCalled())
+    expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({ pendingLimitEnabled: true, pendingLimit: 5 })
+  })
+
+  it('deshabilita la cantidad cuando el tope está apagado', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: [],
+      pendingLimitEnabled: true,
+      pendingLimit: 20,
+      status: 'apagado',
+      hasToken: false,
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText(/Limitar \/pendientes/))
+    expect(screen.getByLabelText('Series máximas en /pendientes')).toBeDisabled()
+  })
+
   it('toggle de arranque en bandeja persiste', async () => {
     const user = userEvent.setup()
     api.appConfigSet.mockResolvedValue({ startInTray: false })
@@ -916,8 +958,8 @@ describe('SettingsModal', () => {
     api.coverAuto.mockResolvedValue('u')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
 
-    fireEvent.change(screen.getByDisplayValue('20'), { target: { value: '' } })
-    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Tamaño de lote'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Pausa entre lotes (min)'), { target: { value: '' } })
 
     await user.click(screen.getByRole('button', { name: /Traer portadas faltantes/ }))
 
@@ -931,7 +973,7 @@ describe('SettingsModal', () => {
     api.coverAuto.mockResolvedValue('u')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
 
-    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Pausa entre lotes (min)'), { target: { value: '0' } })
 
     await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
 
@@ -954,8 +996,8 @@ describe('SettingsModal', () => {
       await act(async () => { await vi.advanceTimersByTimeAsync(0) })
       await act(async () => { await vi.advanceTimersByTimeAsync(0) })
 
-      fireEvent.change(screen.getByDisplayValue('20'), { target: { value: '1' } })
-      fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '1' } })
+      fireEvent.change(screen.getByLabelText('Tamaño de lote'), { target: { value: '1' } })
+      fireEvent.change(screen.getByLabelText('Pausa entre lotes (min)'), { target: { value: '1' } })
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Traer portadas faltantes/ }))
         await vi.advanceTimersByTimeAsync(0)

@@ -10,6 +10,9 @@ import { listProfiles, getProfileById, listMangas } from './catalog-base.js';
 import { getRecommendations } from './recommendations.js';
 import { searchResult, pendingSummary, entryStatus } from './search.js';
 import { handlers } from '../ipc/handlers.js';
+import { splitMessage } from './discord-messages.js';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const SLASH_COMMANDS = [
   {
@@ -228,7 +231,12 @@ export function consumePendingWrite(session, token, now = Date.now) {
   return { pending };
 }
 
-export function createCommands({ db, getDb, getRecommendations: recommend = getRecommendations } = {}) {
+export function createCommands({
+  db,
+  getDb,
+  getConfig = () => ({}),
+  getRecommendations: recommend = getRecommendations,
+} = {}) {
   const resolveDb = getDb ?? (() => db);
   const entriesFor = (profileId) => listEntries(resolveDb(), profileId);
 
@@ -268,8 +276,10 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
       const profileId = activeProfile(session).id;
       const summary = pendingSummary(entriesFor(profileId));
       if (summary.count === 0) return '🎉 ¡No tenés nada pendiente! Colección al día.';
-      const LIMIT = 20;
-      const shown = summary.entries.slice(0, LIMIT);
+      const config = getConfig() ?? {};
+      const limitEnabled = config.pendingLimitEnabled !== false;
+      const limit = Number.isInteger(config.pendingLimit) ? config.pendingLimit : 20;
+      const shown = limitEnabled ? summary.entries.slice(0, limit) : summary.entries;
       const lines = shown.map((e) => {
         const priority = e.priority ? '⭐ ' : '';
         const parts = [`${e.quantity}/${e.manga.volumes} (faltan ${e.manga.volumes - e.quantity})`];
@@ -447,11 +457,12 @@ export function createDiscordBot({
   logger = console,
   onStatusChange = () => {},
   loadDiscord,
+  followUpDelayMs = 350,
 } = {}) {
   let client = null;
   let status = 'apagado';
   const session = createSessionStore();
-  const commands = createCommands({ getDb, db });
+  const commands = createCommands({ getDb, db, getConfig });
   const load = loadDiscord ?? (() => import('discord.js'));
   const resolveDb = getDb ?? (() => db);
   let discordMod = null;
@@ -497,7 +508,12 @@ export function createDiscordBot({
       });
       return;
     }
-    await interaction.reply(String(reply));
+    const chunks = splitMessage(String(reply));
+    await interaction.reply(chunks[0]);
+    for (let i = 1; i < chunks.length; i += 1) {
+      await sleep(followUpDelayMs);
+      await interaction.followUp(chunks[i]);
+    }
   }
 
   async function handleButton(interaction) {
