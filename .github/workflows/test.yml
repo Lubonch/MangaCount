@@ -55,3 +55,36 @@ jobs:
 
       - name: Test + coverage
         run: npm run test:renderer:coverage
+
+  package-smoke:
+    name: Packaged app smoke (AppImage boots)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix mangacount.client
+
+      - name: Build renderer
+        run: npm run build:renderer
+
+      - name: Build AppImage
+        run: npx electron-builder --linux AppImage --publish never
+
+      - name: Install xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      - name: Run packaged app
+        run: xvfb-run -a npm run smoke:package
+        env:
+          SMOKE_TIMEOUT: 45
