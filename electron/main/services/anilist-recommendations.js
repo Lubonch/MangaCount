@@ -24,6 +24,34 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const TAG_WEIGHT = 2.4;
 const COSINE_WEIGHT = 1.5;
 const SEED_BONUS = 0.5;
+const POOL_TTL_MS = 5 * 60 * 1000;
+
+// Cache of the scored candidate pool, keyed by database and profile. Building it
+// costs one AniList request per seed, so the backfill (`limit: 1` after dismissing
+// a card) must not rebuild it: it is served from here until it expires or the
+// filters drain it. Keyed by the `db` object so a replaced connection (e.g. after
+// a restore) starts from an empty cache and tests stay isolated.
+const poolCache = new WeakMap(); // db -> Map<profileId, { at: number, candidates }>
+
+function readPool(db, profileId, now) {
+  const perProfile = poolCache.get(db);
+  const entry = perProfile?.get(profileId);
+  if (!entry) return null;
+  if (now.getTime() - entry.at >= POOL_TTL_MS) {
+    perProfile.delete(profileId);
+    return null;
+  }
+  return entry.candidates;
+}
+
+function writePool(db, profileId, now, candidates) {
+  let perProfile = poolCache.get(db);
+  if (!perProfile) {
+    perProfile = new Map();
+    poolCache.set(db, perProfile);
+  }
+  perProfile.set(profileId, { at: now.getTime(), candidates });
+}
 
 // Query verified live: `rating` = how many users recommended the work.
 const GRAPH_QUERY = `query ($id: Int) {
@@ -102,9 +130,9 @@ async function fetchSeed(seed, { fetchImpl, timeoutMs }) {
   }
 }
 
-// Seeds: profile mangas with `MangaExternalRef(anilist)`; those without a
-// link are resolved by title search (strict auto-match). Cap of 12,
-// the most recent (highest entry id).
+// Seeds: profile mangas with `MangaExternalRef(anilist)`; those without a link are
+// resolved by title search (strict auto-match). Cap of 12, the most recent ones
+// (higher entry id).
 async function resolveSeeds(db, entries, { fetchImpl, timeoutMs, includeAdult }) {
   const seeds = [];
   const recent = [...entries]
@@ -174,6 +202,119 @@ function aggregate(seedResults) {
   return [...byId.values()];
 }
 
+// Expensive half: seeds -> AniList graph -> aggregate -> score -> sort. Returns
+// `null` when there is nothing to work with (no resolvable seed, or every seed
+// request failed), so the caller can fall back to the local engine. The result is
+// the full scored pool; the filters are applied per call by `selectRecommendations`.
+async function buildCandidatePool(db, entries, { fetchImpl, timeoutMs, includeAdult }) {
+  const seeds = await resolveSeeds(db, entries, { fetchImpl, timeoutMs, includeAdult });
+  if (seeds.length === 0) return null;
+
+  const settled = await mapWithConcurrency(seeds, SEED_CONCURRENCY, async (seed) => {
+    try {
+      return { seed, nodes: await fetchSeed(seed, { fetchImpl, timeoutMs }), ok: true };
+    } catch {
+      return { seed, nodes: [], ok: false };
+    }
+  });
+
+  // One failing seed does not abort the rest; if all fail -> fallback local.
+  const successful = settled.filter((result) => result.ok);
+  if (successful.length === 0) return null;
+
+  const profile = buildUserTasteProfile(entries, []);
+  const candidates = [];
+  for (const aggregated of aggregate(successful)) {
+    const { media } = aggregated;
+    const title = media.title?.romaji || media.title?.english || '';
+    if (!title) continue;
+
+    const similarity = cosineSimilarity(profile.tokenWeights, candidateTokenWeights(media));
+    const score =
+      Math.log1p(aggregated.ratingTotal) + similarity * COSINE_WEIGHT + aggregated.seedCount * SEED_BONUS;
+    // `reason` is the highest-rated seed that brought the candidate; the sentence
+    // is composed in the UI with i18n (`rec.reason`).
+    const bestSeed = aggregated.seeds.reduce((a, b) => (b.rating > a.rating ? b : a), aggregated.seeds[0]);
+    candidates.push({
+      externalId: String(media.id),
+      title,
+      coverUrl: media.coverImage?.large ?? null,
+      volumes: media.volumes ?? null,
+      genres: (media.genres ?? []).slice(),
+      isAdult: media.isAdult === true,
+      score: Number(score.toFixed(4)),
+      reason: bestSeed?.title ?? '',
+    });
+  }
+
+  candidates.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.title.localeCompare(b.title);
+  });
+  return candidates;
+}
+
+// Cheap half: applies the current filters (dismissed / seen within the TTL /
+// already owned / adult), takes up to `safeLimit` and marks those as seen.
+function selectRecommendations(db, profileId, entries, candidates, { safeLimit, seenTtlDays, includeAdult, now }) {
+  const sinceIso = new Date(now.getTime() - seenTtlDays * DAY_MS).toISOString();
+  // Prune expired seen rows so `RecommendationSeen` cannot grow without bound.
+  pruneSeen(db, profileId, sinceIso);
+
+  const dismissed = new Set(
+    listDismissed(db, profileId)
+      .filter((row) => row.provider === PROVIDER)
+      .map((row) => String(row.externalId))
+  );
+  const seen = new Set(
+    listSeen(db, profileId, sinceIso)
+      .filter((row) => row.provider === PROVIDER)
+      .map((row) => String(row.externalId))
+  );
+
+  const ownedRefIds = new Set();
+  const ownedTitles = new Set();
+  for (const entry of entries) {
+    const key = normalizeTitle(entry.manga?.name);
+    if (key) ownedTitles.add(key);
+    const refId = entry.mangaId ? getRef(db, entry.mangaId, PROVIDER)?.externalId : null;
+    if (refId) ownedRefIds.add(String(refId));
+  }
+
+  const items = [];
+  for (const candidate of candidates) {
+    if (items.length >= safeLimit) break;
+    const idStr = candidate.externalId;
+    if (dismissed.has(idStr) || seen.has(idStr) || ownedRefIds.has(idStr)) continue;
+    if (ownedTitles.has(normalizeTitle(candidate.title))) continue;
+    if (candidate.isAdult && !includeAdult) continue;
+    items.push({
+      externalId: candidate.externalId,
+      title: candidate.title,
+      coverUrl: candidate.coverUrl,
+      volumes: candidate.volumes,
+      genres: candidate.genres,
+      score: candidate.score,
+      reason: candidate.reason,
+    });
+  }
+
+  const seenAt = now.toISOString();
+  for (const item of items) markSeen(db, profileId, PROVIDER, item.externalId, seenAt);
+
+  return {
+    provider: 'anilist',
+    inferredCountry: null,
+    isConfident: true,
+    availableCount: items.length,
+    blockedByImportCount: 0,
+    items,
+    limit: safeLimit,
+    inference: null,
+    exhausted: items.length < safeLimit,
+  };
+}
+
 export async function getAnilistRecommendations(
   db,
   profileId,
@@ -189,91 +330,17 @@ export async function getAnilistRecommendations(
   const safeLimit = clampAnilistLimit(limit);
   const entries = listEntries(db, profileId);
 
-  const seeds = await resolveSeeds(db, entries, { fetchImpl, timeoutMs, includeAdult });
-  if (seeds.length === 0) return null;
-
-  const settled = await mapWithConcurrency(seeds, SEED_CONCURRENCY, async (seed) => {
-    try {
-      return { seed, nodes: await fetchSeed(seed, { fetchImpl, timeoutMs }), ok: true };
-    } catch {
-      return { seed, nodes: [], ok: false };
-    }
-  });
-
-  // A failing seed does not abort the rest; if all fail -> local fallback.
-  const successful = settled.filter((result) => result.ok);
-  if (successful.length === 0) return null;
-
-  const sinceIso = new Date(now.getTime() - seenTtlDays * DAY_MS).toISOString();
-  // Prunes expired seen rows: prevents `RecommendationSeen` from growing without bound.
-  pruneSeen(db, profileId, sinceIso);
-  const dismissed = new Set(
-    listDismissed(db, profileId)
-      .filter((row) => row.provider === PROVIDER)
-      .map((row) => String(row.externalId))
-  );
-  const seen = new Set(
-    listSeen(db, profileId, sinceIso)
-      .filter((row) => row.provider === PROVIDER)
-      .map((row) => String(row.externalId))
-  );
-  const ownedRefIds = new Set();
-  const ownedTitles = new Set();
-  for (const entry of entries) {
-    const key = normalizeTitle(entry.manga?.name);
-    if (key) ownedTitles.add(key);
-    const refId = entry.mangaId ? getRef(db, entry.mangaId, PROVIDER)?.externalId : null;
-    if (refId) ownedRefIds.add(String(refId));
+  let candidates = readPool(db, profileId, now);
+  if (!candidates) {
+    candidates = await buildCandidatePool(db, entries, { fetchImpl, timeoutMs, includeAdult });
+    if (!candidates) return null;
+    writePool(db, profileId, now, candidates);
   }
 
-  const profile = buildUserTasteProfile(entries, []);
-  const candidates = [];
-  for (const aggregated of aggregate(successful)) {
-    const { media } = aggregated;
-    const idStr = String(media.id);
-    if (dismissed.has(idStr) || seen.has(idStr) || ownedRefIds.has(idStr)) continue;
-    const title = media.title?.romaji || media.title?.english || '';
-    if (!title) continue;
-    if (ownedTitles.has(normalizeTitle(title))) continue;
-    if (media.isAdult === true && !includeAdult) continue;
-
-    const similarity = cosineSimilarity(profile.tokenWeights, candidateTokenWeights(media));
-    const score =
-      Math.log1p(aggregated.ratingTotal) + similarity * COSINE_WEIGHT + aggregated.seedCount * SEED_BONUS;
-    // `reason` is the highest-rated seed that brought the candidate; the phrase is
-    // composed in the UI with i18n (`rec.reason`).
-    const bestSeed = aggregated.seeds.reduce((a, b) => (b.rating > a.rating ? b : a), aggregated.seeds[0]);
-    candidates.push({
-      externalId: String(media.id),
-      title,
-      coverUrl: media.coverImage?.large ?? null,
-      volumes: media.volumes ?? null,
-      genres: (media.genres ?? []).slice(),
-      score: Number(score.toFixed(4)),
-      reason: bestSeed?.title ?? '',
-    });
-  }
-
-  candidates.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return a.title.localeCompare(b.title);
+  return selectRecommendations(db, profileId, entries, candidates, {
+    safeLimit,
+    seenTtlDays,
+    includeAdult,
+    now,
   });
-
-  // Buffer `limit * 3`: we return `limit` and mark only those as seen.
-  const buffer = candidates.slice(0, safeLimit * 3);
-  const items = buffer.slice(0, safeLimit);
-  const seenAt = now.toISOString();
-  for (const item of items) markSeen(db, profileId, PROVIDER, item.externalId, seenAt);
-
-  return {
-    provider: 'anilist',
-    inferredCountry: null,
-    isConfident: true,
-    availableCount: items.length,
-    blockedByImportCount: 0,
-    items,
-    limit: safeLimit,
-    inference: null,
-    exhausted: items.length < safeLimit,
-  };
 }

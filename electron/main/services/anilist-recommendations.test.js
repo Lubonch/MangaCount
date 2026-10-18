@@ -193,4 +193,53 @@ describe('services/anilist-recommendations', () => {
     assert.equal(res.exhausted, true);
     assert.equal(res.limit, 3);
   });
+
+  it('reusa el pool cacheado: el relleno no vuelve a consultar AniList', async () => {
+    seedManga('Alfa', 100);
+    seedManga('Beta', 200);
+    let calls = 0;
+    const base = makeFetch({
+      100: [graphNode(1, 9, { title: 'Uno' }), graphNode(2, 8, { title: 'Dos' })],
+      200: [],
+    });
+    const counting = async (url, opts) => {
+      calls += 1;
+      return base(url, opts);
+    };
+
+    const first = await getAnilistRecommendations(db, profile.id, deps(counting, { limit: 1 }));
+    assert.deepEqual(first.items.map((i) => i.externalId), ['1']);
+    assert.equal(calls, 2); // one graph request per seed, and only once
+
+    const second = await getAnilistRecommendations(db, profile.id, deps(counting, { limit: 1 }));
+    assert.deepEqual(second.items.map((i) => i.externalId), ['2']);
+    assert.equal(calls, 2); // served from the cached pool
+  });
+
+  it('el pool vence pasado el TTL y se vuelve a consultar', async () => {
+    seedManga('Alfa', 100);
+    let calls = 0;
+    const base = makeFetch({ 100: [graphNode(1, 9, { title: 'Uno' })] });
+    const counting = async (url, opts) => {
+      calls += 1;
+      return base(url, opts);
+    };
+
+    await getAnilistRecommendations(db, profile.id, deps(counting, { limit: 1 }));
+    assert.equal(calls, 1);
+
+    const later = new Date(NOW.getTime() + 6 * 60 * 1000); // +6 min > TTL 5 min
+    await getAnilistRecommendations(db, profile.id, { ...deps(counting, { limit: 1 }), now: later });
+    assert.equal(calls, 2);
+  });
+
+  it('un fallo total no queda cacheado: la siguiente llamada reintenta', async () => {
+    seedManga('Alfa', 100);
+    const failing = makeFetch({}, { failIds: [100] });
+    assert.equal(await getAnilistRecommendations(db, profile.id, deps(failing)), null);
+
+    const ok = makeFetch({ 100: [graphNode(1, 9, { title: 'Uno' })] });
+    const res = await getAnilistRecommendations(db, profile.id, deps(ok));
+    assert.deepEqual(res.items.map((i) => i.externalId), ['1']);
+  });
 });
