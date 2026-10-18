@@ -78,7 +78,7 @@
     font-size: var(--text-xs);
 }
 
-/* Portada +18: blur siempre; el pref decide cómo se revela. */
+/* +18 cover: always blurred; the pref decides how it is revealed. */
 .cover-candidate img {
     transition: filter var(--dur-fast) var(--ease-out);
 }

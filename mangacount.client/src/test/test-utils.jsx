@@ -50,7 +50,6 @@ export const createMockEntry = (overrides = {}) => {
   }
 }
 
-// Enhanced mock API responses
 export const mockSuccessfulFetch = (data) => {
   global.fetch.mockResolvedValueOnce({
     ok: true,
@@ -85,8 +84,6 @@ export const mockSequentialFetch = (...responses) => {
   })
 }
 
-// re-export everything
 export * from '@testing-library/react'
 
-// override render method
 export { customRender as render }

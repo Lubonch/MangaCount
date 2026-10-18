@@ -1,8 +1,8 @@
-// Cliente de chequeo de actualizaciones contra GitHub Releases.
+// Update-check client against GitHub Releases.
 //
-// No usamos electron-updater (choca con .deb/pacman): solo comparamos la última
-// release publicada con la versión local y avisamos. Aislado del runtime para
-// poder testearlo con un `fetch` inyectado.
+// We don't use electron-updater (it clashes with .deb/pacman): we only compare the latest
+// published release with the local version and notify. Isolated from the runtime so it can
+// be tested with an injected `fetch`.
 
 const RELEASES_URL = 'https://api.github.com/repos/Lubonch/MangaCount/releases/latest';
 
@@ -10,12 +10,12 @@ function parseVersion(value) {
   return String(value ?? '')
     .trim()
     .replace(/^v/i, '')
-    .split('-')[0] // ignora pre-release/build
+    .split('-')[0] // ignores pre-release/build
     .split('.')
     .map((part) => Number.parseInt(part, 10) || 0);
 }
 
-// >0 si `b` es más nueva que `a`; 0 si son iguales; <0 si `a` es más nueva.
+// >0 if `b` is newer than `a`; 0 if equal; <0 if `a` is newer.
 export function compareVersions(a, b) {
   const pa = parseVersion(a);
   const pb = parseVersion(b);
@@ -50,9 +50,9 @@ export async function fetchLatestRelease({ fetchImpl = fetch, timeoutMs = 5000 }
 
 export { RELEASES_URL };
 
-// Modo de actualización según el canal:
-// - 'auto' solo donde el ejecutable se puede reemplazar (Windows NSIS o AppImage con $APPIMAGE).
-// - 'link' en dev y donde manda el gestor de paquetes (.deb, makepkg en /opt).
+// Update mode per channel:
+// - 'auto' only where the executable can be replaced (Windows NSIS or AppImage with $APPIMAGE).
+// - 'link' in dev and where the package manager rules (.deb, makepkg in /opt).
 export function resolveUpdateMode({ isPackaged = false, platform = process.platform, env = process.env } = {}) {
   if (!isPackaged) return 'link';
   if (platform === 'win32') return 'auto';

@@ -1,11 +1,11 @@
-// Port de EntryService.cs (import TSV + CRUD) a Node.
-// Diferencias intencionales vs el original:
-// - La columna "Completa" se parsea pero no se persiste (igual que en C#:
-//   Entry no tiene dónde guardarla; el estado se deriva de quantity/volumes).
-// - Export TSV es nuevo (el backend no tenía endpoint de export; el frontend
-//   tampoco tenía UI): genera las mismas 8 columnas.
-// - GetOrCreate ya no abre conexiones nuevas: usa los repositories porteados.
-// - Sin AutoMapper: los repositories ya devuelven DTOs camelCase.
+// Port of EntryService.cs (TSV import + CRUD) to Node.
+// Intentional differences vs the original:
+// - The "Completa" column is parsed but not persisted (same as C#:
+//   Entry has nowhere to store it; the state is derived from quantity/volumes).
+// - TSV export is new (the backend had no export endpoint; the frontend
+//   had no UI either): it generates the same 8 columns.
+// - GetOrCreate no longer opens new connections: it uses the ported repositories.
+// - No AutoMapper: the repositories already return camelCase DTOs.
 
 import { listEntries, upsertEntry, updateEntry } from '../db/repositories/entries.js';
 import { listMangas, createManga, updateManga } from '../db/repositories/mangas.js';
@@ -22,7 +22,7 @@ const parseBool = (value) => /^\s*true\s*$/i.test(value ?? '');
 
 function getOrCreate(catalog, db, name) {
   const clean = (name ?? '').trim() || 'Unknown';
-  // Case-insensitive: "ivrea" reusa "Ivrea" en vez de crear un duplicado.
+  // Case-insensitive: "ivrea" reuses "Ivrea" instead of creating a duplicate.
   const found = catalog.findByName(db, clean);
   return (found ?? catalog.create(db, clean)).id;
 }

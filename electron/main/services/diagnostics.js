@@ -1,5 +1,5 @@
-// Armado del diagnóstico que el usuario puede copiar al portapapeles.
-// Puro (recibe el texto del log), para testearlo sin FS.
+// Builds the diagnostic the user can copy to the clipboard.
+// Pure (receives the log text), to test it without FS.
 
 export function tailLines(text, n) {
   const lines = String(text ?? '').split(/\r?\n/);

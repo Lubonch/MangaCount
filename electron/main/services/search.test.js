@@ -7,6 +7,8 @@ import {
   pendingEntries,
   pendingSummary,
   searchResult,
+  huecosEntries,
+  almostCompleteEntries,
 } from './search.js';
 
 const entry = (name, quantity, volumes, priority = false) => ({
@@ -23,6 +25,26 @@ const collection = () => [
   entry('Vagabond', 0, 0),
 ];
 
+describe('services/search: filtros rápidos', () => {
+  const manga = (id, volumes) => ({ id, name: `M${id}`, volumes });
+  const entry = (id, volumes, quantity, pending = null) => ({ id, quantity, pending, manga: manga(id, volumes) });
+
+  it('huecos: solo series con nota de pendientes', () => {
+    const entries = [entry(1, 10, 5, '6,9'), entry(2, 10, 5, null), entry(3, 10, 5, '  '), entry(4, 10, 5, '3')];
+    assert.deepEqual(huecosEntries(entries).map((e) => e.id), [1, 4]);
+  });
+
+  it('a-punto: total conocido y faltan 1 o 2, ordenadas por faltante', () => {
+    const entries = [entry(1, 10, 8), entry(2, 10, 9), entry(3, 10, 5), entry(4, 0, 0), entry(5, 10, 10)];
+    assert.deepEqual(almostCompleteEntries(entries).map((e) => e.id), [2, 1]);
+  });
+
+  it('tolera entradas inválidas', () => {
+    assert.deepEqual(huecosEntries(null), []);
+    assert.deepEqual(almostCompleteEntries(undefined), []);
+  });
+});
+
 describe('services/search: buscar', () => {
   it('encuentra por subcadena (case-insensitive)', () => {
     assert.equal(findEntries(collection(), 'berserk').length, 2);
@@ -33,7 +55,7 @@ describe('services/search: buscar', () => {
   it('sugiere títulos por palabra cuando no hay coincidencia', () => {
     const result = searchResult(collection(), 'berserk vagabond');
     assert.equal(result.results.length, 0);
-    // 'berserk' no matchea ninguno como subcadena completa... sí: 'berserk vagabond' no está contenido
+    // 'berserk' does not match any as a full substring... yes: 'berserk vagabond' is not contained
     assert.ok(result.suggestions.includes('Berserk'));
   });
 

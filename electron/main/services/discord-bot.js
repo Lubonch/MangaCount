@@ -1,89 +1,117 @@
-// Bot de Discord embebido en el proceso main (solo consulta).
+// Discord bot embedded in the main process (read-only).
 //
-// Reutiliza la misma conexión SQLite y los mismos servicios que la app; el
-// despacho es un registro nombre → función, con el seam abierto para sumar un
-// comando de escritura (`actualizar`) sin infraestructura nueva. La parte pura
-// (autorización, comandos, despacho, sesión) se testea sin conexión real.
+// Reuses the same SQLite connection and the same services as the app; the
+// dispatch is a name → function registry, with the seam open to add a
+// write command (`actualizar`) without new infrastructure. The pure part
+// (authorization, commands, dispatch, session) is tested without a real connection.
 
 import { listEntries } from '../db/repositories/entries.js';
 import { listProfiles, getProfileById, listMangas } from './catalog-base.js';
 import { getRecommendations } from './recommendations.js';
-import { searchResult, pendingSummary, entryStatus } from './search.js';
+import {
+  searchResult,
+  pendingSummary,
+  entryStatus,
+  huecosEntries,
+  almostCompleteEntries,
+} from './search.js';
 import { handlers } from '../ipc/handlers.js';
+import { splitMessage } from './discord-messages.js';
+import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
+import { createPaginationStore, renderPage } from './discord-pagination.js';
 
-export const SLASH_COMMANDS = [
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Default translator (tests): follows the env `MANGACOUNT_LANG`/default.
+const fallbackTranslator = () => createAppTranslator(resolveLanguage({}));
+
+export function slashCommands(t = fallbackTranslator()) {
+  return [
   {
     name: 'perfil',
-    description: 'Ver o cambiar el perfil activo',
-    options: [{ type: 3, name: 'perfil', description: 'Nombre o id del perfil', required: false }],
+    description: t('bot.descPerfil'),
+    options: [{ type: 3, name: 'perfil', description: t('bot.optPerfil'), required: false }],
   },
   {
     name: 'buscar',
-    description: 'Buscar una serie en tu colección',
-    options: [{ type: 3, name: 'query', description: 'Título a buscar', required: true }],
+    description: t('bot.descBuscar'),
+    options: [{ type: 3, name: 'query', description: t('bot.optQuery'), required: true, autocomplete: true }],
   },
-  { name: 'pendientes', description: 'Series en curso y volúmenes faltantes' },
+  { name: 'pendientes', description: t('bot.descPendientes') },
+  { name: 'huecos', description: t('bot.descHuecos') },
+  { name: 'a-punto', description: t('bot.descAPunto') },
   {
     name: 'recomendar',
-    description: 'Recomendaciones para el perfil activo',
+    description: t('bot.descRecomendar'),
     options: [
-      { type: 4, name: 'limite', description: 'Cantidad (1-10)', required: false, min_value: 1, max_value: 10 },
+      { type: 4, name: 'limite', description: t('bot.optLimite'), required: false, min_value: 1, max_value: 10 },
     ],
   },
   {
     name: 'tomo',
-    description: 'Sumar 1 tomo a una serie',
-    options: [{ type: 3, name: 'titulo', description: 'Título de la serie', required: true }],
+    description: t('bot.descTomo'),
+    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true }],
   },
   {
     name: 'actualizar',
-    description: 'Fijar la cantidad de tomos de una serie',
+    description: t('bot.descActualizar'),
     options: [
-      { type: 3, name: 'titulo', description: 'Título de la serie', required: true },
-      { type: 4, name: 'cantidad', description: 'Cantidad de tomos', required: true, min_value: 0, max_value: 9999 },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true },
+      { type: 4, name: 'cantidad', description: t('bot.optCantidad'), required: true, min_value: 0, max_value: 9999 },
     ],
   },
   {
     name: 'pending',
-    description: 'Fijar los tomos pendientes (no consecutivos)',
+    description: t('bot.descPending'),
     options: [
-      { type: 3, name: 'titulo', description: 'Título de la serie', required: true },
-      { type: 3, name: 'tomos', description: 'Ej: 5,7 (vacío = limpiar)', required: false },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true },
+      { type: 3, name: 'tomos', description: t('bot.optTomos'), required: false },
     ],
   },
   {
     name: 'prioridad',
-    description: 'Activar/desactivar la prioridad de una serie',
-    options: [{ type: 3, name: 'titulo', description: 'Título de la serie', required: true }],
+    description: t('bot.descPrioridad'),
+    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true }],
   },
   {
     name: 'nuevo',
-    description: 'Agregar una serie nueva a la colección',
+    description: t('bot.descNuevo'),
     options: [
-      { type: 3, name: 'titulo', description: 'Título', required: true },
-      { type: 4, name: 'total', description: 'Tomos totales (0 = desconocido)', required: false, min_value: 0 },
-      { type: 4, name: 'cantidad', description: 'Tomos que tenés', required: false, min_value: 0 },
-      { type: 3, name: 'formato', description: 'Formato', required: false },
-      { type: 3, name: 'editorial', description: 'Editorial', required: false },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true },
+      { type: 4, name: 'total', description: t('bot.optTotal'), required: false, min_value: 0 },
+      { type: 4, name: 'cantidad', description: t('bot.optOwned'), required: false, min_value: 0 },
+      { type: 3, name: 'formato', description: t('bot.optFormato'), required: false },
+      { type: 3, name: 'editorial', description: t('bot.optEditorial'), required: false },
     ],
   },
-  { name: 'ayuda', description: 'Lista de comandos disponibles' },
-];
+    { name: 'stats', description: t('bot.descStats') },
+  { name: 'backup', description: t('bot.descBackup') },
+  { name: 'status', description: t('bot.descStatus') },
+  { name: 'ayuda', description: t('bot.descAyuda') },
+  ];
+}
 
-export const AYUDA_TEXT = [
-  'Comandos de MangaCount:',
-  '• `/perfil [perfil]` — ver o cambiar el perfil activo',
-  '• `/buscar query:<título>` — buscar en la colección',
-  '• `/pendientes` — series en curso y qué falta',
-  '• `/recomendar [limite]` — recomendaciones del mercado local',
-  '• `/tomo titulo:<serie>` — sumar 1 tomo',
-  '• `/actualizar titulo:<serie> cantidad:<n>` — fijar cuántos tomos tenés',
-  '• `/pending titulo:<serie> tomos:<5,7>` — tomos pendientes no consecutivos',
-  '• `/prioridad titulo:<serie>` — activar/desactivar prioridad',
-  '• `/nuevo titulo:<serie> [total] [cantidad] [formato] [editorial]` — agregar una serie',
-].join('\n');
+export function ayudaText(t = fallbackTranslator()) {
+  return [
+    t('bot.helpTitle'),
+    t('bot.helpPerfil'),
+    t('bot.helpBuscar'),
+    t('bot.helpPendientes'),
+    t('bot.helpHuecos'),
+    t('bot.helpAPunto'),
+    t('bot.helpStats'),
+    t('bot.helpBackup'),
+    t('bot.helpStatus'),
+    t('bot.helpRecomendar'),
+    t('bot.helpTomo'),
+    t('bot.helpActualizar'),
+    t('bot.helpPending'),
+    t('bot.helpPrioridad'),
+    t('bot.helpNuevo'),
+  ].join('\n');
+}
 
-// Autorización por guild/user IDs; allowlist vacía no responde a nadie.
+// Authorization by guild/user IDs; an empty allowlist responds to nobody.
 export function isAuthorized(config, { userId, guildId } = {}) {
   if (!config?.guildId || String(config.guildId) !== String(guildId)) return false;
   const allowed = config.allowedUserIds ?? [];
@@ -91,8 +119,8 @@ export function isAuthorized(config, { userId, guildId } = {}) {
   return allowed.map(String).includes(String(userId));
 }
 
-// Sesión por usuario de Discord (clave = user id): recuerda el perfil activo.
-// `get` devuelve el objeto mutable guardado para que los comandos lo actualicen.
+// Session per Discord user (key = user id): remembers the active profile.
+// `get` returns the stored mutable object so commands can update it.
 export function createSessionStore() {
   const map = new Map();
   return {
@@ -107,22 +135,22 @@ export function createSessionStore() {
   };
 }
 
-function formatEntryLine(entry) {
+function formatEntryLine(entry, t = fallbackTranslator()) {
   const status = entryStatus(entry);
   const describe =
     status.total > 0
       ? status.complete
-        ? '✅ Completo'
-        : `📖 ${status.quantity}/${status.total} vol. (${status.pending} pendientes)`
-      : `📖 ${status.quantity} vol. (en curso)`;
+        ? t('bot.formatComplete')
+        : t('bot.formatProgress', { quantity: status.quantity, total: status.total, pending: status.pending })
+      : t('bot.formatOngoing', { quantity: status.quantity });
   const meta = [entry.manga?.format?.name, entry.manga?.publisher?.name].filter(Boolean).join(' · ');
   const priority = entry.priority ? '⭐ ' : '';
   return `${priority}*${entry.manga.name}*\n  ${meta}\n  ${describe}`;
 }
 
-// Perfil de sesión válido: si el id recordado no existe (p. ej. tras una Nuclear
-// Option/restore que re-siembra los perfiles), no se opera; se pide /perfil. Si no
-// hay perfil y existe uno solo, se auto-selecciona.
+// Valid session profile: if the remembered id does not exist (e.g. after a Nuclear
+// Option/restore that re-seeds the profiles), it does not operate; it asks for /perfil. If there
+// is no profile and only one exists, it is auto-selected.
 export function resolveSessionProfile(session, db) {
   const profiles = listProfiles(db);
   const current = profiles.find((p) => p.id === session.profileId);
@@ -131,11 +159,11 @@ export function resolveSessionProfile(session, db) {
     session.profileId = profiles[0].id;
     return profiles[0];
   }
-  throw new Error('Elegí un perfil con /perfil (el perfil guardado ya no está disponible).');
+  throw new Error(fallbackTranslator()('bot.profileRequired'));
 }
 
-// Crea format/editorial por nombre si no existe (mismo criterio que el import:
-// vacío → 'Unknown'). Devuelve el id.
+// Creates format/publisher by name if it does not exist (same criterion as the import:
+// empty → 'Unknown'). Returns the id.
 function getOrCreateCatalog(kind, db, name) {
   const clean = String(name ?? '').trim() || 'Unknown';
   const key = kind === 'format' ? 'format' : 'publisher';
@@ -144,21 +172,21 @@ function getOrCreateCatalog(kind, db, name) {
   return found ? found.id : handlers[`${key}:create`]({ db }, { name: clean }).id;
 }
 
-// Ejecuta una acción de escritura reusando los handlers (validan el perfil).
+// Runs a write action reusing the handlers (they validate the profile).
 export function applyWrite(db, action) {
-  if (!action || typeof action !== 'object') throw new Error('Acción de escritura inválida.');
+  if (!action || typeof action !== 'object') throw new Error(fallbackTranslator()('bot.writeInvalid'));
   const ctx = { db };
   if (action.type === 'setQuantity') {
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, quantity: action.quantity });
     return {
-      summary: `*${action.entry.manga.name}*: ${action.entry.quantity} → ${action.quantity} tomos`,
+      summary: fallbackTranslator()('bot.summarySetQuantity', { name: action.entry.manga.name, from: action.entry.quantity, to: action.quantity }),
       entry: updated,
     };
   }
   if (action.type === 'setPending') {
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, pending: action.pending });
     return {
-      summary: `*${action.entry.manga.name}* · pending: ${action.pending || '—'}`,
+      summary: fallbackTranslator()('bot.summarySetPending', { name: action.entry.manga.name, value: action.pending || '—' }),
       entry: updated,
     };
   }
@@ -166,7 +194,7 @@ export function applyWrite(db, action) {
     const priority = !action.entry.priority;
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, priority });
     return {
-      summary: `*${action.entry.manga.name}* · prioridad: ${priority ? 'activada' : 'desactivada'}`,
+      summary: fallbackTranslator()('bot.summaryTogglePriority', { name: action.entry.manga.name, state: priority ? fallbackTranslator()('bot.priorityOn') : fallbackTranslator()('bot.priorityOff') }),
       entry: updated,
     };
   }
@@ -187,22 +215,22 @@ export function applyWrite(db, action) {
       profileId: action.profileId,
       quantity: action.quantity ?? 0,
     });
-    return { summary: `*${manga.name}* agregado (${action.quantity ?? 0} tomos)`, manga, entry };
+    return { summary: fallbackTranslator()('bot.summaryCreated', { name: manga.name, count: action.quantity ?? 0 }), manga, entry };
   }
   throw new Error(`Acción de escritura desconocida: ${action.type}`);
 }
 
-// Resuelve un título a una entrada única de la colección. No adivina: 0 o >1 → error.
-export function resolveEntry(entries, title) {
+// Resolves a title to a single entry of the collection. Does not guess: 0 or >1 → error.
+export function resolveEntry(entries, title, t = fallbackTranslator()) {
   const q = String(title ?? '').trim().toLowerCase();
-  if (!q) return { error: 'Falta el título.' };
+  if (!q) return { error: t('bot.missingTitle') };
   const exact = entries.filter((e) => (e.manga?.name ?? '').toLowerCase() === q);
   const list = exact.length
     ? exact
     : entries.filter((e) => (e.manga?.name ?? '').toLowerCase().includes(q));
-  if (list.length === 0) return { error: `No encontré *${title}* en tu colección.` };
+  if (list.length === 0) return { error: t('bot.entryNotFound', { title }) };
   if (list.length > 1) {
-    return { error: `Encontré varias: ${list.map((e) => e.manga.name).join(', ')}. Sé más específico.` };
+    return { error: t('bot.entryAmbiguous', { list: list.map((e) => e.manga.name).join(', ') }) };
   }
   return { entry: list[0] };
 }
@@ -211,7 +239,7 @@ function writeProposal(summary, action) {
   return { kind: 'write', summary, action };
 }
 
-// Escritura pendiente de confirmación por usuario (token + expiración).
+// Write pending confirmation per user (token + expiry).
 export function beginPendingWrite(session, { summary, action, ttlMs = 300000, now = Date.now, token } = {}) {
   const t = token ?? Math.random().toString(36).slice(2, 10);
   session.pending = { token: t, summary, action, expiresAt: now() + ttlMs };
@@ -228,7 +256,17 @@ export function consumePendingWrite(session, token, now = Date.now) {
   return { pending };
 }
 
-export function createCommands({ db, getDb, getRecommendations: recommend = getRecommendations } = {}) {
+export function createCommands({
+  db,
+  getDb,
+  getConfig = () => ({}),
+  getT = fallbackTranslator,
+  pagination = createPaginationStore(),
+  runBackup = async () => ({ ok: false }),
+  getStatus = () => ({}),
+  getRecommendations: recommend = getRecommendations,
+} = {}) {
+  const t = (key, params) => getT()(key, params);
   const resolveDb = getDb ?? (() => db);
   const entriesFor = (profileId) => listEntries(resolveDb(), profileId);
 
@@ -236,20 +274,37 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
     return resolveSessionProfile(session, resolveDb());
   }
 
+  // Page size: the configured cap, or everything if disabled.
+  function pageSizeFor(config, count) {
+    const enabled = config?.pendingLimitEnabled !== false;
+    const limit = Number.isInteger(config?.pendingLimit) ? config.pendingLimit : 20;
+    return enabled ? limit : Math.max(count, 1);
+  }
+
+  function pagedResult({ lines, userId, header, config }) {
+    const token = pagination.create({
+      lines,
+      pageSize: pageSizeFor(config, lines.length),
+      userId,
+      header,
+    });
+    return { kind: 'paged', token };
+  }
+
   return {
     async perfil({ session, perfil }) {
       const list = listProfiles(resolveDb());
-      if (list.length === 0) return 'No hay perfiles creados en MangaCount.';
+      if (list.length === 0) return t('bot.noProfiles');
       if (perfil) {
         const found =
           list.find((p) => p.name.toLowerCase() === String(perfil).toLowerCase()) ??
           list.find((p) => String(p.id) === String(perfil));
-        if (!found) return `No existe un perfil "${perfil}".`;
+        if (!found) return t('bot.profileNotFound', { name: perfil });
         session.profileId = found.id;
-        return `Perfil activo: *${found.name}*.`;
+        return t('bot.profileActive', { name: found.name });
       }
       const lines = list.map((p) => `${p.id === session.profileId ? '▶️' : '•'} ${p.name}`).join('\n');
-      return `Perfiles:\n${lines}`;
+      return t('bot.profileList', { lines });
     },
 
     async buscar({ session, query }) {
@@ -257,37 +312,85 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
       const { results, suggestions } = searchResult(entriesFor(profileId), query);
       if (results.length === 0) {
         const hint = suggestions.length
-          ? `\n¿Quizás quisiste decir?\n${suggestions.map((t) => `   • ${t}`).join('\n')}`
+          ? t('bot.searchHint', { list: suggestions.map((s) => `   • ${s}`).join('\n') })
           : '';
-        return `❌ No encontré *${query}* en tu colección.${hint}`;
+        return t('bot.searchNotFound', { query, hint });
       }
-      return `🔍 Resultados para "*${query}*":\n\n${results.map(formatEntryLine).join('\n\n')}`;
+      const content = t('bot.searchResults', { query, lines: results.map((e) => formatEntryLine(e, getT())).join('\n\n') });
+      if (results.length === 1) {
+        return { kind: 'entry', entryId: results[0].id, content };
+      }
+      return content;
     },
 
-    async pendientes({ session }) {
+    async pendientes({ session, userId }) {
       const profileId = activeProfile(session).id;
       const summary = pendingSummary(entriesFor(profileId));
-      if (summary.count === 0) return '🎉 ¡No tenés nada pendiente! Colección al día.';
-      const LIMIT = 20;
-      const shown = summary.entries.slice(0, LIMIT);
-      const lines = shown.map((e) => {
+      if (summary.count === 0) return t('bot.nothingPending');
+      const config = getConfig() ?? {};
+      const limitEnabled = config.pendingLimitEnabled !== false;
+      const limit = Number.isInteger(config.pendingLimit) ? config.pendingLimit : 20;
+      const lines = summary.entries.map((e) => {
         const priority = e.priority ? '⭐ ' : '';
-        const parts = [`${e.quantity}/${e.manga.volumes} (faltan ${e.manga.volumes - e.quantity})`];
-        if (e.pending) parts.push(`pending: ${e.pending}`);
+        const parts = [t('bot.pendingDetail', { quantity: e.quantity, total: e.manga.volumes, missing: e.manga.volumes - e.quantity })];
+        if (e.pending) parts.push(t('bot.pendingNote', { value: e.pending }));
         const meta = [e.manga?.format?.name, e.manga?.publisher?.name].filter(
           (n) => n && n !== 'Unknown'
         );
         if (meta.length) parts.push(meta.join(' · '));
         return `${priority}*${e.manga.name}*: ${parts.join(' · ')}`;
       });
-      const rest = summary.count - shown.length;
-      const more = rest > 0 ? `\n\n…y ${rest} series más.` : '';
-      return `📋 Pendientes (${summary.count} series, ${summary.totalPending} vols.):\n\n${lines.join('\n')}${more}`;
+      return pagedResult({
+        lines,
+        userId,
+        config,
+        header: t('bot.pendingHeader', { count: summary.count, vols: summary.totalPending }),
+      });
+    },
+
+    async huecos({ session, userId }) {
+      const profileId = activeProfile(session).id;
+      const entries = huecosEntries(entriesFor(profileId));
+      if (entries.length === 0) return t('bot.noHuecos');
+      const lines = entries.map((e) =>
+        t('bot.huecosLine', {
+          name: e.manga.name,
+          quantity: e.quantity,
+          total: e.manga.volumes,
+          pending: e.pending,
+        })
+      );
+      return pagedResult({
+        lines,
+        userId,
+        config: getConfig(),
+        header: t('bot.huecosHeader', { count: entries.length }),
+      });
+    },
+
+    async 'a-punto'({ session, userId }) {
+      const profileId = activeProfile(session).id;
+      const entries = almostCompleteEntries(entriesFor(profileId));
+      if (entries.length === 0) return t('bot.noAPunto');
+      const lines = entries.map((e) =>
+        t('bot.aPuntoLine', {
+          name: e.manga.name,
+          quantity: e.quantity,
+          total: e.manga.volumes,
+          missing: e.manga.volumes - e.quantity,
+        })
+      );
+      return pagedResult({
+        lines,
+        userId,
+        config: getConfig(),
+        header: t('bot.aPuntoHeader', { count: entries.length }),
+      });
     },
 
     async recomendar({ session, limite }) {
       const profileId = activeProfile(session).id;
-      const response = await recommend(resolveDb(), profileId, limite ?? 5);
+      const response = await recommend(resolveDb(), profileId, limite ?? getConfig()?.recommendLimit ?? 5);
       if (!response?.isConfident || !response?.inferredCountry) {
         const breakdown = response?.inference?.breakdown ?? [];
         const owned = entriesFor(profileId).filter((e) => (e.quantity ?? 0) > 0).length;
@@ -295,23 +398,23 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
         const noCountry = Math.max(owned - mapped, 0);
         const detected = breakdown.length
           ? breakdown
-              .map((b) => `   • ${b.country}: ${b.seriesCount} series (${b.volumeCount} vols.)`)
+              .map((b) => t('bot.recDetectedLine', { country: b.country, series: b.seriesCount, volumes: b.volumeCount }))
               .join('\n')
-          : '   (ninguna editorial reconocida)';
+          : t('bot.recNoPublisher');
         return (
-          'No pude inferir tu mercado local con suficiente confianza.\n' +
-          `Detecté por editorial:\n${detected}\n` +
-          `Series sin editorial reconocida: ${noCountry}.\n` +
-          'Sumá más series con editoriales conocidas (Ivrea, Ovni, Panini, …) y volvé a intentar.'
+          `${t('bot.recNoConfidence')}\n` +
+          `${t('bot.recDetected')}\n${detected}\n` +
+          `${t('bot.recUnmapped', { count: noCountry })}\n` +
+          t('bot.recAdvice')
         );
       }
       const items = response.items ?? [];
       if (items.length === 0) {
-        return `No encontré recomendaciones elegibles para ${response.inferredCountry}.`;
+        return t('bot.recNone', { country: response.inferredCountry });
       }
       const note =
         response.blockedByImportCount > 0
-          ? `\nSe excluyeron ${response.blockedByImportCount} opciones de importación.`
+          ? t('bot.recExcluded', { count: response.blockedByImportCount })
           : '';
       const lines = items
         .map((item, index) => {
@@ -322,17 +425,17 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
         .join('\n\n');
       const profile = getProfileById(resolveDb(), profileId);
       return (
-        `Recomendaciones para *${profile?.name ?? ''}*\n` +
-        `País: ${response.inferredCountry}\n` +
-        `Proveedor: ${response.provider || 'local'}${note}\n\n${lines}`
+        `${t('bot.recHeader', { name: profile?.name ?? '' })}\n` +
+        `${t('bot.recCountry', { country: response.inferredCountry })}\n` +
+        `${t('bot.recProvider', { provider: response.provider || 'local' })}${note}\n\n${lines}`
       );
     },
     async tomo({ session, titulo }) {
       const profile = activeProfile(session);
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
-      return writeProposal(`*${e.manga.name}*: ${e.quantity} → ${e.quantity + 1} tomos`, {
+      return writeProposal(t('bot.summarySetQuantity', { name: e.manga.name, from: e.quantity, to: e.quantity + 1 }), {
         type: 'setQuantity',
         entry: e,
         quantity: e.quantity + 1,
@@ -342,11 +445,11 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
     async actualizar({ session, titulo, cantidad }) {
       const profile = activeProfile(session);
       const n = Number.parseInt(cantidad, 10);
-      if (!Number.isInteger(n) || n < 0) return 'Cantidad inválida.';
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      if (!Number.isInteger(n) || n < 0) return t('bot.invalidQuantity');
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
-      return writeProposal(`*${e.manga.name}*: ${e.quantity} → ${n} tomos`, {
+      return writeProposal(t('bot.summarySetQuantity', { name: e.manga.name, from: e.quantity, to: n }), {
         type: 'setQuantity',
         entry: e,
         quantity: n,
@@ -355,23 +458,27 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
 
     async pending({ session, titulo, tomos }) {
       const profile = activeProfile(session);
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
       const value = String(tomos ?? '').trim();
-      return writeProposal(`*${e.manga.name}* · pending: ${value || '—'}`, {
+      // No text: open the modal preloaded with the current note.
+      if (value === '') {
+        return { kind: 'modal', entryId: e.id, value: e.pending ?? '' };
+      }
+      return writeProposal(t('bot.summarySetPending', { name: e.manga.name, value }), {
         type: 'setPending',
         entry: e,
-        pending: value || null,
+        pending: value,
       });
     },
 
     async prioridad({ session, titulo }) {
       const profile = activeProfile(session);
-      const r = resolveEntry(entriesFor(profile.id), titulo);
+      const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
-      return writeProposal(`*${e.manga.name}* · ${e.priority ? 'quitar' : 'activar'} prioridad`, {
+      return writeProposal(t('bot.proposalPriority', { name: e.manga.name, action: e.priority ? t('bot.removePriority') : t('bot.addPriority') }), {
         type: 'togglePriority',
         entry: e,
       });
@@ -380,12 +487,12 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
     async nuevo({ session, titulo, total, cantidad, formato, editorial }) {
       const profile = activeProfile(session);
       const name = String(titulo ?? '').trim();
-      if (!name) return 'Falta el título.';
+      if (!name) return t('bot.missingTitle');
       const existing = entriesFor(profile.id).find(
         (e) => e.manga.name.toLowerCase() === name.toLowerCase()
       );
-      if (existing) return `Ya tenés *${existing.manga.name}*. Usá /tomo o /actualizar.`;
-      return writeProposal(`Agregar *${name}* (${cantidad ?? 0}/${total ?? '??'} tomos)`, {
+      if (existing) return t('bot.alreadyExists', { name: existing.manga.name });
+      return writeProposal(t('bot.proposalAdd', { name, quantity: cantidad ?? 0, total: total ?? '??' }), {
         type: 'createMangaEntry',
         name,
         total: total ?? null,
@@ -396,24 +503,65 @@ export function createCommands({ db, getDb, getRecommendations: recommend = getR
       });
     },
 
+    async stats({ session }) {
+      const profile = activeProfile(session);
+      const entries = entriesFor(profile.id);
+      const volumes = entries.reduce((acc, e) => acc + (e.quantity ?? 0), 0);
+      const complete = entries.filter((e) => entryStatus(e).complete).length;
+      const countBy = (pick) => {
+        const map = new Map();
+        for (const e of entries) {
+          const key = pick(e);
+          if (key && key !== 'Unknown') map.set(key, (map.get(key) ?? 0) + 1);
+        }
+        return [...map.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([name, count]) => `${name} (${count})`)
+          .join(', ');
+      };
+      return {
+        kind: 'stats',
+        title: t('bot.statsTitle', { name: profile.name }),
+        fields: [
+          t('bot.statsVolumes', { count: volumes }),
+          t('bot.statsSeries', { total: entries.length, complete, ongoing: entries.length - complete }),
+          t('bot.statsFormats', { list: countBy((e) => e.manga?.format?.name) || t('bot.none') }),
+          t('bot.statsPublishers', { list: countBy((e) => e.manga?.publisher?.name) || t('bot.none') }),
+        ],
+      };
+    },
+
+    async backup({ session }) {
+      const pending = beginPendingWrite(session, {
+        summary: t('bot.backupConfirm'),
+        action: { type: 'backup' },
+      });
+      return { kind: 'backup', token: pending.token };
+    },
+
+    async status() {
+      return { kind: 'status', data: getStatus() };
+    },
+
     async ayuda() {
-      return AYUDA_TEXT;
+      return ayudaText(getT());
     },
   };
 }
 
-// Despacho nombre → función; los errores se convierten en respuesta, sin romper el bot.
-export async function dispatch(commands, name, args) {
+// Dispatch name → function; errors become a response, without breaking the bot.
+export async function dispatch(commands, name, args, t = fallbackTranslator()) {
   const fn = commands[name];
-  if (!fn) return 'Comando no disponible.';
+  if (!fn) return t('bot.unknownCommand');
   try {
     return await fn(args);
   } catch (err) {
-    return `⚠️ ${err?.message ?? 'No pude procesar el comando.'}`;
+    return t('bot.error', { message: err?.message ?? t('bot.dispatchError').replace('⚠️ ', '') });
   }
 }
 
-// Extrae los argumentos de una interacción como objeto plano (testeable).
+// Extracts an interaction's arguments as a plain object (testable).
 export function readInteraction(interaction) {
   const opt = interaction.options;
   return {
@@ -432,13 +580,21 @@ export function readInteraction(interaction) {
   };
 }
 
-export async function registerGuildCommands({ token, applicationId, guildId, commands = SLASH_COMMANDS }) {
+export async function registerGuildCommands({
+  token,
+  applicationId,
+  guildId,
+  commands,
+  getT = fallbackTranslator,
+}) {
   const { REST, Routes } = await import('discord.js');
   const rest = new REST({ version: '10' }).setToken(token);
-  await rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: commands });
+  await rest.put(Routes.applicationGuildCommands(applicationId, guildId), {
+    body: commands ?? slashCommands(getT()),
+  });
 }
 
-// Cliente de Discord. `loadDiscord` es inyectable para no conectar en tests.
+// Discord client. `loadDiscord` is injectable to avoid connecting in tests.
 export function createDiscordBot({
   getConfig,
   getToken,
@@ -447,11 +603,16 @@ export function createDiscordBot({
   logger = console,
   onStatusChange = () => {},
   loadDiscord,
+  followUpDelayMs = 350,
+  getT = fallbackTranslator,
+  runBackup = async () => ({ ok: false }),
+  getStatus = () => ({}),
 } = {}) {
   let client = null;
   let status = 'apagado';
   const session = createSessionStore();
-  const commands = createCommands({ getDb, db });
+  const pagination = createPaginationStore();
+  const commands = createCommands({ getDb, db, getConfig, getT, pagination, getStatus });
   const load = loadDiscord ?? (() => import('discord.js'));
   const resolveDb = getDb ?? (() => db);
   let discordMod = null;
@@ -463,66 +624,361 @@ export function createDiscordBot({
     onStatusChange(next);
   };
 
-  const confirmRow = (token) => {
+  const buildPager = (page) => {
     if (!discordMod) return [];
     const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
     return [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`mc:confirm:${token}`)
-          .setLabel('Confirmar')
+          .setCustomId(page.prevId)
+          .setLabel(getT()('bot.pagerPrev'))
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(page.prevDisabled),
+        new ButtonBuilder()
+          .setCustomId(page.nextId)
+          .setLabel(getT()('bot.pagerNext'))
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(page.nextDisabled)
+      ),
+    ];
+  };
+
+  const embedOf = ({ title, fields }) => {
+    if (!discordMod?.EmbedBuilder) return null;
+    const embed = new discordMod.EmbedBuilder().setTitle(title);
+    if (fields?.length) embed.addFields(...fields.map((value) => ({ name: '\u200b', value })));
+    return embed;
+  };
+
+  const backupRow = (token) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`mc:backup:confirm:${token}`)
+          .setLabel(getT()('bot.confirmLabel'))
           .setStyle(ButtonStyle.Success),
         new ButtonBuilder()
-          .setCustomId(`mc:cancel:${token}`)
-          .setLabel('Cancelar')
+          .setCustomId(`mc:backup:cancel:${token}`)
+          .setLabel(getT()('bot.cancelLabel'))
           .setStyle(ButtonStyle.Secondary)
       ),
     ];
   };
 
+  const entryActions = (entryId) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`mc:entry:tomo:${entryId}`)
+          .setLabel(getT()('bot.actionAddVolume'))
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId(`mc:entry:prioridad:${entryId}`)
+          .setLabel(getT()('bot.actionTogglePriority'))
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId(`mc:entry:pending:${entryId}`)
+          .setLabel(getT()('bot.actionEditPending'))
+          .setStyle(ButtonStyle.Secondary)
+      ),
+    ];
+  };
+
+  const pendingModal = (entryId, value) => {
+    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = discordMod;
+    return new ModalBuilder()
+      .setCustomId(`mc:pending:${entryId}`)
+      .setTitle(getT()('bot.pendingModalTitle'))
+      .addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('pending')
+            .setLabel(getT()('bot.pendingModalLabel'))
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setValue(String(value ?? ''))
+        )
+      );
+  };
+
+  const confirmRow = (token, { withEditNote = false } = {}) => {
+    if (!discordMod) return [];
+    const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
+    const buttons = [
+      new ButtonBuilder()
+        .setCustomId(`mc:confirm:${token}`)
+        .setLabel(getT()('bot.confirmLabel'))
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`mc:cancel:${token}`)
+        .setLabel(getT()('bot.cancelLabel'))
+        .setStyle(ButtonStyle.Secondary),
+    ];
+    if (withEditNote) {
+      buttons.push(
+        new ButtonBuilder()
+          .setCustomId(`mc:confirmedit:${token}`)
+          .setLabel(getT()('bot.confirmAndEdit'))
+          .setStyle(ButtonStyle.Primary)
+      );
+    }
+    return [new ActionRowBuilder().addComponents(...buttons)];
+  };
+
+  async function handleAutocomplete(interaction) {
+    const config = getConfig();
+    const args = { userId: interaction.user?.id, guildId: interaction.guildId };
+    if (!isAuthorized(config, args)) {
+      await interaction.respond([]);
+      return;
+    }
+    const focused = interaction.options?.getFocused?.(true)?.value ?? '';
+    const query = String(focused).trim().toLowerCase();
+    const options = listMangas(resolveDb())
+      .filter((manga) => !query || manga.name.toLowerCase().includes(query))
+      .sort(
+        (a, b) =>
+          Number(b.name.toLowerCase().startsWith(query)) -
+          Number(a.name.toLowerCase().startsWith(query))
+      )
+      .slice(0, 25)
+      .map((manga) => ({ name: manga.name.slice(0, 100), value: manga.name.slice(0, 100) }));
+    await interaction.respond(options);
+  }
+
+  async function handleModal(interaction) {
+    const config = getConfig();
+    const args = { userId: interaction.user?.id, guildId: interaction.guildId };
+    if (!isAuthorized(config, args)) return;
+    const match = /^mc:pending:(\d+)$/.exec(interaction.customId ?? '');
+    if (!match) return;
+    const entryId = Number(match[1]);
+    const value = String(interaction.fields?.getTextInputValue?.('pending') ?? '').trim();
+    try {
+      const ctx = { db: resolveDb() };
+      const current = handlers['entry:get-by-id'](ctx, entryId);
+      if (!current) throw new Error(getT()('bot.entryNotFound', { title: entryId }));
+      handlers['entry:upsert'](ctx, { ...current, pending: value === '' ? null : value });
+      await interaction.reply({ content: getT()('bot.pendingUpdated'), ephemeral: true });
+    } catch (err) {
+      await interaction.reply({
+        content: getT()('bot.error', { message: err?.message ?? err }),
+        ephemeral: true,
+      });
+    }
+  }
+
   async function handleInteraction(interaction) {
+    if (interaction.isAutocomplete?.()) return handleAutocomplete(interaction);
+    if (interaction.isModalSubmit?.()) return handleModal(interaction);
     if (interaction.isButton?.()) return handleButton(interaction);
     if (!interaction.isChatInputCommand?.()) return;
     const config = getConfig();
     const args = readInteraction(interaction);
     if (!isAuthorized(config, args)) return;
     const userSession = session.get(args.userId);
-    const reply = await dispatch(commands, args.name, { session: userSession, ...args });
+    const reply = await dispatch(commands, args.name, { session: userSession, ...args }, getT());
     if (reply && typeof reply === 'object' && reply.kind === 'write') {
-      const pending = beginPendingWrite(userSession, reply);
+      const pending = beginPendingWrite(userSession, {
+        ...reply,
+        ttlMs: (Number(config.confirmTtlMinutes) || 5) * 60000,
+      });
       await interaction.reply({
-        content: `¿Confirmás?\n${pending.summary}`,
+        content: getT()('bot.confirm', { summary: pending.summary }),
         ephemeral: true,
-        components: confirmRow(pending.token),
+        components: confirmRow(pending.token, {
+          withEditNote:
+            reply.action?.type === 'setQuantity' && Boolean(reply.action.entry?.pending),
+        }),
       });
       return;
     }
-    await interaction.reply(String(reply));
+    if (reply && typeof reply === 'object' && reply.kind === 'stats') {
+      const embed = embedOf({ title: reply.title, fields: reply.fields });
+      await interaction.reply(
+        embed ? { embeds: [embed], ephemeral: config.ephemeralReplies === true } : reply.fields.join('\n')
+      );
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'status') {
+      const d = reply.data ?? {};
+      const fields = [
+        getT()('bot.statusVersion', { version: d.version ?? getT()('bot.none') }),
+        getT()('bot.statusDb', { count: d.entries ?? getT()('bot.none') }),
+        getT()('bot.statusLastBackup', { date: d.lastBackupAt ?? getT()('bot.none') }),
+      ];
+      const embed = embedOf({ title: getT()('bot.statusTitle'), fields });
+      await interaction.reply(
+        embed ? { embeds: [embed], ephemeral: config.ephemeralReplies === true } : fields.join('\n')
+      );
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'backup') {
+      await interaction.reply({
+        content: getT()('bot.backupConfirm'),
+        components: backupRow(reply.token),
+        ephemeral: true,
+      });
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'entry') {
+      await interaction.reply({
+        content: reply.content,
+        components: entryActions(reply.entryId),
+        ephemeral: config.ephemeralReplies === true,
+      });
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'modal') {
+      await interaction.showModal(pendingModal(reply.entryId, reply.value));
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'paged') {
+      const item = pagination.get(reply.token);
+      if (!item) {
+        await interaction.reply(getT()('bot.pagerExpired'));
+        return;
+      }
+      const page = renderPage(item, 1, getT());
+      await interaction.reply({
+        content: page.content,
+        components: buildPager(page),
+        ephemeral: config.ephemeralReplies === true,
+      });
+      return;
+    }
+
+    const ephemeral = config.ephemeralReplies === true;
+    const payload = (content) => (ephemeral ? { content, ephemeral: true } : content);
+    const chunks = splitMessage(String(reply));
+    await interaction.reply(payload(chunks[0]));
+    for (let i = 1; i < chunks.length; i += 1) {
+      await sleep(followUpDelayMs);
+      await interaction.followUp(payload(chunks[i]));
+    }
   }
 
   async function handleButton(interaction) {
     const config = getConfig();
     const args = { userId: interaction.user?.id, guildId: interaction.guildId };
     if (!isAuthorized(config, args)) return;
+    const userSession = session.get(args.userId);
+    const editNote = /^mc:confirmedit:(.+)$/.exec(interaction.customId ?? '');
+    if (editNote) {
+      const consumed = consumePendingWrite(userSession, editNote[1]);
+      if (consumed.error) {
+        await interaction.update({ content: consumed.error, components: [] });
+        return;
+      }
+      try {
+        const result = applyWrite(resolveDb(), consumed.pending.action);
+        await interaction.showModal(pendingModal(result.entry?.id, result.entry?.pending ?? ''));
+      } catch (err) {
+        await interaction.update({
+          content: getT()('bot.error', { message: err?.message ?? err }),
+          components: [],
+        });
+      }
+      return;
+    }
+
+    const backupAction = /^mc:backup:(confirm|cancel):(.+)$/.exec(interaction.customId ?? '');
+    if (backupAction) {
+      const [, action, token] = backupAction;
+      const consumed = consumePendingWrite(userSession, token);
+      if (consumed.error) {
+        await interaction.update({ content: consumed.error, components: [] });
+        return;
+      }
+      if (action === 'cancel') {
+        await interaction.update({ content: getT()('bot.cancelled'), components: [] });
+        return;
+      }
+      await interaction.update({ content: getT()('bot.backupStarted'), components: [] });
+      try {
+        const result = await runBackup();
+        await interaction.editReply({
+          content: result?.fileName
+            ? getT()('bot.backupOk', { file: result.fileName })
+            : getT()('bot.backupOk', { file: getT()('bot.none') }),
+        });
+      } catch (err) {
+        await interaction.editReply({
+          content: getT()('bot.backupFailed', { error: err?.message ?? err }),
+        });
+      }
+      return;
+    }
+
+    const entryAction = /^mc:entry:(tomo|prioridad|pending):(\d+)$/.exec(interaction.customId ?? '');
+    if (entryAction) {
+      const [, action, idStr] = entryAction;
+      const entryId = Number(idStr);
+      const ctx = { db: resolveDb() };
+      const entry = handlers['entry:get-by-id'](ctx, entryId);
+      if (!entry) {
+        await interaction.update({ content: getT()('bot.entryNotFound', { title: entryId }), components: [] });
+        return;
+      }
+      if (action === 'pending') {
+        await interaction.showModal(pendingModal(entryId, entry.pending ?? ''));
+        return;
+      }
+      try {
+        const result = applyWrite(
+          resolveDb(),
+          action === 'tomo'
+            ? { type: 'setQuantity', entry, quantity: entry.quantity + 1 }
+            : { type: 'togglePriority', entry }
+        );
+        await interaction.update({
+          content: `${formatEntryLine(result.entry, getT())}\n\n${result.summary}`,
+          components: entryActions(entryId),
+        });
+      } catch (err) {
+        await interaction.update({
+          content: getT()('bot.error', { message: err?.message ?? err }),
+          components: [],
+        });
+      }
+      return;
+    }
+
+    const pend = /^mc:pend:([^:]+):(\d+)$/.exec(interaction.customId ?? '');
+    if (pend) {
+      const [, token, pageStr] = pend;
+      const item = pagination.get(token);
+      if (!item) {
+        await interaction.update({ content: getT()('bot.pagerExpired'), components: [] });
+        return;
+      }
+      const page = renderPage(item, Number(pageStr), getT());
+      await interaction.update({ content: page.content, components: buildPager(page) });
+      return;
+    }
+
     const match = /^mc:(confirm|cancel):(.+)$/.exec(interaction.customId ?? '');
     if (!match) return;
     const [, action, token] = match;
-    const userSession = session.get(args.userId);
     const consumed = consumePendingWrite(userSession, token);
     if (consumed.error) {
       await interaction.update({ content: consumed.error, components: [] });
       return;
     }
     if (action === 'cancel') {
-      await interaction.update({ content: 'Cancelado.', components: [] });
+      await interaction.update({ content: getT()('bot.cancelled'), components: [] });
       return;
     }
     try {
       const result = applyWrite(resolveDb(), consumed.pending.action);
       logger?.info?.(`bot write: ${result.summary}`);
-      await interaction.update({ content: `✅ ${result.summary}`, components: [] });
+      await interaction.update({ content: getT()('bot.applied', { summary: result.summary }), components: [] });
     } catch (err) {
-      await interaction.update({ content: `⚠️ ${err?.message ?? err}`, components: [] });
+      await interaction.update({ content: getT()('bot.error', { message: err?.message ?? err }), components: [] });
     }
   }
 
@@ -549,9 +1005,9 @@ export function createDiscordBot({
     }
   }
 
-  // Agent HTTP con keep-alive largo. En redes con DNS/resolución lenta, reconectar
-  // puede tardar >3s y la respuesta a la interacción llegaría tarde (Unknown
-  // interaction); con la conexión caliente se reusa.
+  // HTTP agent with long keep-alive. On networks with slow DNS/resolution, reconnecting
+  // can take >3s and the interaction response would arrive late (Unknown
+  // interaction); with a warm connection it is reused.
   async function createHttpAgent() {
     try {
       const { Agent } = await import('undici');
@@ -565,7 +1021,7 @@ export function createDiscordBot({
     }
   }
 
-  // Ping liviano para no dejar cerrar la conexión REST entre comandos.
+  // Lightweight ping so the REST connection is not allowed to close between commands.
   function keepWarm() {
     if (warmTimer) clearInterval(warmTimer);
     warmTimer = setInterval(() => {
@@ -604,6 +1060,7 @@ export function createDiscordBot({
             token,
             applicationId: ready.application.id,
             guildId: config.guildId,
+            getT,
           });
         } catch (err) {
           logger?.warn?.(`no se pudieron registrar los comandos: ${err?.message ?? err}`);

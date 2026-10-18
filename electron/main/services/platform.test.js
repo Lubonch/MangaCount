@@ -59,7 +59,7 @@ describe('services/files+logger+prefs+database', () => {
     today = new Date(2026, 4, 11, 9, 0, 0);
     log.info('día nuevo');
     assert.ok(fs.existsSync(path.join(logsDir, 'app.2026-05-11.txt')));
-    // Vacío no rota: borro actual, escribo nada y cambio de día.
+    // Empty does not rotate: delete current, write nothing and change the day.
     fs.rmSync(path.join(logsDir, 'app.txt'));
     fs.writeFileSync(path.join(logsDir, 'app.txt'), '');
     fs.utimesSync(path.join(logsDir, 'app.txt'), new Date(2026, 4, 11), new Date(2026, 4, 11));
@@ -86,7 +86,7 @@ describe('services/files+logger+prefs+database', () => {
     assert.equal(nuked.ok, true);
     assert.equal(nuked.entries, 0);
     assert.equal(nuked.mangas, 0);
-    assert.equal(nuked.profiles, 0); // estado cero (sin re-seed de perfil)
-    assert.equal(nuked.formats, 0); // sin seed de catálogos
+    assert.equal(nuked.profiles, 0); // zero state (no profile re-seed)
+    assert.equal(nuked.formats, 0); // no catalog seed
   });
 });

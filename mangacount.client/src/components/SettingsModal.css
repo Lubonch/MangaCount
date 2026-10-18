@@ -12,13 +12,13 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    /* Permite que el body scrollee sin empujar el footer fuera del modal. */
+    /* Lets the body scroll without pushing the footer out of the modal. */
     flex: 1 1 auto;
     min-height: 0;
 }
 
-/* El .modal-actions global no trae padding lateral/inferior: en Settings lo
-   ajustamos para que "Cerrar" no quede pegado a la esquina del modal. */
+/* The global .modal-actions has no side/bottom padding: in Settings we
+   adjust it so "Close" does not stick to the modal corner. */
 .settings-modal-content .modal-actions {
     margin-top: 0;
     padding: var(--space-4);
@@ -93,8 +93,8 @@
     color: var(--color-complete);
 }
 
-/* Botones propios del modal sobre design tokens (no reutilizan las clases del
-   Sidebar). Sin width:100% por defecto: el ancho lo da el contenido/acción. */
+/* Modal's own buttons on design tokens (they do not reuse the Sidebar
+   classes). No width:100% by default: the width comes from the content/action. */
 .settings-btn {
     padding: var(--space-2) var(--space-4);
     border: 1px solid var(--border-color);
@@ -144,7 +144,7 @@
     background-color: var(--bg-incomplete);
 }
 
-/* Selector de archivo TSV propio del modal (reemplaza .file-input/.file-input-label). */
+/* Modal's own TSV file picker (replaces .file-input/.file-input-label). */
 .settings-file-input {
     display: none;
 }
@@ -175,7 +175,7 @@
     cursor: not-allowed;
 }
 
-/* Bloque de import/export/portadas dentro de una sección (reemplaza .import-section). */
+/* Import/export/covers block inside a section (replaces .import-section). */
 .settings-exchange {
     display: flex;
     flex-direction: column;

@@ -1,8 +1,8 @@
-// Port de RecommendationService.cs a Node, usando shared/recommendations en JS
-// (NO se porta LocalRecommendationEngine.cs: el JS es la implementación de referencia).
-// Semántica conservada: clamp de limit 1-10, fallback local garantizado, reranking
-// remoto opcional con try/catch (sin providers configurados por defecto -> local).
-// Hook: futuros providers implementan `rerank(context)` y se listan en `providers`.
+// Port of RecommendationService.cs to Node, using shared/recommendations in JS
+// (LocalRecommendationEngine.cs is NOT ported: the JS is the reference implementation).
+// Preserved semantics: limit clamp 1-10, guaranteed local fallback, optional
+// remote reranking with try/catch (no providers configured by default -> local).
+// Hook: future providers implement `rerank(context)` and are listed in `providers`.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,10 +26,10 @@ function sharedData() {
   return cache;
 }
 
-// Punto de extensión para reranking remoto: cada provider es
+// Extension point for remote reranking: each provider is
 // `{ name, rerank({entries, baseItems, inferredCountry, limit}) => items[]|null }`.
-// Por defecto no hay ninguno (el fallback local siempre responde); se pueden
-// inyectar por parámetro (tests u otra fase).
+// By default there is none (the local fallback always responds); they can be
+// injected by parameter (tests or another phase).
 
 export function clampLimit(limit) {
   return Math.min(10, Math.max(1, Number.isInteger(limit) ? limit : 10));
@@ -60,7 +60,7 @@ export async function getRecommendations(db, profileId, limit = 10, { providers 
         return toResponse({ ...local, provider: provider.name, items: reranked.slice(0, safeLimit) }, safeLimit);
       }
     } catch {
-      // Fallback local (igual que el catch del C#).
+      // Local fallback (same as the C# catch).
     }
   }
   return toResponse(local, safeLimit);

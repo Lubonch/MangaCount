@@ -330,12 +330,12 @@ describe('LinkCoverModal', () => {
     expect(option.className).toContain('cover-candidate--adult')
     expect(option.className).not.toContain('cover-candidate--reveal-hover')
 
-    // 1er click: revela sin vincular.
+    // 1st click: reveals without linking.
     await userEvent.click(option)
     await waitFor(() => expect(option.className).toContain('cover-candidate--revealed'))
     expect(api.coverLink).not.toHaveBeenCalled()
 
-    // 2do click: ejecuta la vinculación real.
+    // 2nd click: performs the real link.
     await userEvent.click(option)
     await waitFor(() =>
       expect(api.coverLink).toHaveBeenCalledWith(5, expect.objectContaining({ id: 1 }))

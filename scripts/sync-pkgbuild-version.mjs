@@ -1,6 +1,4 @@
-// Sincroniza el `pkgver` del PKGBUILD de Arch con la versión de package.json y
-// resetea `pkgrel=1`. Se corre en cada release (`npm run release:sync`) para que
-// el paquete de Arch no quede apuntando a una versión vieja del AppImage.
+// Sync the Arch PKGBUILD pkgver with package.json and reset pkgrel=1 on each release, so the Arch package does not point to an old AppImage.
 
 import fs from 'node:fs';
 import path from 'node:path';

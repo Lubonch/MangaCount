@@ -1,11 +1,11 @@
-// Disparadores del backup automático.
+// Automatic backup triggers.
 //
-// `onStartup` es el disparador robusto (un `setInterval` muere al cerrar la app),
-// `whileRunning` complementa sesiones largas. `onQuit` queda fuera de alcance.
+// `onStartup` is the robust trigger (a `setInterval` dies when the app closes),
+// `whileRunning` complements long sessions. `onQuit` is out of scope.
 
 import { validateBackupConfig } from './prefs.js';
 
-// ¿Toca hacer backup al iniciar? Habilitado + con destino + `onStartup` + intervalo vencido.
+// Should a backup run at startup? Enabled + with destination + `onStartup` + interval elapsed.
 export function backupDue(backup, now = Date.now()) {
   if (!backup?.enabled || !backup.destinationDir || !backup.triggers?.onStartup) return false;
   if (!backup.lastBackupAt) return true;
@@ -15,8 +15,8 @@ export function backupDue(backup, now = Date.now()) {
   return now - last >= interval;
 }
 
-// Arranca los disparadores y devuelve `stop()`. `loadConfig()` devuelve el bloque
-// `backup` resuelto; `runBackup(destinationDir)` ejecuta el backup.
+// Starts the triggers and returns `stop()`. `loadConfig()` returns the resolved
+// `backup` block; `runBackup(destinationDir)` runs the backup.
 export function startAutoBackup({
   loadConfig,
   runBackup,

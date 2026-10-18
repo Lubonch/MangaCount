@@ -6,7 +6,8 @@ import path from 'node:path';
 import { openDb } from '../db/client.js';
 import { createManga } from '../db/repositories/mangas.js';
 import { createProfile } from '../db/repositories/profiles.js';
-import { upsertEntry } from '../db/repositories/entries.js';
+import { upsertEntry, listEntries } from '../db/repositories/entries.js';
+import { upsertRef, getRef } from '../db/repositories/manga-external-refs.js';
 import { publishers } from '../db/repositories/catalogs.js';
 import { clampLimit, getRecommendations } from './recommendations.js';
 import { inferUserCountry } from '../../../shared/recommendations/countryInference.js';
@@ -44,7 +45,7 @@ describe('services/recommendations', () => {
 
   it('colección Ivrea: mercado Argentina, sin owned ni fuera de mercado', async () => {
     const profile = createProfile(db, 'yo');
-    // Ivrea -> Argentina. Tomo un título del catálogo como owned.
+    // Ivrea -> Argentina. Take a catalog title as owned.
     const { default: catalog } = await import('../../../shared/recommendations/catalog.json', {
       with: { type: 'json' },
     });
@@ -145,5 +146,142 @@ describe('services/recommendations', () => {
     assert.equal(res.inferredCountry, 'United States');
     assert.equal(res.isConfident, true);
     assert.deepEqual(res.items, []);
+  });
+});
+
+describe('recommendation:get con AniList', () => {
+  let dir;
+  let db;
+  let realFetch;
+  let profile;
+  const ctx = () => ({ db, dataDir: dir });
+
+  const graphResponse = (nodes) => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ data: { Media: { recommendations: { nodes } } } }),
+  });
+
+  const node = (id, rating, title) => ({
+    rating,
+    mediaRecommendation: {
+      id,
+      title: { romaji: title },
+      genres: [],
+      tags: [],
+      volumes: null,
+      coverImage: { large: `https://img/${id}.jpg` },
+      isAdult: false,
+    },
+  });
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcrech-'));
+    db = openDb(dir);
+    realFetch = globalThis.fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+    db?.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  function seed(name, externalId) {
+    const manga = createManga(db, { name });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId });
+    return manga;
+  }
+
+  it('habilitado y con semillas → provider anilist', async () => {
+    profile = createProfile(db, 'anilist');
+    seed('Alfa', 100);
+    globalThis.fetch = async () => graphResponse([node(1, 9, 'Uno'), node(2, 5, 'Dos')]);
+    const res = await handlers['recommendation:get'](ctx(), { profileId: profile.id, limit: 10 });
+    assert.equal(res.provider, 'anilist');
+    assert.deepEqual(res.items.map((i) => i.externalId), ['1', '2']);
+  });
+
+  it('AniList caído → motor local (provider local)', async () => {
+    profile = createProfile(db, 'caido');
+    seed('Alfa', 100);
+    globalThis.fetch = async () => {
+      throw new Error('sin red');
+    };
+    const res = await handlers['recommendation:get'](ctx(), { profileId: profile.id, limit: 10 });
+    assert.equal(res.provider, 'local');
+  });
+
+  it('dismiss persiste y la próxima get lo excluye', async () => {
+    profile = createProfile(db, 'descartar');
+    seed('Alfa', 100);
+    globalThis.fetch = async () => graphResponse([node(1, 9, 'Uno'), node(2, 5, 'Dos')]);
+    assert.deepEqual(
+      handlers['recommendation:dismiss'](ctx(), { profileId: profile.id, provider: 'anilist', externalId: 1 }),
+      { ok: true }
+    );
+    const res = await handlers['recommendation:get'](ctx(), { profileId: profile.id, limit: 10 });
+    assert.deepEqual(res.items.map((i) => i.externalId), ['2']);
+  });
+
+  it('own con mangaId vincula y asegura el Entry; sin mangaId crea el manga', () => {
+    profile = createProfile(db, 'own');
+    const existing = createManga(db, { name: 'Existente' });
+
+    const linked = handlers['recommendation:own'](ctx(), {
+      profileId: profile.id,
+      provider: 'anilist',
+      externalId: 42,
+      mangaId: existing.id,
+    });
+    assert.equal(linked.id, existing.id);
+    assert.equal(getRef(db, existing.id, 'anilist').externalId, '42');
+    assert.ok(listEntries(db, profile.id).some((e) => e.mangaId === existing.id));
+
+    const created = handlers['recommendation:own'](ctx(), {
+      profileId: profile.id,
+      provider: 'anilist',
+      externalId: 43,
+      title: 'Nombre del usuario',
+    });
+    assert.equal(created.name, 'Nombre del usuario');
+    assert.equal(getRef(db, created.id, 'anilist').externalId, '43');
+    assert.ok(listEntries(db, profile.id).some((e) => e.mangaId === created.id));
+  });
+
+  it('config get/set con validaciones', () => {
+    assert.deepEqual(handlers['recommendation:config-get'](ctx()), {
+      enabled: true,
+      limit: 10,
+      seenTtlDays: 30,
+    });
+    assert.deepEqual(
+      handlers['recommendation:config-set'](ctx(), { enabled: false, limit: 5, seenTtlDays: 90 }),
+      { enabled: false, limit: 5, seenTtlDays: 90 }
+    );
+    assert.throws(() => handlers['recommendation:config-set'](ctx(), { limit: 0 }), /entre 1 y 25/);
+    assert.throws(() => handlers['recommendation:config-set'](ctx(), { seenTtlDays: 0 }), /entre 1 y 365/);
+    assert.throws(() => handlers['recommendation:config-set'](ctx(), { limit: 30 }), /entre 1 y 25/);
+  });
+
+  it('dismiss/own validan profileId y externalId', () => {
+    const p = createProfile(db, 'validaciones');
+    assert.throws(
+      () => handlers['recommendation:dismiss'](ctx(), { profileId: 0, externalId: 1 }),
+      /profileId inválido/
+    );
+    assert.throws(
+      () => handlers['recommendation:dismiss'](ctx(), { profileId: p.id, externalId: '' }),
+      /identificador/
+    );
+    assert.throws(
+      () => handlers['recommendation:own'](ctx(), { profileId: p.id, externalId: 1, title: '  ' }),
+      /nombre para el manga/
+    );
+    assert.throws(
+      () => handlers['recommendation:own'](ctx(), { profileId: p.id, externalId: 1, mangaId: 9999 }),
+      /mangaId inválido/
+    );
   });
 });

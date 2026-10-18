@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as api from '../../api/localAdapter.js'
 
-// ---------------------------------------------------------------------------
-// Funciones tipadas — camino Electron (`window.mangaCount.invoke`)
-// ---------------------------------------------------------------------------
-
 describe('localAdapter · funciones tipadas (IPC de Electron)', () => {
   let invoke
 
@@ -45,6 +41,10 @@ describe('localAdapter · funciones tipadas (IPC de Electron)', () => {
     ['publisherCreate', () => api.publisherCreate('P'), 'publisher:create', [{ name: 'P' }]],
     ['recommendationGet (limit por defecto)', () => api.recommendationGet(2), 'recommendation:get', [{ profileId: 2, limit: 10 }]],
     ['recommendationGet (limit explícito)', () => api.recommendationGet(2, 5), 'recommendation:get', [{ profileId: 2, limit: 5 }]],
+    ['recommendationDismiss', () => api.recommendationDismiss({ profileId: 2, provider: 'anilist', externalId: 1 }), 'recommendation:dismiss', [{ profileId: 2, provider: 'anilist', externalId: 1 }]],
+    ['recommendationOwn', () => api.recommendationOwn({ profileId: 2, provider: 'anilist', externalId: 1, title: 'x' }), 'recommendation:own', [{ profileId: 2, provider: 'anilist', externalId: 1, title: 'x' }]],
+    ['recommendationConfigGet', () => api.recommendationConfigGet(), 'recommendation:config-get', []],
+    ['recommendationConfigSet', () => api.recommendationConfigSet({ limit: 5 }), 'recommendation:config-set', [{ limit: 5 }]],
     ['coverSearch', () => api.coverSearch('x'), 'cover:search', [{ query: 'x' }]],
     ['coverSearch (query vacía)', () => api.coverSearch(), 'cover:search', [{ query: undefined }]],
     ['coverLink', () => api.coverLink(5, { id: 1 }), 'cover:link', [{ mangaId: 5, candidate: { id: 1 } }]],
@@ -88,10 +88,6 @@ describe('localAdapter · funciones tipadas (IPC de Electron)', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Funciones tipadas — fallback `fetch` (navegador)
-// ---------------------------------------------------------------------------
-
 describe('localAdapter · fallback fetch (navegador)', () => {
   beforeEach(() => {
     delete window.mangaCount
@@ -118,10 +114,6 @@ describe('localAdapter · fallback fetch (navegador)', () => {
     await expect(api.profileGet(7)).rejects.toThrow('HTTP 503 en /api/profile/7')
   })
 })
-
-// ---------------------------------------------------------------------------
-// Helpers y `isElectron`
-// ---------------------------------------------------------------------------
 
 describe('localAdapter · isElectron y onUpdateState', () => {
   afterEach(() => {
@@ -157,10 +149,6 @@ describe('localAdapter · isElectron y onUpdateState', () => {
     expect(result).toBe(off)
   })
 })
-
-// ---------------------------------------------------------------------------
-// installApiFetchShim
-// ---------------------------------------------------------------------------
 
 describe('localAdapter · installApiFetchShim', () => {
   let realFetch
@@ -251,6 +239,10 @@ describe('localAdapter · installApiFetchShim', () => {
     { url: '/api/publisher', method: 'POST', body: JSON.stringify({ name: 'P' }), channel: 'publisher:create', args: [{ name: 'P' }] },
     { url: '/api/recommendation?profileId=2', method: 'GET', channel: 'recommendation:get', args: [{ profileId: 2, limit: 10 }] },
     { url: '/api/recommendation?profileId=2&limit=5', method: 'GET', channel: 'recommendation:get', args: [{ profileId: 2, limit: 5 }] },
+    { url: '/api/recommendation/dismiss', method: 'POST', body: JSON.stringify({ externalId: 1 }), channel: 'recommendation:dismiss', args: [{ externalId: 1 }] },
+    { url: '/api/recommendation/own', method: 'POST', body: JSON.stringify({ title: 'x' }), channel: 'recommendation:own', args: [{ title: 'x' }] },
+    { url: '/api/recommendation/config', method: 'GET', channel: 'recommendation:config-get' },
+    { url: '/api/recommendation/config', method: 'POST', body: JSON.stringify({ limit: 5 }), channel: 'recommendation:config-set', args: [{ limit: 5 }] },
     { url: '/api/database/statistics', method: 'GET', channel: 'database:statistics' },
     { url: '/api/database/nuke', method: 'POST', body: '{}', channel: 'database:nuke-local' },
   ]

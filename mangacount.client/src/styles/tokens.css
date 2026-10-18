@@ -1,10 +1,9 @@
-/* Design tokens — base no- color (tipografía, espaciado, radios, sombras, motion).
-   Los colores viven en theme.css (dark/light). */
+/* Design tokens — non-color base (typography, spacing, radii, shadows, motion).
+   Colors live in theme.css (dark/light). */
 
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  /* Escala tipográfica */
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
   --text-base: 0.9375rem;
@@ -14,7 +13,6 @@
   --leading-tight: 1.25;
   --leading-normal: 1.5;
 
-  /* Espaciado (base 4/8) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -22,18 +20,15 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  /* Radios */
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
   --radius-full: 999px;
 
-  /* Elevación */
   --shadow-1: 0 1px 2px var(--shadow);
   --shadow-2: 0 4px 14px var(--shadow);
   --shadow-3: 0 12px 32px var(--shadow-hover);
 
-  /* Motion */
   --dur-fast: 120ms;
   --dur-normal: 200ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);

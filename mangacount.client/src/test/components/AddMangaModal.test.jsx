@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, within } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
-// setup.js mockea AddMangaModal globalmente; acá usamos el componente real.
+// setup.js mocks AddMangaModal globally; here we use the real component.
 vi.unmock('../../components/AddMangaModal')
 
 import AddMangaModal from '../../components/AddMangaModal'
@@ -38,7 +38,7 @@ const submit = (container) => fireEvent.submit(container.querySelector('form'))
 const findCall = (url) => global.fetch.mock.calls.find((c) => c[0] === url)
 const bodyOf = (url) => JSON.parse(findCall(url)[1].body)
 
-// El catálogo se carga con GET; estos helpers filtran las mutaciones reales.
+// The catalog is loaded with GET; these helpers filter the real mutations.
 const methodCalls = (url, method) =>
   global.fetch.mock.calls.filter(
     (c) => c[0] === url && (c[1]?.method || 'GET').toUpperCase() === method
@@ -235,7 +235,7 @@ describe('AddMangaModal: edición', () => {
     await waitFor(() => expect(props.onSuccess).toHaveBeenCalledTimes(1))
     expect(findCall('/api/manga/3')[1].method).toBe('PUT')
     expect(bodyOf('/api/manga/3')).toMatchObject({ id: 3, name: 'Old', volumes: 7 })
-    // en edición no se limpia el formulario
+    // in edit mode the form is not cleared
     expect(screen.getByLabelText(/Manga Name/)).toHaveValue('Old')
   })
 
@@ -306,7 +306,7 @@ describe('AddMangaModal: agregar formato inline', () => {
     await user.click(screen.getByTitle('Add new format'))
     const input = screen.getByPlaceholderText('New format name')
 
-    // tecla distinta de Enter no dispara el alta
+    // a key other than Enter does not trigger the create
     fireEvent.keyPress(input, { key: 'a', charCode: 97 })
     expect(postCalls('/api/format')).toHaveLength(0)
 
@@ -330,7 +330,7 @@ describe('AddMangaModal: agregar formato inline', () => {
     expect(postCalls('/api/format')).toHaveLength(0)
 
     await user.type(screen.getByPlaceholderText('New format name'), 'Broken')
-    // respuesta no-ok: no agrega nada y el panel queda abierto
+    // not-ok response: adds nothing and the panel stays open
     global.fetch.mockResolvedValueOnce({ ok: false })
     await user.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(screen.queryByRole('option', { name: 'Broken' })).not.toBeInTheDocument())
@@ -383,7 +383,7 @@ describe('AddMangaModal: agregar editorial inline', () => {
     expect(postCalls('/api/publisher')).toHaveLength(0)
 
     await user.type(screen.getByPlaceholderText('New publisher name'), 'Broken')
-    // respuesta no-ok: no agrega nada y el panel queda abierto
+    // not-ok response: adds nothing and the panel stays open
     global.fetch.mockResolvedValueOnce({ ok: false })
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(screen.queryByRole('option', { name: 'Broken' })).not.toBeInTheDocument())

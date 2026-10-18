@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { MockAgent, setGlobalDispatcher, getGlobalDispatcher } from 'undici';
 import { openDb } from '../db/client.js';
+import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
 import { createProfile } from '../db/repositories/profiles.js';
 import { createManga } from '../db/repositories/mangas.js';
 import { upsertEntry, listEntries } from '../db/repositories/entries.js';
@@ -22,8 +23,12 @@ import {
   consumePendingWrite,
   readInteraction,
   registerGuildCommands,
-  SLASH_COMMANDS,
+  slashCommands,
 } from './discord-bot.js';
+import { createPaginationStore, renderPage } from './discord-pagination.js';
+
+const t = createAppTranslator(resolveLanguage({}));
+const pageContent = (pagination, result) => renderPage(pagination.get(result.token), 1, t).content;
 
 describe('discord-bot: autorización', () => {
   const config = { guildId: 'g1', allowedUserIds: ['u1', 'u2'] };
@@ -57,6 +62,7 @@ describe('discord-bot: comandos', () => {
   let db;
   let profile;
   let commands;
+  let pagination;
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdisc-'));
@@ -64,7 +70,8 @@ describe('discord-bot: comandos', () => {
     profile = createProfile(db, 'Lucas');
     const manga = createManga(db, { name: 'Berserk', volumes: 41 });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 40, priority: true });
-    commands = createCommands({ db });
+    pagination = createPaginationStore();
+    commands = createCommands({ db, pagination });
   });
 
   afterEach(() => {
@@ -82,15 +89,16 @@ describe('discord-bot: comandos', () => {
   });
 
   it('exige perfil activo', async () => {
-    createProfile(db, 'Otro'); // con ≥2 perfiles no auto-selecciona
+    createProfile(db, 'Otro'); // with ≥2 profiles it does not auto-select
     const reply = await dispatch(commands, 'pendientes', { session: { profileId: null } });
     assert.match(reply, /perfil/i);
   });
 
-  it('busca por título', async () => {
+  it('busca por título (match único devuelve entry con acciones)', async () => {
     const reply = await commands.buscar({ session: { profileId: profile.id }, query: 'berserk' });
-    assert.match(reply, /Berserk/);
-    assert.match(reply, /40\/41/);
+    assert.equal(reply.kind, 'entry');
+    assert.match(reply.content, /Berserk/);
+    assert.match(reply.content, /40\/41/);
   });
 
   it('sugiere cuando no encuentra', async () => {
@@ -99,7 +107,8 @@ describe('discord-bot: comandos', () => {
   });
 
   it('lista pendientes con prioridad', async () => {
-    const reply = await commands.pendientes({ session: { profileId: profile.id } });
+    const result = await commands.pendientes({ session: { profileId: profile.id } });
+    const reply = pageContent(pagination, result);
     assert.match(reply, /Berserk/);
     assert.match(reply, /1 vols\./);
   });
@@ -110,19 +119,77 @@ describe('discord-bot: comandos', () => {
     const manga = createManga(db, { name: 'Vagabond', volumes: 37, formatId: format.id, publisherId: publisher.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 10, pending: '5,7' });
 
-    const reply = await commands.pendientes({ session: { profileId: profile.id } });
+    const result = await commands.pendientes({ session: { profileId: profile.id } });
+    const reply = pageContent(pagination, result);
     assert.match(reply, /Vagabond/);
     assert.match(reply, /pending: 5,7/);
     assert.ok(reply.includes(`${format.name} · ${publisher.name}`));
   });
 
-  it('/pendientes acota la salida (20 series + resto)', async () => {
+  it('/pendientes pagina con el tope por defecto', async () => {
     for (let i = 0; i < 25; i += 1) {
       const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
       upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
     }
-    const reply = await commands.pendientes({ session: { profileId: profile.id } });
-    assert.match(reply, /…y \d+ series más\./);
+    const result = await commands.pendientes({ session: { profileId: profile.id } });
+    const item = pagination.get(result.token);
+    const first = renderPage(item, 1, t);
+    assert.equal(first.pages, 2);
+    assert.match(first.content, /Página 1 de 2/);
+    assert.ok(!first.content.includes('Serie 24*'));
+    assert.ok(renderPage(item, 2, t).content.includes('Serie 24*'));
+    assert.equal(first.prevDisabled, true);
+  });
+
+  it('/pendientes respeta un tope configurado distinto de 20', async () => {
+    for (let i = 0; i < 25; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const store = createPaginationStore();
+    const custom = createCommands({ db, pagination: store, getConfig: () => ({ pendingLimitEnabled: true, pendingLimit: 5 }) });
+    const result = await custom.pendientes({ session: { profileId: profile.id } });
+    const first = renderPage(store.get(result.token), 1, t);
+    assert.match(first.content, /Página 1 de 6/);
+    assert.ok(!first.content.includes('Serie 5*'));
+  });
+
+  it('/pendientes sin tope lista todas las series en una página', async () => {
+    for (let i = 0; i < 25; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const store = createPaginationStore();
+    const full = createCommands({ db, pagination: store, getConfig: () => ({ pendingLimitEnabled: false }) });
+    const result = await full.pendientes({ session: { profileId: profile.id } });
+    const page = renderPage(store.get(result.token), 1, t);
+    assert.equal(page.pages, 1);
+    assert.ok(page.content.includes('Serie 24*'));
+  });
+
+  it('/huecos lista series con nota y /a-punto las casi completas', async () => {
+    const withGap = createManga(db, { name: 'Con Hueco', volumes: 20 });
+    upsertEntry(db, { mangaId: withGap.id, profileId: profile.id, quantity: 5, pending: '6,9' });
+    const almost = createManga(db, { name: 'Casi', volumes: 12 });
+    upsertEntry(db, { mangaId: almost.id, profileId: profile.id, quantity: 11 });
+    const far = createManga(db, { name: 'Lejos', volumes: 30 });
+    upsertEntry(db, { mangaId: far.id, profileId: profile.id, quantity: 3 });
+
+    const huecos = pageContent(pagination, await commands.huecos({ session: { profileId: profile.id } }));
+    assert.match(huecos, /Con Hueco/);
+    assert.match(huecos, /Nota: 6,9/);
+    assert.doesNotMatch(huecos, /Casi/);
+
+    const aPunto = pageContent(pagination, await commands['a-punto']({ session: { profileId: profile.id } }));
+    assert.match(aPunto, /Casi/);
+    assert.match(aPunto, /faltan 1/);
+    assert.doesNotMatch(aPunto, /Lejos/);
+  });
+
+  it('/huecos saluda sin huecos y /a-punto incluye las casi completas', async () => {
+    assert.match(await commands.huecos({ session: { profileId: profile.id } }), /Sin huecos/);
+    const aPunto = pageContent(pagination, await commands['a-punto']({ session: { profileId: profile.id } }));
+    assert.match(aPunto, /Berserk/);
   });
 
   it('despacho desconocido no rompe', async () => {
@@ -205,7 +272,7 @@ describe('discord-bot: ciclo de vida sin conexión', () => {
   });
 
   it('expone los slash commands de lectura y escritura', () => {
-    const names = SLASH_COMMANDS.map((c) => c.name);
+    const names = slashCommands().map((c) => c.name);
     for (const expected of [
       'perfil',
       'buscar',
@@ -304,6 +371,21 @@ describe('discord-bot: /recomendar espera el resultado', () => {
     assert.match(out, /Monster/);
     assert.match(out, /Argentina/);
     assert.doesNotMatch(out, /No pude inferir/);
+  });
+
+  it('usa recommendLimit como cantidad por defecto y respeta el limite explícito', async () => {
+    const calls = [];
+    const commands = createCommands({
+      db,
+      getConfig: () => ({ recommendLimit: 3 }),
+      getRecommendations: async (_db, _profileId, limit) => {
+        calls.push(limit);
+        return { isConfident: true, inferredCountry: 'Argentina', provider: 'local', blockedByImportCount: 0, items: [] };
+      },
+    });
+    await commands.recomendar({ session: { profileId: profile.id } });
+    await commands.recomendar({ session: { profileId: profile.id }, limite: 7 });
+    assert.deepEqual(calls, [3, 7]);
   });
 
   it('muestra el desglose de mercado cuando no hay confianza', async () => {
@@ -478,6 +560,7 @@ describe('discord-bot: comandos de escritura y bordes', () => {
   let profile;
   let session;
   let commands;
+  let pagination;
 
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcedge-'));
@@ -488,7 +571,8 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const deluxe = createManga(db, { name: 'Berserk Deluxe', volumes: 42 });
     upsertEntry(db, { mangaId: deluxe.id, profileId: profile.id, quantity: 10 });
     session = { profileId: profile.id };
-    commands = createCommands({ db });
+    pagination = createPaginationStore();
+    commands = createCommands({ db, pagination });
   });
 
   afterEach(() => {
@@ -508,9 +592,9 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const out = await commands.pending({ session, titulo: 'Berserk', tomos: '5,7' });
     assert.equal(out.action.type, 'setPending');
     assert.equal(out.action.pending, '5,7');
-    const cleared = await commands.pending({ session, titulo: 'Berserk', tomos: '  ' });
-    assert.equal(cleared.action.pending, null);
-    assert.match(cleared.summary, /pending: —/);
+    const modal = await commands.pending({ session, titulo: 'Berserk', tomos: '  ' });
+    assert.equal(modal.kind, 'modal');
+    assert.equal(modal.value, '');
   });
 
   it('/prioridad propone alternar según el estado', async () => {
@@ -532,10 +616,10 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     assert.match(await commands.prioridad({ session, titulo: 'zzz' }), /No encontré/);
   });
 
-  it('/pending sin tomos limpia el campo', async () => {
+  it('/pending sin tomos abre el modal precargado', async () => {
     const out = await commands.pending({ session, titulo: 'Berserk' });
-    assert.equal(out.action.pending, null);
-    assert.match(out.summary, /pending: —/);
+    assert.equal(out.kind, 'modal');
+    assert.ok(out.entryId > 0);
   });
 
   it('los títulos ambiguos no escriben', async () => {
@@ -707,7 +791,8 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const unknown = formats.create(db, 'Unknown');
     const manga = createManga(db, { name: 'Serie U', volumes: 10, formatId: unknown.id });
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
-    const out = await commands.pendientes({ session });
+    const result = await commands.pendientes({ session });
+    const out = pageContent(pagination, result);
     assert.match(out, /Serie U/);
     assert.doesNotMatch(out, /Unknown/);
   });
@@ -858,7 +943,7 @@ describe('discord-bot: registerGuildCommands', () => {
   });
 });
 
-// Fake mínimo de discord.js para ejercitar el ciclo del bot sin conexión real.
+// Minimal discord.js fake to exercise the bot cycle without a real connection.
 function makeFakeDiscord({ restGet } = {}) {
   const clients = [];
   class ButtonBuilder {
@@ -874,10 +959,60 @@ function makeFakeDiscord({ restGet } = {}) {
       this.style = style;
       return this;
     }
+    setDisabled(disabled) {
+      this.disabled = disabled;
+      return this;
+    }
   }
   class ActionRowBuilder {
     addComponents(...components) {
       this.components = components;
+      return this;
+    }
+  }
+  class EmbedBuilder {
+    setTitle(title) {
+      this.title = title;
+      return this;
+    }
+    addFields(...fields) {
+      this.fields = fields;
+      return this;
+    }
+  }
+  class ModalBuilder {
+    setCustomId(id) {
+      this.customId = id;
+      return this;
+    }
+    setTitle(title) {
+      this.title = title;
+      return this;
+    }
+    addComponents(...rows) {
+      this.components = rows;
+      return this;
+    }
+  }
+  class TextInputBuilder {
+    setCustomId(id) {
+      this.customId = id;
+      return this;
+    }
+    setLabel(label) {
+      this.label = label;
+      return this;
+    }
+    setStyle(style) {
+      this.style = style;
+      return this;
+    }
+    setRequired(required) {
+      this.required = required;
+      return this;
+    }
+    setValue(value) {
+      this.value = value;
       return this;
     }
   }
@@ -913,7 +1048,11 @@ function makeFakeDiscord({ restGet } = {}) {
       Events: { InteractionCreate: 'interactionCreate', ClientReady: 'ready' },
       ActionRowBuilder,
       ButtonBuilder,
-      ButtonStyle: { Success: 3, Secondary: 2 },
+      ButtonStyle: { Primary: 1, Secondary: 2, Success: 3 },
+      EmbedBuilder,
+      ModalBuilder,
+      TextInputBuilder,
+      TextInputStyle: { Short: 1, Paragraph: 2 },
     },
     clients,
   };
@@ -941,6 +1080,16 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     guildId: 'g1',
     options: { getString: () => null, getInteger: () => null },
     reply: async () => {},
+    ...over,
+  });
+  const autocomplete = (focused, over = {}) => ({
+    isAutocomplete: () => true,
+    isButton: () => false,
+    isChatInputCommand: () => false,
+    user: { id: 'u1' },
+    guildId: 'g1',
+    options: { getFocused: () => ({ value: focused }) },
+    respond: async () => {},
     ...over,
   });
   const button = (customId, over = {}) => ({
@@ -971,8 +1120,11 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'] }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: true }),
       getToken: () => 'tok',
+      followUpDelayMs: 0,
+      runBackup: async () => ({ fileName: 'mangacount-backup-x.zip' }),
+      getStatus: () => ({ version: '2.2.5', entries: 7, lastBackupAt: '2026-10-18' }),
       db,
       logger: {
         error: (m) => errors.push(m),
@@ -1005,7 +1157,212 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     const replies = [];
     await clients[0].handlers.interactionCreate(chat({ reply: async (p) => replies.push(p) }));
     await flush();
-    assert.match(replies[0], /\/tomo/);
+    assert.match(replies[0].content, /\/tomo/);
+    assert.equal(replies[0].ephemeral, true);
+  });
+
+  it('/pendientes responde paginado con botones', async () => {
+    for (let i = 0; i < 30; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'pendientes', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.equal(replies.length, 1);
+    assert.match(replies[0].content, /Página 1 de 2/);
+    assert.ok(replies[0].components?.length >= 1);
+
+    // Navigate to page 2 with the Next button.
+    const nextId = replies[0].components[0].components[1].customId;
+    const updates = [];
+    await clients[0].handlers.interactionCreate(button(nextId, { update: async (p) => updates.push(p) }));
+    for (let i = 0; i < 20 && updates.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /Página 2 de 2/);
+    assert.equal(updates[0].components[0].components[1].disabled, true);
+  });
+
+  it('avisa cuando la paginación expiró', async () => {
+    const updates = [];
+    await clients[0].handlers.interactionCreate(
+      button('mc:pend:noexiste:2', { update: async (p) => updates.push(p) })
+    );
+    for (let i = 0; i < 20 && updates.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /expiró/i);
+  });
+
+  it('reparte en varios mensajes una respuesta larga de /buscar', async () => {
+    for (let i = 0; i < 120; i += 1) {
+      const manga = createManga(db, { name: `Serie ${i}`, volumes: 10 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const replies = [];
+    const followUps = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'buscar',
+        options: { getString: (n) => (n === 'query' ? 'Serie' : null), getInteger: () => null },
+        reply: async (p) => replies.push(p),
+        followUp: async (p) => followUps.push(p),
+      })
+    );
+    for (let i = 0; i < 40 && followUps.length === 0; i += 1) await flush();
+    assert.equal(replies.length, 1);
+    assert.ok(followUps.length >= 1);
+    assert.match(followUps[followUps.length - 1].content, /\(\d+\/\d+\)/);
+  });
+
+  it('autocompleta títulos de la biblioteca', async () => {
+    for (const name of ['Berserk Deluxe', 'Vinland Saga']) {
+      const manga = createManga(db, { name, volumes: 1 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const responses = [];
+    await clients[0].handlers.interactionCreate(
+      autocomplete('ber', { respond: async (opts) => responses.push(opts) })
+    );
+    await flush();
+    assert.deepEqual(responses[0].map((o) => o.name), ['Berserk', 'Berserk Deluxe']);
+  });
+
+  it('autocomplete responde vacío sin coincidencias o sin autorización', async () => {
+    const responses = [];
+    await clients[0].handlers.interactionCreate(
+      autocomplete('zzz', { respond: async (opts) => responses.push(opts) })
+    );
+    await flush();
+    assert.deepEqual(responses[0], []);
+
+    const unauthorized = [];
+    await clients[0].handlers.interactionCreate(
+      autocomplete('ber', { user: { id: 'x' }, respond: async (opts) => unauthorized.push(opts) })
+    );
+    await flush();
+    assert.deepEqual(unauthorized[0], []);
+  });
+
+  it('/pending sin tomos abre el modal y el submit guarda el pending', async () => {
+    const modals = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'pending',
+        options: { getString: (n) => (n === 'titulo' ? 'Berserk' : null), getInteger: () => null },
+        showModal: async (m) => modals.push(m),
+      })
+    );
+    for (let i = 0; i < 20 && modals.length === 0; i += 1) await flush();
+    assert.equal(modals.length, 1);
+    assert.match(modals[0].customId, /^mc:pending:\d+$/);
+
+    const replies = [];
+    await clients[0].handlers.interactionCreate({
+      isModalSubmit: () => true,
+      isButton: () => false,
+      isChatInputCommand: () => false,
+      user: { id: 'u1' },
+      guildId: 'g1',
+      customId: modals[0].customId,
+      fields: { getTextInputValue: () => '3,5' },
+      reply: async (p) => replies.push(p),
+    });
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.match(replies[0].content, /Pendientes actualizados/);
+    const berserk = listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk');
+    assert.equal(berserk.pending, '3,5');
+  });
+
+  it('el botón "confirmar +1 y editar nota" aplica el +1 y abre el modal', async () => {
+    const berserk = listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk');
+    upsertEntry(db, { ...berserk, pending: '2' });
+
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'tomo',
+        options: { getString: (n) => (n === 'titulo' ? 'Berserk' : null), getInteger: () => null },
+        reply: async (p) => replies.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    const editId = replies[0].components[0].components[2].customId;
+    assert.match(editId, /^mc:confirmedit:/);
+
+    const modals = [];
+    const updates = [];
+    await clients[0].handlers.interactionCreate(
+      button(editId, { showModal: async (m) => modals.push(m), update: async (p) => updates.push(p) })
+    );
+    for (let i = 0; i < 20 && modals.length === 0; i += 1) await flush();
+    assert.match(modals[0].customId, /^mc:pending:/);
+    assert.equal(listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk').quantity, 41);
+  });
+
+  it('/buscar con match único muestra botones y el +1 actualiza', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'buscar',
+        options: { getString: (n) => (n === 'query' ? 'Berserk' : null), getInteger: () => null },
+        reply: async (p) => replies.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.equal(replies[0].components[0].components.length, 3);
+
+    const tomoId = replies[0].components[0].components[0].customId;
+    const updates = [];
+    await clients[0].handlers.interactionCreate(
+      button(tomoId, { update: async (p) => updates.push(p) })
+    );
+    for (let i = 0; i < 20 && updates.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /tomos/);
+    assert.equal(listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk').quantity, 41);
+  });
+
+  it('/stats responde un embed con los totales', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'stats', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.equal(replies[0].embeds[0].title, 'Estadísticas de P');
+    assert.ok(replies[0].embeds[0].fields.some((f) => f.value.includes('Series:')));
+  });
+
+  it('/status no expone datos sensibles', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'status', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    const fields = replies[0].embeds[0].fields.map((f) => f.value).join('\n');
+    assert.match(fields, /Versión: 2\.2\.5/);
+    assert.match(fields, /Entradas en la base: 7/);
+    assert.doesNotMatch(fields, /token|guild|\//i);
+  });
+
+  it('/backup pide confirmación y reporta el resultado', async () => {
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({ commandName: 'backup', reply: async (p) => replies.push(p) })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    const confirmId = replies[0].components[0].components[0].customId;
+    assert.match(confirmId, /^mc:backup:confirm:/);
+
+    const updates = [];
+    const edits = [];
+    await clients[0].handlers.interactionCreate(
+      button(confirmId, {
+        update: async (p) => updates.push(p),
+        editReply: async (p) => edits.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && edits.length === 0; i += 1) await flush();
+    assert.match(updates[0].content, /Backup iniciado/);
+    assert.match(edits[0].content, /mangacount-backup-x\.zip/);
   });
 
   it('ignora interacciones no autorizadas', async () => {
@@ -1103,7 +1460,7 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     );
     await flush();
     const token = tokenFrom(replies[0]);
-    // El perfil desaparece entre la propuesta y la confirmación.
+    // The profile disappears between the proposal and the confirmation.
     db.prepare('DELETE FROM Profile WHERE Id = ?').run(profile.id);
     const updates = [];
     await clients[0].handlers.interactionCreate(
@@ -1191,8 +1548,11 @@ describe('discord-bot: keepWarm', () => {
     agent.get('https://discord.com').intercept({ path: /.*/, method: 'PUT' }).reply(200, []);
     setGlobalDispatcher(agent);
     const bot = createDiscordBot({
-      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'] }),
+      getConfig: () => ({ enabled: true, guildId: 'g1', allowedUserIds: ['u1'], pendingLimitEnabled: true, pendingLimit: 20, ephemeralReplies: true }),
       getToken: () => 'tok',
+      followUpDelayMs: 0,
+      runBackup: async () => ({ fileName: 'mangacount-backup-x.zip' }),
+      getStatus: () => ({ version: '2.2.5', entries: 7, lastBackupAt: '2026-10-18' }),
       db,
       getDb: () => db,
       logger: { error() {}, warn() {}, info() {} },

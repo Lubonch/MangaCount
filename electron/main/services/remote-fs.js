@@ -1,9 +1,9 @@
-// Envoltura con timeout sobre el worker de filesystem.
+// Timeout wrapper over the filesystem worker.
 //
-// `call(op, args, { timeoutMs })` encola la operación en un worker y resuelve con
-// el resultado. Si el worker no responde dentro del timeout (destino colgado), se
-// lo termina, se crea uno nuevo para la próxima llamada y se rechaza con un error
-// marcado `timedOut: true`.
+// `call(op, args, { timeoutMs })` queues the operation in a worker and resolves with
+// the result. If the worker does not respond within the timeout (hung destination), it is
+// terminated, a new one is created for the next call and it rejects with an error
+// flagged `timedOut: true`.
 
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
@@ -67,7 +67,7 @@ export function createRemoteFs({ workerFile = WORKER_FILE, spawnWorker } = {}) {
           try {
             instance.terminate();
           } catch {
-            /* ya terminado */
+            /* already finished */
           }
         }
         const err = new Error('timeout del destino');
@@ -93,7 +93,7 @@ export function createRemoteFs({ workerFile = WORKER_FILE, spawnWorker } = {}) {
     try {
       instance?.terminate();
     } catch {
-      /* ya terminado */
+      /* already finished */
     }
   };
 

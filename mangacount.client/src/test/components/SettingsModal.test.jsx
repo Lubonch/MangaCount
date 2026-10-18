@@ -28,6 +28,8 @@ vi.mock('../../api/localAdapter.js', () => ({
   mangaList: vi.fn(),
   coverAll: vi.fn(),
   coverAuto: vi.fn(),
+  recommendationConfigGet: vi.fn(),
+  recommendationConfigSet: vi.fn(),
 }))
 
 vi.mock('../../components/NukeDataModal', () => ({
@@ -64,6 +66,7 @@ function setupDefaults() {
   api.backupList.mockResolvedValue([])
   api.botConfigGet.mockResolvedValue({ enabled: false, guildId: null, allowedUserIds: [], status: 'apagado', hasToken: false })
   api.botAutostartGet.mockResolvedValue({ enabled: false })
+  api.recommendationConfigGet.mockResolvedValue({ enabled: true, limit: 10, seenTtlDays: 30 })
 }
 
 describe('SettingsModal', () => {
@@ -253,6 +256,89 @@ describe('SettingsModal', () => {
     expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({ guildId: 'g1', allowedUserIds: ['u1'] })
   })
 
+  it('configura el límite de /pendientes', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: ['u1'],
+      pendingLimitEnabled: true,
+      pendingLimit: 20,
+      status: 'apagado',
+      hasToken: false,
+    })
+    api.botConfigSet.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    const limitInput = screen.getByLabelText('Series máximas en /pendientes')
+    expect(limitInput).toHaveValue(20)
+    await user.clear(limitInput)
+    await user.type(limitInput, '5')
+    await user.click(screen.getByLabelText('Guardar bot'))
+    await waitFor(() => expect(api.botConfigSet).toHaveBeenCalled())
+    expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({ pendingLimitEnabled: true, pendingLimit: 5 })
+  })
+
+  it('deshabilita la cantidad cuando el tope está apagado', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: [],
+      pendingLimitEnabled: true,
+      pendingLimit: 20,
+      status: 'apagado',
+      hasToken: false,
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText(/Limitar \/pendientes/))
+    expect(screen.getByLabelText('Series máximas en /pendientes')).toBeDisabled()
+  })
+
+  it('configura efímeras, TTL y recomendaciones del bot', async () => {
+    const user = userEvent.setup()
+    api.botConfigGet.mockResolvedValue({
+      enabled: true,
+      guildId: 'g1',
+      allowedUserIds: [],
+      pendingLimitEnabled: true,
+      pendingLimit: 20,
+      ephemeralReplies: false,
+      confirmTtlMinutes: 5,
+      recommendLimit: 5,
+      status: 'apagado',
+      hasToken: false,
+    })
+    api.botConfigSet.mockResolvedValue({})
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Bot (Discord)')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Respuestas efímeras'))
+    const ttl = screen.getByLabelText('Minutos para confirmar escrituras')
+    await user.clear(ttl)
+    await user.type(ttl, '10')
+    await user.click(screen.getByLabelText('Guardar bot'))
+    await waitFor(() => expect(api.botConfigSet).toHaveBeenCalled())
+    expect(api.botConfigSet.mock.calls[0][0]).toMatchObject({
+      ephemeralReplies: true,
+      confirmTtlMinutes: 10,
+      recommendLimit: 5,
+    })
+  })
+
+  it('cambia el idioma desde Settings', async () => {
+    const user = userEvent.setup()
+    api.appConfigSet.mockResolvedValue({ language: 'en' })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('General')).toBeInTheDocument())
+
+    await user.selectOptions(screen.getByLabelText('Idioma'), 'en')
+    await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ language: 'en' }))
+  })
+
   it('toggle de arranque en bandeja persiste', async () => {
     const user = userEvent.setup()
     api.appConfigSet.mockResolvedValue({ startInTray: false })
@@ -318,20 +404,17 @@ describe('SettingsModal', () => {
   it('bulk de portadas: recorre sólo los mangas sin portada', async () => {
     const user = userEvent.setup()
     api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
-    api.coverAll.mockResolvedValue({ 1: { url: 'mangacount://covers/1.jpg', isAdult: false } }) // el 1 ya tiene
+    api.coverAll.mockResolvedValue({ 1: { url: 'mangacount://covers/1.jpg', isAdult: false } }) // 1 already has one
     api.coverAuto.mockResolvedValue('mangacount://covers/2.jpg')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={vi.fn()} />)
 
     await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
 
     await waitFor(() => expect(api.coverAuto).toHaveBeenCalledWith(2))
-    expect(api.coverAuto).toHaveBeenCalledTimes(1) // no toca el que ya tiene
+    expect(api.coverAuto).toHaveBeenCalledTimes(1) // does not touch the one it already has
     expect(await screen.findByText(/1 portadas nuevas/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // General
-  // ---------------------------------------------------------------------------
   it('muestra error si no se puede guardar un toggle general', async () => {
     const user = userEvent.setup()
     api.appConfigSet.mockRejectedValue(new Error('boom'))
@@ -365,9 +448,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/No se pudo guardar: nope/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Inicialización
-  // ---------------------------------------------------------------------------
   it('tolera metadatos y config incompletos', async () => {
     api.appInfo.mockResolvedValue(null)
     api.backupConfigGet.mockResolvedValue(undefined)
@@ -398,9 +478,6 @@ describe('SettingsModal', () => {
     })
   })
 
-  // ---------------------------------------------------------------------------
-  // Actualizaciones
-  // ---------------------------------------------------------------------------
   it('muestra Reiniciar cuando hay una actualización descargada', async () => {
     const user = userEvent.setup()
     api.updateInstall.mockResolvedValue({})
@@ -479,9 +556,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/No se pudo verificar: net/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Backup
-  // ---------------------------------------------------------------------------
   it('no cambia el destino si no se elige carpeta', async () => {
     const user = userEvent.setup()
     api.pickDirectory.mockResolvedValue(null)
@@ -616,9 +690,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/Restore falló: rst fail/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Importar / Exportar (TSV)
-  // ---------------------------------------------------------------------------
   it('rechaza archivos que no son TSV', async () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
@@ -736,9 +807,6 @@ describe('SettingsModal', () => {
     expect(screen.getByRole('button', { name: 'Exportar TSV' })).toBeDisabled()
   })
 
-  // ---------------------------------------------------------------------------
-  // Bot
-  // ---------------------------------------------------------------------------
   it('muestra error si falla guardar el token del bot', async () => {
     const user = userEvent.setup()
     api.botSetToken.mockRejectedValue(new Error('tok'))
@@ -795,9 +863,6 @@ describe('SettingsModal', () => {
     expect(screen.getByLabelText('Habilitar bot')).not.toBeChecked()
   })
 
-  // ---------------------------------------------------------------------------
-  // Diagnóstico
-  // ---------------------------------------------------------------------------
   it('muestra error si falla copiar el diagnóstico', async () => {
     const user = userEvent.setup()
     api.diagnosticsCopy.mockRejectedValue(new Error('cp'))
@@ -831,9 +896,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/No se pudo abrir: ol/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Danger Zone
-  // ---------------------------------------------------------------------------
   it('la Nuclear Option cae a onImportSuccess si no hay onDataReset', async () => {
     const user = userEvent.setup()
     const onImportSuccess = vi.fn()
@@ -859,9 +921,6 @@ describe('SettingsModal', () => {
     expect(onDataReset).not.toHaveBeenCalled()
   })
 
-  // ---------------------------------------------------------------------------
-  // Portadas: casos de borde
-  // ---------------------------------------------------------------------------
   it('bulk de portadas: informa cuando todas ya están vinculadas', async () => {
     const user = userEvent.setup()
     api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }])
@@ -916,8 +975,8 @@ describe('SettingsModal', () => {
     api.coverAuto.mockResolvedValue('u')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
 
-    fireEvent.change(screen.getByDisplayValue('20'), { target: { value: '' } })
-    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Tamaño de lote'), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText('Pausa entre lotes (min)'), { target: { value: '' } })
 
     await user.click(screen.getByRole('button', { name: /Traer portadas faltantes/ }))
 
@@ -931,7 +990,7 @@ describe('SettingsModal', () => {
     api.coverAuto.mockResolvedValue('u')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
 
-    fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('Pausa entre lotes (min)'), { target: { value: '0' } })
 
     await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
 
@@ -954,8 +1013,8 @@ describe('SettingsModal', () => {
       await act(async () => { await vi.advanceTimersByTimeAsync(0) })
       await act(async () => { await vi.advanceTimersByTimeAsync(0) })
 
-      fireEvent.change(screen.getByDisplayValue('20'), { target: { value: '1' } })
-      fireEvent.change(screen.getByDisplayValue('5'), { target: { value: '1' } })
+      fireEvent.change(screen.getByLabelText('Tamaño de lote'), { target: { value: '1' } })
+      fireEvent.change(screen.getByLabelText('Pausa entre lotes (min)'), { target: { value: '1' } })
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Traer portadas faltantes/ }))
         await vi.advanceTimersByTimeAsync(0)
@@ -990,5 +1049,32 @@ describe('SettingsModal', () => {
     await user.click(await screen.findByLabelText(/Incluir resultados \+18/))
 
     await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ showAdultCovers: true }))
+  })
+
+  it('guarda la config de recomendaciones', async () => {
+    const user = userEvent.setup()
+    api.recommendationConfigSet.mockResolvedValue({ enabled: true, limit: 5, seenTtlDays: 60 })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Recomendaciones (AniList)')).toBeInTheDocument())
+
+    const limit = screen.getByLabelText('Cantidad de recomendaciones')
+    await user.clear(limit)
+    await user.type(limit, '5')
+    await user.click(screen.getByLabelText('Guardar recomendaciones'))
+
+    await waitFor(() => expect(api.recommendationConfigSet).toHaveBeenCalled())
+    expect(api.recommendationConfigSet.mock.calls[0][0]).toMatchObject({ enabled: true, limit: 5 })
+    expect(await screen.findByText('Configuración de recomendaciones guardada.')).toBeInTheDocument()
+  })
+
+  it('muestra error si falla guardar la config de recomendaciones', async () => {
+    const user = userEvent.setup()
+    api.recommendationConfigSet.mockRejectedValue(new Error('rec fail'))
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByLabelText('Guardar recomendaciones')).toBeInTheDocument())
+
+    await user.click(screen.getByLabelText('Guardar recomendaciones'))
+
+    expect(await screen.findByText('No se pudo guardar: rec fail')).toBeInTheDocument()
   })
 })

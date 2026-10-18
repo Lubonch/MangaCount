@@ -93,12 +93,12 @@ describe('repositories', () => {
     assert.equal(deleteManga(db, manga.id), true);
     assert.equal(getMangaById(db, manga.id), null);
     assert.equal(listEntries(db).length, 0);
-    assert.equal(deleteManga(db, manga.id), false); // ya no existe
+    assert.equal(deleteManga(db, manga.id), false); // no longer exists
   });
 
   it('catalogs: CRUD + alta case-insensitive', () => {
     assert.equal(formats.list(db).length, 0);
-    // "ivrea" reusa "Ivrea": no crea duplicado.
+    // "ivrea" reuses "Ivrea": does not create a duplicate.
     const first = publishers.create(db, 'Ivrea');
     const again = publishers.create(db, '  ivrea ');
     assert.equal(again.id, first.id);
@@ -139,7 +139,7 @@ describe('repositories', () => {
     assert.equal(first.manga.name, 'berserk');
     assert.equal(first.manga.format.name, 'Tankoubon');
     assert.equal(first.manga.publisher.name, 'Panini');
-    // Mismo par (perfil, manga): actualiza en vez de duplicar (UNIQUE).
+    // Same pair (profile, manga): updates instead of duplicating (UNIQUE).
     const second = upsertEntry(db, {
       mangaId: manga.id,
       profileId: profile.id,
@@ -171,9 +171,9 @@ describe('repositories', () => {
     const created = upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 30013 });
     assert.equal(created.externalId, '30013');
     assert.equal(created.coverFile, null);
-    assert.equal(created.isAdult, false); // default: no adulto
+    assert.equal(created.isAdult, false); // default: not adult
 
-    // El indicador viaja en el DTO y se normaliza a booleano (SQLite guarda 0/1).
+    // The flag travels in the DTO and is normalized to boolean (SQLite stores 0/1).
     const adult = upsertRef(db, {
       mangaId: manga.id,
       provider: 'anilist',
@@ -186,7 +186,7 @@ describe('repositories', () => {
     assert.equal(withCover.coverFile, '3.jpg');
     assert.equal(withCover.isAdult, true);
 
-    // Upsert del mismo par actualiza, no duplica.
+    // Upsert of the same pair updates, does not duplicate.
     const updated = upsertRef(db, {
       mangaId: manga.id,
       provider: 'anilist',

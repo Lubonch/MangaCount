@@ -3,6 +3,41 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.2.5] - 2026-10-18
+
+### Added
+
+- **App bilingüe ES/EN**: la interfaz, los mensajes del proceso main y el bot de Discord se traducen,
+  con **inglés por defecto** y selector de idioma en Settings. El diccionario ES es 1:1 con los textos
+  que ya existían; el EN es nuevo.
+- **Bot de Discord — comandos nuevos**: de consulta `/huecos`, `/a-punto`, `/stats` y `/status`, y de
+  administración `/backup` (con confirmación y en background). Además, **autocomplete** del parámetro
+  de serie, **paginación con botones** en los listados largos, **modal precargado** en `/pending` (con
+  el atajo *Confirmar +1 y editar nota* en `/tomo`) y **botones de acción** en los resultados de
+  `/buscar`.
+- **Ajustes del bot en Settings**: habilitar, guild, usuarios permitidos, **límite por página**,
+  respuestas **efímeras**, **TTL de confirmación** y cantidad por defecto de recomendaciones.
+- **Recomendaciones dinámicas con AniList**: a partir de la colección, la app recorre el grafo de
+  recomendaciones colaborativas de **AniList** (sin API key) y puntúa por rating más similitud
+  temática; el **motor local** queda como *fallback* si AniList no responde. Feedback del usuario:
+  **"Ya lo tengo"** (vincula la recomendación con un manga propio, o lo crea) y **"No viable"**
+  (descarte permanente por perfil), con lista que se **rellena** al descartar, botón de refresco y
+  memoria de "ya visto" con vencimiento configurable.
+- **README bilingüe**: `README.md` en inglés (por defecto) y `README.es.md` en español, cross-linkeados.
+
+### Changed
+
+- **Settings → Recomendaciones**: activar/desactivar, tamaño de la lista (1–25) y días de memoria de lo
+  ya visto (1–365).
+- **Limpieza de comentarios y código muerto** en `electron/`, `mangacount.client/src/`, `shared/` y
+  `scripts/`: sin cambios de comportamiento; los comentarios quedan en inglés.
+
+### Fixed
+
+- **Bot `/pendientes`**: el límite de 20 series ya no trunca la lista; se pagina con botones.
+- **Relleno de recomendaciones**: el pool de AniList se cachea por perfil, así descartar tarjetas no
+  vuelve a consultar la API en cada una (antes podía alcanzar el rate limit de AniList).
+
 ## [2.2.4] - 2026-10-17
 
 ### Added

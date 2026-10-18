@@ -1,5 +1,4 @@
-﻿/* Add these if missing from your main CSS variables */
-:root {
+﻿:root {
     --accent-color: var(--accent);
     --accent-hover: var(--accent-hover);
     --card-bg: var(--bg-tertiary);
@@ -192,7 +191,6 @@
     transform: none;
 }
 
-/* New styles for select-with-add */
 .select-with-add {
     display: flex;
     gap: 8px;
@@ -286,7 +284,6 @@
     color: white;
 }
 
-/* Animations */
 @keyframes modalOverlayFadeIn {
     from {
         opacity: 0;
@@ -307,7 +304,6 @@
     }
 }
 
-/* Mobile responsive */
 @media (max-width: 600px) {
     .modal-content {
         width: 95%;

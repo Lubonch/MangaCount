@@ -6,6 +6,7 @@ import '@fontsource/inter/600.css'
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import { I18nProvider } from './contexts/I18nContext.jsx'
 import { installApiFetchShim, logError, isElectron } from './api/localAdapter.js'
 
 installApiFetchShim()
@@ -31,8 +32,10 @@ window.addEventListener('unhandledrejection', (event) =>
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <I18nProvider>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </I18nProvider>
   </StrictMode>,
 )

@@ -1,9 +1,9 @@
-// Autostart con el sistema operativo.
+// Autostart with the operating system.
 //
-// Windows/macOS usan la API de Electron (`app.setLoginItemSettings`). Linux no
-// la soporta: se escribe/elimina `~/.config/autostart/mangacount.desktop`
-// resolviendo la ruta real del ejecutable (con AppImage la ruta del mount
-// cambia en cada arranque, por eso se usa `process.env.APPIMAGE`).
+// Windows/macOS use the Electron API (`app.setLoginItemSettings`). Linux does not
+// support it: it writes/removes `~/.config/autostart/mangacount.desktop`
+// resolving the real executable path (with AppImage the mount path
+// changes on every boot, hence `process.env.APPIMAGE` is used).
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,8 +20,8 @@ export function autostartDesktopPath(home = os.homedir()) {
   return path.join(autostartDir(home), AUTOSTART_DESKTOP);
 }
 
-// Ruta estable del ejecutable: AppImage monta en /tmp y cambia por arranque,
-// así que se prefiere `process.env.APPIMAGE`; en su defecto, el binario actual.
+// Stable executable path: AppImage mounts in /tmp and changes per boot,
+// so `process.env.APPIMAGE` is preferred; otherwise, the current binary.
 export function resolveExecPath({ env = process.env, execPath = process.execPath } = {}) {
   return env.APPIMAGE || execPath;
 }
@@ -52,14 +52,14 @@ export function disableAutostartLinux(home = os.homedir()) {
   fs.rmSync(autostartDesktopPath(home), { force: true });
 }
 
-// Estado real del autostart, leyendo el sistema (no asumido).
+// Real autostart state, reading the system (not assumed).
 export function getAutostart({ app, platform = process.platform, home } = {}) {
   if (platform === 'linux') return isAutostartEnabledLinux(home);
   return app.getLoginItemSettings().openAtLogin === true;
 }
 
-// Activa/desactiva el autostart en el sistema operativo correspondiente.
-// `args` permite decidir si el arranque del sistema abre oculto (`--hidden`).
+// Enables/disables autostart in the corresponding operating system.
+// `args` allows deciding whether the system boot opens hidden (`--hidden`).
 export function setAutostart(enabled, { app, platform = process.platform, home, execPath, args } = {}) {
   if (platform === 'linux') {
     if (enabled) enableAutostartLinux({ home, execPath, args });

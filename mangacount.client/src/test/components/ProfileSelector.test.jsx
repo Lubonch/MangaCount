@@ -172,7 +172,6 @@ describe('ProfileSelector Component', () => {
       expect(screen.getByText('Profile 1')).toBeInTheDocument()
     })
 
-    // Find and click delete button for Profile 2
     const deleteButtons = screen.getAllByTitle('Delete profile')
     await user.click(deleteButtons[1]) // Second profile's delete button
 
@@ -201,7 +200,6 @@ describe('ProfileSelector Component', () => {
       expect(screen.getByText('Only Profile')).toBeInTheDocument()
     })
 
-    // Should not show delete button for the only profile
     expect(screen.queryByTitle('Delete profile')).not.toBeInTheDocument()
   })
 

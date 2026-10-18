@@ -27,7 +27,7 @@ describe('services/catalog-base + canales', () => {
     assert.ok(created.id > 0);
     const renamed = handlers['profile:upsert'](ctx(), { id: created.id, name: 'cole 2' });
     assert.equal(renamed.name, 'cole 2');
-    assert.equal(handlers['profile:list'](ctx()).length, 1); // sin seed de perfiles
+    assert.equal(handlers['profile:list'](ctx()).length, 1); // no profile seed
     assert.equal(handlers['profile:get'](ctx(), created.id).name, 'cole 2');
     assert.deepEqual(handlers['profile:delete'](ctx(), created.id), { ok: true });
     assert.throws(() => saveOrUpdateProfile(db, { name: '  ' }), /requerido/);
@@ -53,10 +53,10 @@ describe('services/catalog-base + canales', () => {
   it('manga: isAdult se propaga y se conserva si se omite en la edición', () => {
     const created = saveOrUpdateManga(db, { name: 'adult', volumes: 1, isAdult: true });
     assert.equal(created.isAdult, true);
-    // Editar sin isAdult conserva el flag (callers que no lo conocen).
+    // Editing without isAdult keeps the flag (callers that don't know it).
     const renamed = saveOrUpdateManga(db, { id: created.id, name: 'adult 2', volumes: 1 });
     assert.equal(renamed.isAdult, true);
-    // Enviarlo explícitamente lo apaga.
+    // Sending it explicitly clears it.
     assert.equal(
       saveOrUpdateManga(db, { id: created.id, name: 'adult 2', volumes: 1, isAdult: false }).isAdult,
       false

@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { useT } from './contexts/I18nContext';
 import Sidebar from './components/Sidebar';
 import CollectionView from './components/CollectionView';   
 import LoadingSpinner from './components/LoadingSpinner';
@@ -13,6 +14,7 @@ import catalog from '@shared/recommendations/catalog.json';
 import publisherCountries from '@shared/recommendations/publisher-countries.json';
 import { recommendManga } from '@shared/recommendations/recommendationEngine.js';
 function App() {
+    const t = useT();
     const [entries, setEntries] = useState([]);
     const [mangas, setMangas] = useState([]);
     const [profiles, setProfiles] = useState([]);
@@ -37,9 +39,9 @@ function App() {
         initializeApp();
     }, []);
 
-    // Versión + chequeo de actualizaciones (una vez al abrir la app, si está habilitado).
-    // Solo dentro de Electron (fuera no hay IPC ni update real). El estado llega en vivo por
-    // `onUpdateState` (modo auto: descarga/progreso/reiniciar).
+    // Version + update check (once when the app opens, if enabled).
+    // Only inside Electron (outside there is no IPC nor real update). State arrives live
+    // via `onUpdateState` (auto mode: download/progress/restart).
     useEffect(() => {
         if (!isElectron()) return undefined;
         let cancelled = false;
@@ -56,7 +58,7 @@ function App() {
                     if (!cancelled) setUpdateInfo(result);
                 }
             } catch {
-                /* el chequeo de updates no debe romper la app */
+                /* the update check must not break the app */
             }
         })();
         return () => {
@@ -65,8 +67,8 @@ function App() {
         };
     }, []);
 
-    // Preferencia de contenido +18: define el modo de reveal de las portadas
-    // (hover con ON, click con OFF). Se relee al cerrar Settings.
+    // +18 content preference: defines the cover reveal mode
+    // (hover when ON, click when OFF). Re-read when Settings closes.
     useEffect(() => {
         let cancelled = false;
         appConfigGet()
@@ -142,7 +144,7 @@ function App() {
                 setAppPhase('profile-selection');
             }
         } catch (err) {
-            setError('Failed to initialize application');
+            setError(t('app.errInit'));
             console.error('Error initializing app:', err);
             setAppPhase('error');
         } finally {
@@ -172,13 +174,11 @@ function App() {
             }
             setError(null);
             
-            // Load entries for the selected profile
             await loadEntries(selectedProfile.id);
-            
-            // Reload manga library
+
             await loadMangas();
         } catch (err) {
-            setError('Failed to load data');
+            setError(t('app.errLoadData'));
             console.error('Error loading data:', err);
         } finally {
             setLoading(false);
@@ -222,7 +222,7 @@ function App() {
             
             setAppPhase('main-app');
         } catch (err) {
-            setError('Failed to load profile data');
+            setError(t('app.errLoadProfile'));
             console.error('Error loading profile data:', err);
         }
     };
@@ -249,8 +249,8 @@ function App() {
         loadData(true);
     };
 
-    // Tras la "Nuclear Option" los perfiles se re-siembran con un id nuevo: hay
-    // que recargar los perfiles y re-seleccionar para no quedar con un id viejo.
+    // After the "Nuclear Option" profiles are re-seeded with a new id: we
+    // must reload the profiles and re-select to avoid keeping a stale id.
     const handleDataReset = () => {
         setShowSettings(false);
         initializeApp();
@@ -287,7 +287,7 @@ function App() {
             });
 
             if (!response.ok) {
-                throw new Error('Recommendation service unavailable');
+                throw new Error(t('app.errRecommend'));
             }
 
             const data = await response.json();
@@ -299,7 +299,7 @@ function App() {
             setRecommendationData(data);
 
             if (!data?.isConfident) {
-                setRecommendationError('Could not infer a country from the current collection.');
+                setRecommendationError(t('app.errNoCountry'));
             }
         } catch (error) {
             if (controller.signal.aborted || error?.name === 'AbortError') {
@@ -347,10 +347,10 @@ function App() {
         return (
             <ThemeProvider>
                 <div className="app-error">
-                    <h2>Oops! Something went wrong</h2>
+                    <h2>{t('app.errorTitle')}</h2>
                     <p>{error}</p>
                     <button onClick={() => initializeApp()}>
-                        Retry Loading
+                        {t('app.retry')}
                     </button>
                 </div>
             </ThemeProvider>
@@ -407,6 +407,7 @@ function App() {
                             isLoading={recommendationsLoading}
                             error={recommendationError}
                             recommendations={recommendationData}
+                            profileId={selectedProfile?.id}
                             onClose={handleRecommendationClose}
                         />
                         <SettingsModal

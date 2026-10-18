@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { coverSearch, coverLink, coverUnlink, coverStatus, coverLocal, pickFile } from '../api/localAdapter';
 import './LinkCoverModal.css';
+import { useT } from '../contexts/I18nContext';
 
-const IMAGE_FILTERS = [{ name: 'Imágenes', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }];
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
 
-// Vincula la portada de un manga con AniList: busca (prellenado con el título
-// local), el usuario elige un candidato y se descarga/cachea la portada.
-// También permite elegir una imagen local del equipo (para mangas que no están
-// en AniList). Se guarda SOLO el vínculo; el nombre local no cambia.
+// Links a manga cover with AniList: searches (pre-filled with the local
+// title), the user picks a candidate and the cover is downloaded/cached.
+// It also lets the user pick a local image from the machine (for mangas not
+// on AniList). Only the link is saved; the local name does not change.
 export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCovers = false }) {
+  const t = useT();
   const [query, setQuery] = useState(manga?.name ?? '');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
   const [localBusy, setLocalBusy] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState(null);
-  // Candidatos +18 revelados por click (solo con la preferencia apagada).
+  // +18 candidates revealed by click (only when the preference is off).
   const [revealedCandidates, setRevealedCandidates] = useState({});
 
   useEffect(() => {
@@ -37,9 +39,9 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
     try {
       const found = await coverSearch(query);
       setResults(found);
-      if (found.length === 0) setError('Sin resultados para ese título.');
+      if (found.length === 0) setError(t('lcm.noResults'));
     } catch {
-      setError('No se pudo buscar en AniList (revisá la conexión).');
+      setError(t('lcm.searchFailed'));
     } finally {
       setLoading(false);
     }
@@ -58,25 +60,25 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
       onLinked?.(manga.id, res.coverUrl);
       onClose();
     } catch {
-      setError('No se pudo descargar la portada.');
+      setError(t('lcm.downloadFailed'));
     } finally {
       setBusyId(null);
     }
   };
 
-  // Elige una imagen del equipo y la vincula como portada local. Cancelar el
-  // diálogo no es un error: no se llama a `coverLocal`.
+  // Picks an image from the machine and links it as the local cover. Cancelling
+  // the dialog is not an error: `coverLocal` is not called.
   const pickLocal = async () => {
     setError('');
     setLocalBusy(true);
     try {
-      const sourcePath = await pickFile(IMAGE_FILTERS);
+      const sourcePath = await pickFile([{ name: t('lcm.imageFilterName'), extensions: IMAGE_EXTENSIONS }]);
       if (!sourcePath) return;
       const res = await coverLocal(manga.id, sourcePath);
       onLinked?.(manga.id, res.coverUrl);
       onClose();
     } catch {
-      setError('No se pudo usar esa imagen (formato no soportado o demasiado grande).');
+      setError(t('lcm.imageFailed'));
     } finally {
       setLocalBusy(false);
     }
@@ -88,7 +90,7 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
       onLinked?.(manga.id, null);
       onClose();
     } catch {
-      setError('No se pudo quitar el vínculo.');
+      setError(t('lcm.unlinkFailed'));
     }
   };
 
@@ -105,8 +107,8 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
     ].filter(Boolean).join(' ');
   };
 
-  // Con el pref OFF el primer click revela y el segundo ejecuta la vinculación
-  // real; con el pref ON el hover ya revela y el click vincula directo.
+  // With the pref OFF the first click reveals and the second performs the real
+  // link; with the pref ON hover already reveals and the click links directly.
   const handleCandidateClick = (candidate) => {
     if (candidate.isAdult === true && !showAdultCovers && !revealedCandidates[candidate.id]) {
       setRevealedCandidates((prev) => ({ ...prev, [candidate.id]: true }));
@@ -125,8 +127,8 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
           </button>
         </div>
         <p className="link-cover-hint">
-          Buscá en AniList y elegí la edición. Se guarda solo el vínculo; el nombre local no cambia.
-          Si el manga no está en AniList, podés elegir una imagen de tu equipo.
+          {t('lcm.intro1')}
+          {t('lcm.intro2')}
         </p>
 
         {status && (
@@ -135,7 +137,7 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
               <img className="link-cover-current-thumb" src={status.coverUrl} alt="" />
             )}
             <span className="link-cover-current-origin">
-              {status.provider === 'local' ? 'Portada local' : 'Portada de AniList'}
+              {t(status.provider === 'local' ? 'lcm.coverLocal' : 'lcm.coverAniList')}
             </span>
           </div>
         )}
@@ -144,18 +146,18 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Título en AniList…"
+            placeholder={t('lcm.searchPlaceholder')}
             onKeyDown={(e) => e.key === 'Enter' && runSearch()}
           />
           <button className="submit-button" onClick={runSearch} disabled={loading}>
-            {loading ? 'Buscando…' : 'Buscar'}
+            {t(loading ? 'lcm.searching' : 'lcm.search')}
           </button>
           <button
             className="link-cover-local-button"
             onClick={pickLocal}
             disabled={localBusy}
           >
-            {localBusy ? 'Leyendo…' : 'Buscar en mi PC…'}
+            {t(localBusy ? 'lcm.reading' : 'lcm.pickLocal')}
           </button>
         </div>
 
@@ -168,12 +170,12 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
               className={candidateClassName(candidate)}
               onClick={() => handleCandidateClick(candidate)}
               disabled={busyId != null}
-              title={`Vincular con ${candidate.title}`}
+              title={t('lcm.linkTitle', { title: candidate.title })}
             >
               {candidate.coverUrl ? (
                 <img src={candidate.coverUrl} alt="" loading="lazy" />
               ) : (
-                <span className="cover-candidate-placeholder">Sin portada</span>
+                <span className="cover-candidate-placeholder">{t('lcm.noCover')}</span>
               )}
               {candidate.isAdult && <span className="cover-candidate-adult">+18</span>}
               {candidate.source && (
@@ -183,11 +185,11 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
               )}
               <span className="cover-candidate-title">{candidate.title}</span>
               <span className="cover-candidate-meta">
-                {[candidate.format, candidate.year, candidate.volumes ? `${candidate.volumes} vol.` : null]
+                {[candidate.format, candidate.year, candidate.volumes ? t('lcm.volShort', { count: candidate.volumes }) : null]
                   .filter(Boolean)
                   .join(' · ')}
               </span>
-              {busyId === candidate.id && <span className="cover-candidate-busy">Descargando…</span>}
+              {busyId === candidate.id && <span className="cover-candidate-busy">{t('lcm.downloading')}</span>}
             </button>
           ))}
         </div>
@@ -195,11 +197,11 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
         <div className="modal-actions">
           {status && (
             <button className="cancel-button link-cover-unlink" onClick={unlink}>
-              Quitar vínculo
+              {t('lcm.unlink')}
             </button>
           )}
           <button className="cancel-button" onClick={onClose}>
-            Cerrar
+            {t('lcm.close')}
           </button>
         </div>
       </div>

@@ -29,7 +29,7 @@ describe('services/backup', () => {
   const at = (minutes) => () => new Date(new Date(2026, 0, 2, 3, 0, 0).getTime() + minutes * 60000);
 
   beforeEach(() => {
-    // Sin worker real: las ops corren en proceso (mismo código que el worker).
+    // No real worker: the ops run in-process (same code as the worker).
     setRemoteFs({ call: async (op, args) => fsOps[op](...args) });
     dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdata-'));
     destDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mcdest-'));
@@ -40,7 +40,7 @@ describe('services/backup', () => {
     try {
       db?.close();
     } catch {
-      /* ya cerrada por restore */
+      /* already closed by restore */
     }
     fs.rmSync(dataDir, { recursive: true, force: true });
     fs.rmSync(destDir, { recursive: true, force: true });
@@ -165,7 +165,7 @@ describe('services/backup', () => {
     const sub = path.join(dataDir, 'profiles', 'anidado');
     fs.mkdirSync(sub, { recursive: true });
     fs.writeFileSync(path.join(sub, 'nota.txt'), 'hola');
-    // un symlink no es archivo ni directorio: walkFiles lo ignora
+    // a symlink is neither file nor directory: walkFiles ignores it
     fs.symlinkSync(path.join(sub, 'nota.txt'), path.join(dataDir, 'profiles', 'link.txt'));
 
     const result = await createBackup(db, dataDir, destDir, { now: at(0) });

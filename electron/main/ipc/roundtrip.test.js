@@ -1,7 +1,7 @@
-// Ida y vuelta por canal: el renderer (localAdapter) contra el main (handlers)
-// con un transporte loopback en proceso. Cubre las filas 1-15 de parity-matrix.md.
-// Nota: el transporte real (structured clone de Electron) no se ejercita aquí;
-// los DTOs son JSON plano, compatible con ese transporte.
+// Channel round trip: the renderer (localAdapter) against the main (handlers)
+// with an in-process loopback transport. Covers rows 1-15 of parity-matrix.md.
+// Note: the real transport (Electron structured clone) is not exercised here;
+// the DTOs are plain JSON, compatible with that transport.
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -77,7 +77,6 @@ describe('ipc roundtrip por canal', () => {
     assert.ok((await api.formatCreate('Wideban')).id > 0);
     assert.equal((await api.publisherList()).length, 0);
     assert.ok((await api.publisherCreate('Kemuri')).id > 0);
-    // manga:delete
     assert.deepEqual(await api.mangaDelete(manga.id), { ok: true });
     assert.equal(await api.mangaGet(manga.id), null);
   });
@@ -171,11 +170,11 @@ describe('ipc roundtrip por canal', () => {
     };
     try {
       await api.coverSearch('x');
-      assert.match(sentQuery, /isAdult:\s*false/); // default: filtra
+      assert.match(sentQuery, /isAdult:\s*false/); // default: filters
 
       await api.appConfigSet({ showAdultCovers: true });
       await api.coverSearch('x');
-      assert.doesNotMatch(sentQuery, /isAdult:\s*false/); // habilitado: sin filtro
+      assert.doesNotMatch(sentQuery, /isAdult:\s*false/); // enabled: no filter
     } finally {
       delete globalThis.fetch;
     }

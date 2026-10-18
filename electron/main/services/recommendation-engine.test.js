@@ -88,11 +88,11 @@ describe('shared/countryInference', () => {
 
   it('infiere por editorial contemplando todas las formas del campo', () => {
     const entries = [
-      { quantity: 2, manga: { publisher: { name: 'Ivrea' } } }, // objeto
-      { quantity: 1, manga: { publisher: 'Ivrea' } }, // string en manga
+      { quantity: 2, manga: { publisher: { name: 'Ivrea' } } }, // object
+      { quantity: 1, manga: { publisher: 'Ivrea' } }, // string on manga
       { quantity: 1, publisher: 'Ivrea' }, // top-level
-      { quantity: 1, manga: {} }, // sin publisher → ''
-      { quantity: 1, manga: { publisher: { name: 'Desconocida' } } }, // no mapeada
+      { quantity: 1, manga: {} }, // no publisher → ''
+      { quantity: 1, manga: { publisher: { name: 'Desconocida' } } }, // unmapped
     ];
     const result = inferUserCountry(entries, publisherCountries);
     assert.equal(result.country, 'Argentina');
@@ -104,7 +104,7 @@ describe('shared/countryInference', () => {
   it('cantidad no numérica cuenta 1 y entrada nula cuenta 0', () => {
     const entries = [
       { quantity: 'x', manga: { publisher: { name: 'Ivrea' } } }, // NaN → 1
-      null, // país null y owned 0
+      null, // null country and owned 0
       { quantity: 0, manga: { publisher: { name: 'Ivrea' } } }, // owned ≤ 0 → continue
     ];
     const result = inferUserCountry(entries, publisherCountries);
@@ -152,10 +152,10 @@ describe('shared/recommendationEngine: buildUserTasteProfile', () => {
   it('procesa variantes de entry, salta cantidad ≤ 0 y catálogo ausente', () => {
     const profile = buildUserTasteProfile(
       [
-        { title: 'Solo titulo', quantity: 2 }, // título top-level
-        { quantity: 'x', manga: { name: 'Nombre', publisher: 'Ivrea' } }, // cantidad no finita → 1
+        { title: 'Solo titulo', quantity: 2 }, // top-level title
+        { quantity: 'x', manga: { name: 'Nombre', publisher: 'Ivrea' } }, // non-finite quantity → 1
         { quantity: 0, manga: { name: 'Cero' } }, // skip
-        null, // entrada nula
+        null, // null entry
       ],
       []
     );

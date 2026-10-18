@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
-// setup.js mockea ThemeToggle globalmente; acá usamos el componente real.
+// setup.js mocks ThemeToggle globally; here we use the real component.
 vi.unmock('../../components/ThemeToggle')
 
 import ThemeToggle from '../../components/ThemeToggle'
@@ -16,7 +16,7 @@ describe('ThemeToggle', () => {
 
   it('arranca en modo oscuro por defecto', async () => {
     render(<ThemeToggle />)
-    // La etiqueta indica el modo al que se cambiaría: en oscuro muestra "Light".
+    // The label indicates the mode it would switch to: in dark it shows "Light".
     expect(screen.getByText('Light')).toBeInTheDocument()
     expect(screen.getByText('☀️')).toBeInTheDocument()
     expect(screen.getByTitle('Switch to light mode')).toBeInTheDocument()

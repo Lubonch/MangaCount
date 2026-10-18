@@ -254,7 +254,7 @@
     background-color: var(--sidebar-accent);
 }
 
-/* La Biblioteca ocupa el alto disponible y su lista hace scroll interno. */
+/* The Library takes the available height and its list scrolls internally. */
 .sidebar-library {
     flex: 1;
     min-height: 0;
@@ -355,7 +355,6 @@
     padding: 20px;
 }
 
-/* Scrollbar styling for dark mode */
 .manga-list::-webkit-scrollbar {
     width: 6px;
 }

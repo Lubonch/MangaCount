@@ -1,6 +1,6 @@
-// Preferencias locales (reemplazo de appsettings*.json + parte de localStorage).
-// Tema y perfil activo siguen en localStorage del renderer; aquí va lo que el
-// main necesita: arranque en bandeja, config de backup y config del bot.
+// Local preferences (replacement of appsettings*.json + part of localStorage).
+// Theme and active profile stay in the renderer's localStorage; here goes what the
+// main needs: start in tray, backup config and bot config.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,8 +9,9 @@ export function prefsPath(dataDir) {
   return path.join(dataDir, 'preferences.json');
 }
 
-// Valores por defecto: el backup automático y el bot arrancan apagados.
+// Default values: automatic backup and the bot start off.
 export const DEFAULT_PREFS = {
+  language: 'en',
   startInTray: true,
   updateCheck: true,
   diagnosticsCopy: true,
@@ -27,6 +28,16 @@ export const DEFAULT_PREFS = {
     enabled: false,
     guildId: null,
     allowedUserIds: [],
+    pendingLimitEnabled: true,
+    pendingLimit: 20,
+    ephemeralReplies: false,
+    confirmTtlMinutes: 5,
+    recommendLimit: 5,
+  },
+  recommendations: {
+    enabled: true,
+    limit: 10,
+    seenTtlDays: 30,
   },
 };
 
@@ -43,7 +54,7 @@ export function savePrefs(dataDir, prefs) {
   fs.writeFileSync(prefsPath(dataDir), JSON.stringify(prefs, null, 2));
 }
 
-// Completa la config con los defaults (merge superficial + merge por bloque).
+// Fills the config with the defaults (shallow merge + per-block merge).
 export function resolvePrefs(prefs = {}) {
   return {
     ...DEFAULT_PREFS,
@@ -54,6 +65,7 @@ export function resolvePrefs(prefs = {}) {
       triggers: { ...DEFAULT_PREFS.backup.triggers, ...(prefs.backup?.triggers ?? {}) },
     },
     bot: { ...DEFAULT_PREFS.bot, ...(prefs.bot ?? {}) },
+    recommendations: { ...DEFAULT_PREFS.recommendations, ...(prefs.recommendations ?? {}) },
   };
 }
 
@@ -61,13 +73,13 @@ export function loadResolvedPrefs(dataDir) {
   return resolvePrefs(loadPrefs(dataDir));
 }
 
-// Gate de config de backup: habilitado exige destino y al menos un disparador.
-export function validateBackupConfig(backup = {}) {
+// Backup config gate: enabled requires a destination and at least one trigger.
+export function validateBackupConfig(backup = {}, t = (key) => key) {
   const errors = [];
   if (backup.enabled) {
-    if (!backup.destinationDir) errors.push('El backup automático requiere un destino.');
+    if (!backup.destinationDir) errors.push(t('err.backupNeedsDestination'));
     if (!backup.triggers?.onStartup && !backup.triggers?.whileRunning) {
-      errors.push('El backup automático requiere al menos un disparador.');
+      errors.push(t('err.backupNeedsTrigger'));
     }
   }
   return errors;

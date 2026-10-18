@@ -5,6 +5,7 @@ import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
 import LinkCoverModal from './LinkCoverModal';
 import ThemeToggle from './ThemeToggle';
+import { useT } from '../contexts/I18nContext';
 import { botStatus as fetchBotStatus, isElectron, mangaDelete } from '../api/localAdapter.js';
 
 const Sidebar = ({
@@ -19,6 +20,7 @@ const Sidebar = ({
     refreshing = false,
     showAdultCovers = false
 }) => {
+    const t = useT();
     const [showAddEntry, setShowAddEntry] = useState(false);
     const [showAddManga, setShowAddManga] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
@@ -82,8 +84,8 @@ const Sidebar = ({
                         <button
                             className="collapse-btn"
                             onClick={() => setCollapsed((c) => !c)}
-                            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
-                            aria-label="Colapsar menú"
+                            title={t(collapsed ? 'sidebar.expand' : 'sidebar.collapse')}
+                            aria-label={t('sidebar.collapse')}
                         >
                             {collapsed ? '»' : '«'}
                         </button>
@@ -107,13 +109,13 @@ const Sidebar = ({
                                 </div>
                                 <div className="profile-text">
                                     <span className="profile-name-small">{selectedProfile.name}</span>
-                                    <span className="profile-subtitle">Collection</span>
+                                    <span className="profile-subtitle">{t('sidebar.collection')}</span>
                                 </div>
                             </div>
                             <button
                                 className="change-profile-btn"
                                 onClick={onBackToProfiles}
-                                title="Change profile"
+                                title={t('sidebar.changeProfile')}
                             >
                                 👥
                             </button>
@@ -123,82 +125,82 @@ const Sidebar = ({
 
                 <nav className="sidebar-nav">
                     <div className="sidebar-group">
-                        <span className="group-label">Colección</span>
+                        <span className="group-label">{t('sidebar.groupCollection')}</span>
                         <div className="quick-actions">
                             <button
                                 className="action-button add-entry"
                                 onClick={() => setShowAddEntry(true)}
                                 disabled={!selectedProfile}
                             >
-                                + Add Entry
+                                {t('sidebar.addEntry')}
                             </button>
                             <button
                                 className="action-button add-manga"
                                 onClick={() => setShowAddManga(true)}
                             >
-                                + Add Manga
+                                {t('sidebar.addManga')}
                             </button>
                             <button
                                 className="action-button recommend"
                                 onClick={onRecommend}
                                 disabled={!selectedProfile || entries.length === 0 || recommendationsLoading}
                             >
-                                {recommendationsLoading ? 'Thinking...' : 'Recommendations'}
+                                {t(recommendationsLoading ? 'sidebar.thinking' : 'sidebar.recommendations')}
                             </button>
                         </div>
                     </div>
 
                     <div className="sidebar-group sidebar-library">
-                        <span className="group-label">Biblioteca</span>
+                        <span className="group-label">{t('sidebar.groupLibrary')}</span>
                         <h3 className="group-title">
-                            {`Manga Library (${filteredMangas.length}${
-                                filteredMangas.length !== mangas.length ? `/${mangas.length}` : ''
-                            })`}
+                            {filteredMangas.length !== mangas.length
+                                ? t('sidebar.libraryTitleFiltered', { shown: filteredMangas.length, total: mangas.length })
+                                : t('sidebar.libraryTitle', { count: filteredMangas.length })}
                         </h3>
                         {mangas.length > 0 && (
                             <input
                                 type="search"
                                 className="manga-search"
-                                placeholder="Filtrar por título…"
+                                placeholder={t('sidebar.searchPlaceholder')}
                                 value={mangaFilter}
                                 onChange={(e) => setMangaFilter(e.target.value)}
-                                aria-label="Filtrar mangas"
+                                aria-label={t('sidebar.searchAria')}
                             />
                         )}
                         <div className="manga-list">
                             {mangas.length === 0 ? (
-                                <p className="empty-message">No manga in library</p>
+                                <p className="empty-message">{t('sidebar.noManga')}</p>
                             ) : filteredMangas.length === 0 ? (
-                                <p className="empty-message">Sin coincidencias</p>
+                                <p className="empty-message">{t('sidebar.noMatches')}</p>
                             ) : (
                                 filteredMangas.map((manga) => (
                                     <div key={manga.id} className="manga-item">
                                         <div className="manga-info">
                                             <div className="manga-name">{manga.name}</div>
                                             {manga.volumes && (
-                                                <div className="manga-volumes">{manga.volumes} volumes</div>
+                                                <div className="manga-volumes">{t('sidebar.volumes', { count: manga.volumes })}</div>
                                             )}
                                         </div>
                                         <div className="manga-actions">
                                             <button
                                                 className="edit-manga-btn-sidebar"
                                                 onClick={() => setCoverTarget(manga)}
-                                                title="Buscar portada (AniList)"
-                                                aria-label={`Buscar portada de ${manga.name}`}
+                                                title={t('sidebar.coverSearch')}
+                                                aria-label={t('sidebar.coverSearchAria', { name: manga.name })}
                                             >
                                                 🖼️
                                             </button>
                                             <button
                                                 className="edit-manga-btn-sidebar"
                                                 onClick={() => handleEditManga(manga)}
-                                                title="Edit manga info"
+                                                title={t('sidebar.editManga')}
                                             >
                                                 ✏️
                                             </button>
                                             <button
                                                 className="edit-manga-btn-sidebar delete-manga-btn-sidebar"
                                                 onClick={() => handleDeleteManga(manga)}
-                                                title="Eliminar manga"
+                                                title={t('sidebar.deleteManga')}
                                                 aria-label={`Eliminar ${manga.name}`}
                                             >
                                                 🗑️
@@ -211,19 +213,19 @@ const Sidebar = ({
                     </div>
 
                     <div className="sidebar-group sidebar-settings">
-                        <span className="group-label">App</span>
+                        <span className="group-label">{t('sidebar.groupApp')}</span>
                         <ThemeToggle />
-                        <div className="bot-status" title="Estado del bot de Discord">
+                        <div className="bot-status" title={t('sidebar.botTitle')}>
                             <span className={`bot-dot ${botStatus}`} />
-                            Bot: {botStatus}
+                            {t('sidebar.botStatus', { status: botStatus })}
                         </div>
                         <button
                             className="action-button settings-open-button"
                             onClick={onOpenSettings}
-                            title="Settings"
-                            aria-label="Settings"
+                            title={t('sidebar.settings')}
+                            aria-label={t('sidebar.settings')}
                         >
-                            ⚙️ Settings
+                            ⚙️ {t('sidebar.settings')}
                         </button>
                     </div>
                 </nav>

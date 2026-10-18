@@ -36,7 +36,7 @@ describe('services/logger', () => {
   it('serializa Error (sin stack), strings y objetos', () => {
     const logger = createLogger({ logsDir: dir });
     const err = new Error('falla');
-    err.stack = undefined; // fuerza la rama `a.stack ?? a.message`
+    err.stack = undefined; // forces the `a.stack ?? a.message` branch
     logger.error(err);
     logger.info({ a: 1 }, 42);
 
@@ -49,7 +49,7 @@ describe('services/logger', () => {
     let now = new Date(2026, 0, 2, 3, 0, 0);
     const logger = createLogger({ logsDir: dir, now: () => now });
     logger.info('día uno');
-    // el mtime real no coincide con `now()`; lo forzamos para que la rotación sea determinista
+    // the real mtime does not match `now()`; we force it so rotation is deterministic
     fs.utimesSync(logger.currentPath, new Date(2026, 0, 2, 1, 0, 0), new Date(2026, 0, 2, 1, 0, 0));
 
     now = new Date(2026, 0, 3, 3, 0, 0);
@@ -67,13 +67,13 @@ describe('services/logger', () => {
   it('no rota un archivo vacío ni cuando es el mismo día', () => {
     const logger = createLogger({ logsDir: dir, now: () => new Date(2026, 0, 2, 3, 0, 0) });
 
-    // archivo vacío preexistente: no rota aunque cambie el día
+    // pre-existing empty file: does not rotate even if the day changes
     fs.writeFileSync(logger.currentPath, '');
     fs.utimesSync(logger.currentPath, new Date(2026, 0, 1, 0, 0, 0), new Date(2026, 0, 1, 0, 0, 0));
     logger.info('uno');
     assert.deepEqual(fs.readdirSync(dir), ['app.txt']);
 
-    // mismo día: no rota
+    // same day: does not rotate
     fs.utimesSync(logger.currentPath, new Date(2026, 0, 2, 1, 0, 0), new Date(2026, 0, 2, 1, 0, 0));
     logger.info('dos');
     assert.deepEqual(fs.readdirSync(dir), ['app.txt']);

@@ -30,8 +30,8 @@ const NukeDataModal = ({ isOpen, onClose, onSuccess }) => {
         }
     };
 
-    // Los botones solo se renderizan dentro del rango válido (1..TOTAL_STEPS);
-    // el clamp evita salirse si en el futuro se renderizan sin condición.
+    // Buttons are only rendered within the valid range (1..TOTAL_STEPS);
+    // the clamp prevents going out of range if they are ever rendered without a condition.
     const handleNext = () => setStep((s) => Math.min(TOTAL_STEPS, s + 1));
     const handleBack = () => setStep((s) => Math.max(1, s - 1));
 

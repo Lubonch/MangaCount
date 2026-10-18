@@ -27,7 +27,7 @@ describe('services/auto-backup: backupDue', () => {
 
   it('tolera config nula, fecha inválida y usa intervalo default de 1440', () => {
     assert.equal(backupDue(undefined), false);
-    assert.equal(backupDue({ enabled: true, destinationDir: '/d' }), false); // triggers ausente
+    assert.equal(backupDue({ enabled: true, destinationDir: '/d' }), false); // triggers missing
     assert.equal(backupDue(base({ lastBackupAt: 'no-es-fecha' })), true);
     const now = Date.parse('2026-01-02T04:00:00Z');
     assert.equal(

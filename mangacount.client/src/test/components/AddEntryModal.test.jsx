@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
-// setup.js mockea AddEntryModal globalmente; acá usamos el componente real.
+// setup.js mocks AddEntryModal globally; here we use the real component.
 vi.unmock('../../components/AddEntryModal')
 
 import AddEntryModal from '../../components/AddEntryModal'
@@ -185,7 +185,7 @@ describe('AddEntryModal: edición', () => {
     await waitFor(() => expect(props.onSuccess).toHaveBeenCalledTimes(1))
     expect(props.onClose).toHaveBeenCalledTimes(1)
     expect(bodyOf('/api/entry')).toMatchObject({ id: 3, mangaId: 1, quantity: 5 })
-    // en edición no se limpia el formulario
+    // in edit mode the form is not cleared
     expect(screen.getByLabelText(/Quantity Owned/)).toHaveValue(5)
   })
 

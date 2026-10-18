@@ -1,12 +1,12 @@
-// Vínculo de un manga con una entrada externa (p. ej. AniList).
-// Aditivo: no cambia el nombre local del manga. Un registro por (MangaId, Provider).
+// Link of a manga to an external entry (e.g. AniList).
+// Additive: it does not change the local manga name. One record per (MangaId, Provider).
 // DTO: { id, mangaId, provider, externalId, coverFile, isAdult, updatedAt }.
 
 const SELECT =
   'Id AS id, MangaId AS mangaId, Provider AS provider, ExternalId AS externalId, ' +
   'CoverFile AS coverFile, IsAdult AS isAdult, UpdatedAt AS updatedAt FROM MangaExternalRef';
 
-// SQLite guarda el flag como 0/1; el DTO lo expone como booleano.
+// SQLite stores the flag as 0/1; the DTO exposes it as a boolean.
 function toRef(row) {
   if (!row) return row;
   return { ...row, isAdult: row.isAdult === 1 || row.isAdult === true };

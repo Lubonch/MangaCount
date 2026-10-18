@@ -12,9 +12,9 @@ import NukeDataModal from '../../components/NukeDataModal'
 
 const stats = { mangas: 10, entries: 20, profiles: 2, formats: 5, publishers: 3 }
 
-// Invoca el onClick de React saltándose el atributo `disabled` del DOM: el
-// botón de nuke está deshabilitado con texto incorrecto, pero queremos cubrir
-// la guarda defensiva del handler.
+// Calls React's onClick bypassing the DOM `disabled` attribute: the
+// nuke button is disabled with the wrong text, but we want to cover
+// the handler's defensive guard.
 async function forceReactClick(element) {
   const propsKey = Object.keys(element).find((key) => key.startsWith('__reactProps$'))
   const handler = propsKey && element[propsKey]?.onClick

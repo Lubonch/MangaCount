@@ -1,5 +1,5 @@
-// Logger con rotación diaria: archivo actual app.txt; al cambiar el día se
-// renombra a app.YYYY-MM-DD solo si tiene contenido (si está vacío no se rota).
+// Logger with daily rotation: current file app.txt; when the day changes it is
+// renamed to app.YYYY-MM-DD only if it has content (if empty it is not rotated).
 
 import fs from 'node:fs';
 import path from 'node:path';

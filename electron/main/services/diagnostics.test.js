@@ -42,7 +42,7 @@ describe('services/diagnostics', () => {
     const out = buildDiagnostics();
     assert.match(out, /MangaCount vundefined · undefined\/undefined · undefined/);
     assert.match(out, /\(log vacío\)/);
-    // maxLines default (100) recorta el log largo
+    // default maxLines (100) trims the long log
     const largo = Array.from({ length: 120 }, (_, i) => `l${i}`).join('\n');
     assert.match(buildDiagnostics({ logText: largo }), /l119/);
     assert.doesNotMatch(buildDiagnostics({ logText: largo }), /l19\n/);

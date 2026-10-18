@@ -1,9 +1,9 @@
-// Backup y restore del sistema completo.
+// Full-system backup and restore.
 //
-// El estado vive en <dataDir>: `mangacount.db` (WAL), `profiles/`. El backup es
-// un `.zip` con un snapshot consistente de la base (db.backup() de better-sqlite3,
-// online y WAL-safe), la carpeta de fotos y un `manifest.json`. `preferences.json`
-// y `logs/` quedan FUERA: la config es de la máquina, no del dato.
+// The state lives in <dataDir>: `mangacount.db` (WAL), `profiles/`. The backup is
+// a `.zip` with a consistent snapshot of the DB (better-sqlite3's db.backup(),
+// online and WAL-safe), the photos folder and a `manifest.json`. `preferences.json`
+// and `logs/` stay OUT: the config belongs to the machine, not to the data.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,19 +20,19 @@ const DB_FILE = 'mangacount.db';
 const PROFILES_DIR = 'profiles';
 const MANIFEST = 'manifest.json';
 
-// Error marcado para que el handler distinga "destino que no responde".
+// Flagged error so the handler can tell apart "destination not responding".
 export const DESTINATION_TIMEOUT = 'DESTINATION_TIMEOUT';
 
-// Instancia perezosa del worker: no se crea si nunca se toca un destino.
+// Lazy worker instance: not created if a destination is never touched.
 let defaultRemoteFs = null;
 const getRemoteFs = () => (defaultRemoteFs ??= createRemoteFs());
 
-// Seam para tests: reemplaza el worker por una implementación en proceso.
+// Seam for tests: replaces the worker with an in-process implementation.
 export function setRemoteFs(instance) {
   defaultRemoteFs = instance;
 }
 
-// Última lista conocida por destino, para devolverla si el destino deja de responder.
+// Last list known per destination, to return it if the destination stops responding.
 const lastLists = new Map();
 export function cachedBackups(destinationDir) {
   return lastLists.get(destinationDir) ?? [];
@@ -83,8 +83,8 @@ function walkFiles(dir, base = dir) {
   return out;
 }
 
-// Crea un backup completo en `destinationDir` y devuelve { path, fileName, createdAt }.
-// Snapshot a un temporal, zip en memoria y move atómico dentro del destino.
+// Creates a full backup in `destinationDir` and returns { path, fileName, createdAt }.
+// Snapshot to a temp file, zip in memory and atomic move inside the destination.
 export async function createBackup(
   db,
   dataDir,
@@ -132,8 +132,8 @@ export async function listBackups(destinationDir, { remoteFs = getRemoteFs() } =
   return backups;
 }
 
-// Conserva los `keep` más recientes (el nombre ordena cronológicamente) podando
-// solo los archivos propios; devuelve los nombres eliminados.
+// Keeps the `keep` most recent (the name sorts chronologically), pruning
+// only its own files; returns the removed names.
 export async function pruneBackups(destinationDir, keep = DEFAULT_KEEP, { remoteFs = getRemoteFs() } = {}) {
   const files = (await listBackupFiles(destinationDir, { remoteFs })).sort();
   if (files.length <= keep) return [];
@@ -144,8 +144,8 @@ export async function pruneBackups(destinationDir, keep = DEFAULT_KEEP, { remote
   return remove;
 }
 
-// Valida el zip (manifest + app/schemaVersion + integrity_check) SIN tocar datos
-// y devuelve el manifest.
+// Validates the zip (manifest + app/schemaVersion + integrity_check) WITHOUT touching data
+// and returns the manifest.
 export function validateBackup(zipPath) {
   if (!fs.existsSync(zipPath)) throw new Error(`Backup inexistente: ${zipPath}`);
   const entries = unzipSync(new Uint8Array(fs.readFileSync(zipPath)));
@@ -182,9 +182,9 @@ export function validateBackup(zipPath) {
   return manifest;
 }
 
-// Restaura un backup reemplazando todo: valida, hace un safety-backup del estado
-// actual, cierra la base, limpia sidecars `-wal`/`-shm`, reemplaza `mangacount.db`
-// y `profiles/`, y reabre. Devuelve la conexión nueva para que el caller la use.
+// Restores a backup replacing everything: validates, makes a safety backup of the current
+// state, closes the DB, cleans the `-wal`/`-shm` sidecars, replaces `mangacount.db`
+// and `profiles/`, and reopens. Returns the new connection for the caller to use.
 export async function restoreBackup(
   db,
   dataDir,
@@ -216,7 +216,7 @@ export async function restoreBackup(
   for (const [name, bytes] of Object.entries(entries)) {
     if (!name.startsWith(`${PROFILES_DIR}/`)) continue;
     const rel = name.slice(PROFILES_DIR.length + 1);
-    // Anti zip-slip: descartar rutas con `..` o segmentos vacíos (absolutas).
+    // Anti zip-slip: discard paths with `..` or empty (absolute) segments.
     if (!rel || rel.split('/').some((seg) => seg === '..' || seg === '')) continue;
     const target = path.resolve(profilesPath, rel);
     if (target !== profilesPath && !target.startsWith(profilesPath + path.sep)) continue;

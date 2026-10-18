@@ -11,18 +11,14 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-    // Default to dark mode
     const [isDarkMode, setIsDarkMode] = useState(() => {
-        // Check localStorage first, default to dark mode
         const saved = localStorage.getItem('mangacount-theme');
-        return saved ? saved === 'dark' : true; // Default to true (dark mode)
+        return saved ? saved === 'dark' : true;
     });
 
     useEffect(() => {
-        // Apply theme to document root
         document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
-        
-        // Save to localStorage
+
         localStorage.setItem('mangacount-theme', isDarkMode ? 'dark' : 'light');
     }, [isDarkMode]);
 

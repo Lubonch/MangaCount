@@ -131,20 +131,44 @@ bandeja* está activo).
   Linux escribiendo o borrando `~/.config/autostart/mangacount.desktop` con la ruta real del
   ejecutable (`$APPIMAGE` o el binario del `.deb`). El toggle refleja el estado real del sistema.
 
-## Bot de Discord (solo consulta)
+## Bot de Discord (consulta y edición)
 
 Bot **embebido en el proceso main**: arranca y se detiene con la app, sobre la **misma conexión
-SQLite**, y expone slash commands guild-scoped de solo lectura: `/perfil`, `/buscar`, `/pendientes`
-y `/recomendar`. **Cada usuario usa su propio bot** (su aplicación, su token, su servidor); no se
-comparte nada entre instalaciones, y la app es **mono-guild** (un `guildId` por vez).
+SQLite**, y expone slash commands guild-scoped. **Cada usuario usa su propio bot** (su aplicación, su
+token, su servidor); no se comparte nada entre instalaciones, y la app es **mono-guild** (un `guildId`
+por vez).
+
+- **Consulta**: `/perfil`, `/buscar`, `/pendientes`, `/huecos`, `/a-punto`, `/stats`, `/status`,
+  `/recomendar`.
+- **Edición y administración** (piden confirmación y están limitadas a la allowlist): `/tomo`,
+  `/actualizar`, `/pending`, `/prioridad`, `/nuevo`, `/backup`, `/ayuda`.
 
 La configuración vive en **Settings → Bot**: toggle, **token** (cifrado con `safeStorage`; nunca en
-texto plano ni en el repo), **Guild ID** y **allowlist de usuarios** (las User IDs, coma-separadas;
-con la lista vacía no responde a nadie). El **Application ID** no se carga en la app: se usa solo
-para armar la URL de invitación (ver el README).
+texto plano ni en el repo), **Guild ID**, **allowlist de usuarios** (las User IDs, coma-separadas; con
+la lista vacía no responde a nadie), **límite por página** (1–500, default 20), **respuestas efímeras**,
+**TTL de confirmación** (1–60 min, default 5) y **recomendaciones por defecto** (1–10, default 5). El
+**Application ID** no se carga en la app: se usa solo para armar la URL de invitación (ver el README).
+
+UX: **autocomplete** del parámetro de serie, **paginación con botones** en los listados largos, **modal
+precargado** de `pending`, **botones de acción** en `/buscar` y portadas adultas publicadas como
+**spoiler**. Si un título coincide con 0 o más de una serie, el bot no escribe y pide desambiguar.
 
 Sin token o sin red el bot queda *apagado* y la app funciona normal. Los fallos se registran en
-`logs/`. El comando de escritura `actualizar` no está expuesto (queda como punto de extensión).
+`logs/`. La tabla completa de comandos está en el README.
+
+## Recomendaciones
+
+Dos fuentes, en este orden: **AniList** (grafo de recomendaciones colaborativas, sin API key, a partir
+de las series de la colección) y, si AniList no responde (sin red, timeout, rate limit), el **motor
+local** (`shared/recommendations`, léxico, sobre un catálogo chico incluido).
+
+El usuario puede marcar una recomendación como **"Ya lo tengo"** (la vincula a un manga propio vía
+`MangaExternalRef`, o lo crea con el nombre que elija) o **"No viable"** (descarte permanente por
+perfil). La lista mantiene su tamaño rellenando con la siguiente candidata, y las ya vistas se recuerdan
+`seenTtlDays` días.
+
+Los ajustes viven en **Settings → Recomendaciones**: `enabled` (default true), `limit` (1–25, default
+10) y `seenTtlDays` (1–365, default 30).
 
 ## Actualizaciones
 

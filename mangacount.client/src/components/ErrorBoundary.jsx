@@ -1,17 +1,20 @@
 import { Component } from 'react';
 import { logError, isElectron } from '../api/localAdapter.js';
+import I18nContext from '../contexts/I18nContext';
 
-// Reporta el error del render al log del main (solo dentro de Electron; fuera no
-// hay IPC y no queremos recursión por fetch fallido).
+// Reports render errors to the main log (only inside Electron; outside there is
+// no IPC and we do not want recursion from a failed fetch).
 function report(payload) {
   try {
     if (isElectron()) logError(payload);
   } catch {
-    /* el reporte nunca debe romper la UI */
+    /* reporting must never break the UI */
   }
 }
 
 class ErrorBoundary extends Component {
+  static contextType = I18nContext;
+
   constructor(props) {
     super(props);
     this.state = { error: null };
@@ -33,9 +36,9 @@ class ErrorBoundary extends Component {
     if (this.state.error) {
       return (
         <div className="app-error">
-          <h2>Algo salió mal</h2>
+          <h2>{this.context.t('error.title')}</h2>
           <p>{String(this.state.error?.message ?? this.state.error)}</p>
-          <p className="app-error-hint">El error quedó registrado en el log de la app.</p>
+          <p className="app-error-hint">{this.context.t('error.hint')}</p>
         </div>
       );
     }

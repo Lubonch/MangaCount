@@ -3,29 +3,29 @@ import LoadingSpinner from './LoadingSpinner';
 import AddEntryModal from './AddEntryModal';
 import AddMangaModal from './AddMangaModal';
 import { coverAll, coverAuto } from '../api/localAdapter';
+import { useT } from '../contexts/I18nContext';
 import './CollectionView.css';
 
 const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], selectedProfile, showAdultCovers = false }) => {
+    const t = useT();
     const [filter, setFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name');
     const [viewMode, setViewMode] = useState('cards');
     
-    // New filter states
     const [publisherFilter, setPublisherFilter] = useState('all');
     const [formatFilter, setFormatFilter] = useState('all');
     const [availablePublishers, setAvailablePublishers] = useState([]);
     const [availableFormats, setAvailableFormats] = useState([]);
     const [filtersLoading, setFiltersLoading] = useState(false);
     
-    // Edit modal states
     const [showEditEntry, setShowEditEntry] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
     const [editingEntry, setEditingEntry] = useState(null);
     const [editingManga, setEditingManga] = useState(null);
 
-    // Portadas: mapa { mangaId: { url, isAdult } } (se pintan en las cards).
+    // Covers: map { mangaId: { url, isAdult } } (rendered on the cards).
     const [coverMap, setCoverMap] = useState({});
-    // Portadas +18 reveladas por click (solo con la preferencia apagada).
+    // +18 covers revealed by click (only when the preference is off).
     const [revealedCovers, setRevealedCovers] = useState({});
 
     useEffect(() => {
@@ -40,8 +40,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         };
     }, [entries, selectedProfile]);
 
-    // Acepta `{ url, isAdult }` (o `null` al desvincular). El auto-match sigue
-    // devolviendo solo la URL: en ese caso no hay dato de +18 (se asume false).
+    // Accepts `{ url, isAdult }` (or `null` on unlink). Auto-match still
+    // returns only the URL: in that case there is no +18 data (assumed false).
     const handleCoverLinked = (mangaId, cover) => {
         const url = typeof cover === 'string' ? cover : cover?.url;
         const isAdult = typeof cover === 'object' && cover !== null && cover.isAdult === true;
@@ -59,14 +59,14 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         });
     };
 
-    // Reveal por click: consume el evento para no disparar la acción de la card.
+    // Reveal by click: consume the event so the card action does not fire.
     const handleCoverReveal = (event, mangaId) => {
         event.stopPropagation();
         setRevealedCovers((prev) => ({ ...prev, [mangaId]: !prev[mangaId] }));
     };
 
-    // Auto-match best-effort al agregar: cuando aparece un manga nuevo, se
-    // intenta vincular su portada (solo si hay match único; fire-and-forget).
+    // Best-effort auto-match on add: when a new manga shows up, try to
+    // link its cover (only if there is a unique match; fire-and-forget).
     const knownMangasRef = useRef(null);
     useEffect(() => {
         const ids = entries.map((entry) => entry.manga.id);
@@ -79,7 +79,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         fresh.forEach((id) => known.add(id));
         if (fresh.length === 0) return;
 
-        // Secuencial: no saturar AniList (rate limit). Se detiene ante un 429.
+        // Sequential: do not flood AniList (rate limit). Stops on a 429.
         let cancelled = false;
         (async () => {
             for (const id of fresh) {
@@ -97,7 +97,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         };
     }, [entries]);
 
-    // Load filter options when entries or profile changes
     useEffect(() => {
         if (selectedProfile && entries.length > 0) {
             loadFilterOptions();
@@ -109,14 +108,12 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         
         setFiltersLoading(true);
         try {
-            // Load publishers
             const publishersResponse = await fetch(`/api/entry/filters/publishers?profileId=${selectedProfile.id}`);
             if (publishersResponse.ok) {
                 const publishers = await publishersResponse.json();
                 setAvailablePublishers(publishers);
             }
 
-            // Load formats
             const formatsResponse = await fetch(`/api/entry/filters/formats?profileId=${selectedProfile.id}`);
             if (formatsResponse.ok) {
                 const formats = await formatsResponse.json();
@@ -129,14 +126,12 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         }
     };
 
-    // Reset filters when profile changes
     useEffect(() => {
         setPublisherFilter('all');
         setFormatFilter('all');
         setFilter('all');
     }, [selectedProfile]);
 
-    // Helper functions (keeping existing ones)
     const getCompletionPercentage = (entry) => {
         if (!entry.manga.volumes || entry.manga.volumes === 0) return null;
         return Math.round((entry.quantity / entry.manga.volumes) * 100);
@@ -154,7 +149,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         }
     };
 
-    // Identidad visual generada por título (fallback sin portada): gradiente + iniciales.
+    // Visual identity generated from the title (fallback without cover): gradient + initials.
     const titleHash = (value) => {
         let hash = 0;
         const text = value || '';
@@ -193,10 +188,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         return counts;
     };
 
-    // Enhanced filtering logic
     const getFilteredEntries = () => {
         return entries.filter(entry => {
-            // Publisher filter
             if (publisherFilter !== 'all') {
                 const publisherId = entry.manga?.publisher?.id || entry.manga?.publisherId;
                 if (publisherId !== parseInt(publisherFilter)) {
@@ -204,7 +197,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 }
             }
 
-            // Format filter
             if (formatFilter !== 'all') {
                 const formatId = entry.manga?.format?.id || entry.manga?.formatId;
                 if (formatId !== parseInt(formatFilter)) {
@@ -212,7 +204,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 }
             }
 
-            // Status filter
             const status = getEntryStatus(entry);
             switch (filter) {
                 case 'complete':
@@ -231,7 +222,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         });
     };
 
-    // Edit handlers
     const handleEditEntry = (entry) => {
         setEditingEntry(entry);
         setShowEditEntry(true);
@@ -246,7 +236,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         try {
             const entryData = {
                 ...entry,
-                id: entry.id, // Include the ID for update
+                id: entry.id,
                 quantity: newQuantity
             };
 
@@ -300,17 +290,14 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
 
     const statusCounts = getStatusCounts();
 
-    // Helper function to clear all filters
     const clearAllFilters = () => {
         setFilter('all');
         setPublisherFilter('all');
         setFormatFilter('all');
     };
 
-    // Check if any filters are active
     const hasActiveFilters = filter !== 'all' || publisherFilter !== 'all' || formatFilter !== 'all';
 
-    // Skeleton loading (keeping existing)
     const renderSkeleton = () => {
         const skeletonCount = viewMode === 'table' ? 10 : viewMode === 'compact' ? 12 : 6;
         
@@ -323,19 +310,18 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         );
     };
 
-    // Enhanced render methods with edit buttons
     const renderTableView = () => (
         <div className="table-container">
             <table className="entries-table">
                 <thead>
                     <tr>
-                        <th>Title</th>
-                        <th>Status</th>
-                        <th>Progress</th>
-                        <th>Completion</th>
-                        <th>Pending</th>
-                        <th>Priority</th>
-                        <th>Actions</th>
+                        <th>{t('collection.thTitle')}</th>
+                        <th>{t('collection.thStatus')}</th>
+                        <th>{t('collection.thProgress')}</th>
+                        <th>{t('collection.thCompletion')}</th>
+                        <th>{t('collection.thPending')}</th>
+                        <th>{t('collection.thPriority')}</th>
+                        <th>{t('collection.thActions')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -358,7 +344,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                     <div className="table-progress">
                                         <span className="progress-text">
                                             {entry.quantity}
-                                            {entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}
+                                            {entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : t('collection.volumesUnknown')}
                                         </span>
                                         {entry.manga.volumes > 0 && (
                                             <div className="table-progress-bar">
@@ -393,7 +379,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                             <button
                                                 className="quick-btn plus-one"
                                                 onClick={() => handleQuickVolumeUpdate(entry, entry.quantity + 1)}
-                                                title="Add 1 volume"
+                                                title={t('collection.addOne')}
                                             >
                                                 +1
                                             </button>
@@ -401,7 +387,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                         <button
                                             className="edit-btn"
                                             onClick={() => handleEditEntry(entry)}
-                                            title="Edit entry"
+                                            title={t('collection.editEntry')}
                                         >
                                             ✏️
                                         </button>
@@ -485,8 +471,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 const completionPercent = getCompletionPercentage(entry);
                 const cover = coverMap[entry.manga.id];
                 const isAdult = cover?.isAdult === true;
-                // Con el pref ON el reveal es por hover (momentáneo); con el pref
-                // OFF requiere click y queda hasta deshacerlo.
+                // With the pref ON reveal is on hover (momentary); with the pref
+                // OFF it needs a click and stays until undone.
                 const revealOnHover = isAdult && showAdultCovers;
                 const revealed = isAdult && !showAdultCovers && revealedCovers[entry.manga.id] === true;
                 const coverClassName = [
@@ -531,7 +517,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                         <div className="entry-header">
                             <h3 className="manga-title">{entry.manga.name}</h3>
                             <div className="entry-badges">
-                                {entry.priority && <span className="priority-badge">Priority</span>}
+                                {entry.priority && <span className="priority-badge">{t('collection.priorityBadge')}</span>}
                                 <span className={`status-badge ${status}`}>
                                     {status === 'complete' ? '✅' : 
                                      status === 'priority-incomplete' ? '⚡' : '❌'}
@@ -551,7 +537,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                 </div>
                             )}
                             <div className="quantity-info">
-                                <span className="owned">Owned: {entry.quantity}{entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}</span>
+                                <span className="owned">{t('collection.ownedLabel')} {entry.quantity}{entry.manga.volumes > 0 ? ` / ${entry.manga.volumes}` : ' / ??'}</span>
                                 {entry.manga.volumes > 0 && (
                                     <>
                                         <div className="progress-bar">
@@ -569,7 +555,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                             
                             {entry.pending && (
                                 <div className="pending-info">
-                                    <strong>Pending:</strong> {entry.pending}
+                                    <strong>{t('collection.pendingLabel')}</strong> {entry.pending}
                                 </div>
                             )}
 
@@ -580,7 +566,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                         onClick={() => handleQuickVolumeUpdate(entry, entry.quantity + 1)}
                                         title="Add 1 volume"
                                     >
-                                        +1 Volume
+                                        {t('collection.plusOneVolume')}
                                     </button>
                                 )}
                                 <button
@@ -588,7 +574,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                     onClick={() => handleEditEntry(entry)}
                                     title="Edit entry"
                                 >
-                                    ✏️ Edit Entry
+                                    {t('collection.editEntryIcon')}
                                 </button>
                             </div>
                         </div>
@@ -602,13 +588,13 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         <div className="collection-view">
             <div className="collection-header">
                 <div className="header-content">
-                    <h1>My Manga Collection</h1>
+                    <h1>{t('collection.title')}</h1>
                     {onRefresh && (
                         <button 
                             className="refresh-button"
                             onClick={onRefresh}
                             disabled={loading}
-                            title="Refresh collection"
+                            title={t('collection.refresh')}
                         >
                             {loading ? (
                                 <LoadingSpinner size="small" showMessage={false} />
@@ -619,20 +605,20 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     )}
                 </div>
                 <p className="collection-stats">
-                    {entries.length} total entries • {filteredEntries.length} shown • {entries.reduce((sum, entry) => sum + entry.quantity, 0)} volumes total
+                    {t('collection.stats', { total: entries.length, shown: filteredEntries.length, volumes: entries.reduce((sum, entry) => sum + entry.quantity, 0) })}
                 </p>
                 <div className="status-summary">
                     <span className="status-count complete">
                         <div className="status-dot complete"></div>
-                        Complete: {statusCounts.complete}
+                        {t('collection.complete', { count: statusCounts.complete })}
                     </span>
                     <span className="status-count priority-incomplete">
                         <div className="status-dot priority-incomplete"></div>
-                        Priority: {statusCounts.priorityIncomplete}
+                        {t('collection.priority', { count: statusCounts.priorityIncomplete })}
                     </span>
                     <span className="status-count incomplete">
                         <div className="status-dot incomplete"></div>
-                        Incomplete: {statusCounts.incomplete}
+                        {t('collection.incomplete', { count: statusCounts.incomplete })}
                     </span>
                 </div>
             </div>
@@ -640,13 +626,13 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
             <div className="collection-controls">
                 <div className="filters-row">
                     <div className="filter-group">
-                        <label>📚 Publisher:</label>
+                        <label>{t('collection.fPublisher')}</label>
                         <select 
                             value={publisherFilter} 
                             onChange={(e) => setPublisherFilter(e.target.value)} 
                             disabled={loading || filtersLoading}
                         >
-                            <option value="all">All Publishers</option>
+                            <option value="all">{t('collection.fAllPublishers')}</option>
                             {availablePublishers.map(publisher => (
                                 <option key={publisher.id} value={publisher.id}>
                                     {publisher.name} ({publisher.count})
@@ -656,13 +642,13 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     </div>
 
                     <div className="filter-group">
-                        <label>📖 Format:</label>
+                        <label>{t('collection.fFormat')}</label>
                         <select 
                             value={formatFilter} 
                             onChange={(e) => setFormatFilter(e.target.value)} 
                             disabled={loading || filtersLoading}
                         >
-                            <option value="all">All Formats</option>
+                            <option value="all">{t('collection.fAllFormats')}</option>
                             {availableFormats.map(format => (
                                 <option key={format.id} value={format.id}>
                                     {format.name} ({format.count})
@@ -672,14 +658,14 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     </div>
 
                     <div className="filter-group">
-                        <label>📊 Status:</label>
+                        <label>{t('collection.fStatus')}</label>
                         <select value={filter} onChange={(e) => setFilter(e.target.value)} disabled={loading}>
-                            <option value="all">All Status ({entries.length})</option>
-                            <option value="complete">✅ Complete</option>
-                            <option value="priority-incomplete">⚡ Priority Incomplete</option>
-                            <option value="incomplete">❌ Incomplete</option>
-                            <option value="priority">Priority Only</option>
-                            <option value="pending">With Pending</option>
+                            <option value="all">{t('collection.fAllStatus', { count: entries.length })}</option>
+                            <option value="complete">{t('collection.sComplete')}</option>
+                            <option value="priority-incomplete">{t('collection.sPriorityIncomplete')}</option>
+                            <option value="incomplete">{t('collection.sIncomplete')}</option>
+                            <option value="priority">{t('collection.sPriorityOnly')}</option>
+                            <option value="pending">{t('collection.sWithPending')}</option>
                         </select>
                     </div>
 
@@ -688,9 +674,9 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                             <button 
                                 className="clear-filters-btn"
                                 onClick={clearAllFilters}
-                                title="Clear all filters"
+                                title={t('collection.fClearTitle')}
                             >
-                                🗑️ Clear Filters
+                                {t('collection.fClear')}
                             </button>
                         </div>
                     )}
@@ -698,23 +684,23 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
 
                 <div className="controls-row">
                     <div className="view-controls">
-                        <label>View:</label>
+                        <label>{t('collection.viewLabel')}</label>
                         <select value={viewMode} onChange={(e) => setViewMode(e.target.value)} disabled={loading}>
-                            <option value="table">📊 Table</option>
-                            <option value="compact">📋 Compact</option>
-                            <option value="cards">🎴 Cards</option>
+                            <option value="table">{t('collection.viewTable')}</option>
+                            <option value="compact">{t('collection.viewCompact')}</option>
+                            <option value="cards">{t('collection.viewCards')}</option>
                         </select>
                     </div>
 
                     <div className="sort-controls">
-                        <label>Sort by:</label>
+                        <label>{t('collection.sortLabel')}</label>
                         <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} disabled={loading}>
-                            <option value="name">Name</option>
-                            <option value="completion">Completion %</option>
-                            <option value="quantity">Quantity</option>
-                            <option value="priority">Priority</option>
-                            <option value="publisher">Publisher</option>
-                            <option value="format">Format</option>
+                            <option value="name">{t('collection.sortName')}</option>
+                            <option value="completion">{t('collection.sortCompletion')}</option>
+                            <option value="quantity">{t('collection.sortQuantity')}</option>
+                            <option value="priority">{t('collection.sortPriority')}</option>
+                            <option value="publisher">{t('collection.sortPublisher')}</option>
+                            <option value="format">{t('collection.sortFormat')}</option>
                         </select>
                     </div>
                 </div>
@@ -725,7 +711,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                     renderSkeleton()
                 ) : sortedEntries.length === 0 ? (
                     <div className="empty-collection">
-                        <p>No entries found for the selected filters.</p>
+                        <p>{t('collection.empty')}</p>
                         {hasActiveFilters && (
                             <button onClick={clearAllFilters} className="reset-filter">
                                 Clear All Filters
@@ -741,7 +727,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 )}
             </div>
 
-            {/* Edit Modals */}
             <AddEntryModal 
                 isOpen={showEditEntry}
                 onClose={() => {
