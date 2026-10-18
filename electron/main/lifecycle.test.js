@@ -10,6 +10,9 @@ import {
   shouldQuitOnAllWindowsClosed,
   trayMenuTemplate,
 } from './lifecycle.js';
+import { createAppTranslator } from '../../shared/i18n/index.js';
+
+const t = createAppTranslator('es');
 
 describe('lifecycle: arranque oculto', () => {
   it('un lanzamiento manual muestra la ventana', () => {
@@ -34,14 +37,14 @@ describe('lifecycle: ventanas', () => {
 
 describe('lifecycle: menú del tray', () => {
   it('incluye abrir, estado del bot, autostart y salir', () => {
-    const ids = trayMenuTemplate({ botStatus: 'conectado', autostart: true })
+    const ids = trayMenuTemplate({ botStatus: 'conectado', autostart: true, t })
       .filter((i) => i.id)
       .map((i) => i.id);
     assert.deepEqual(ids, ['open', 'botStatus', 'autostart', 'quit']);
   });
 
   it('refleja el estado del bot y del autostart', () => {
-    const items = trayMenuTemplate({ botStatus: 'apagado', autostart: false });
+    const items = trayMenuTemplate({ botStatus: 'apagado', autostart: false, t });
     const bot = items.find((i) => i.id === 'botStatus');
     const auto = items.find((i) => i.id === 'autostart');
     assert.match(bot.label, /apagado/);

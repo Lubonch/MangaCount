@@ -19,12 +19,12 @@ export function shouldQuitOnAllWindowsClosed() {
 
 // Plantilla del menú del tray como datos puros; index.js la traduce a `Menu`
 // agregando los `click` de cada ítem.
-export function trayMenuTemplate({ botStatus = 'apagado', autostart = false } = {}) {
+export function trayMenuTemplate({ botStatus = 'apagado', autostart = false, t = (key) => key } = {}) {
   return [
-    { id: 'open', label: 'Abrir' },
-    { id: 'botStatus', label: `Estado del bot: ${botStatus}`, enabled: false },
-    { id: 'autostart', label: 'Iniciar con el sistema', type: 'checkbox', checked: !!autostart },
+    { id: 'open', label: t('tray.open') },
+    { id: 'botStatus', label: t('tray.botStatus', { status: botStatus }), enabled: false },
+    { id: 'autostart', label: t('tray.autostart'), type: 'checkbox', checked: !!autostart },
     { type: 'separator' },
-    { id: 'quit', label: 'Salir' },
+    { id: 'quit', label: t('tray.quit') },
   ];
 }

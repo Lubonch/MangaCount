@@ -11,6 +11,7 @@ import { PROFILE_IMAGE_SCHEME } from './services/files.js';
 import { loadResolvedPrefs } from './services/prefs.js';
 import { createSecrets } from './services/secrets.js';
 import { createLocalFileGrants } from './services/local-file-grants.js';
+import { getTranslator } from './services/i18n.js';
 import { getAutostart, setAutostart, AUTOSTART_ARGS } from './services/autostart.js';
 import { startAutoBackup } from './services/auto-backup.js';
 import { createDiscordBot } from './services/discord-bot.js';
@@ -213,7 +214,7 @@ function initBackend() {
       async pickFile(filters) {
         const res = await electronDialog.showOpenDialog(win ?? undefined, {
           properties: ['openFile'],
-          filters: filters?.length ? filters : [{ name: 'Backup MangaCount', extensions: ['zip'] }],
+          filters: filters?.length ? filters : [{ name: getTranslator(dataDir)('dialog.backupFilter'), extensions: ['zip'] }],
         });
         return res.canceled ? null : res.filePaths[0] ?? null;
       },
@@ -333,6 +334,7 @@ function handleTrayAction(id, menuItem) {
 function refreshTrayMenu() {
   if (!tray) return;
   const template = trayMenuTemplate({
+    t: getTranslator(appCtx?.dataDir),
     botStatus,
     autostart: getAutostart({ app }),
   }).map((item) =>

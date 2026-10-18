@@ -18,6 +18,7 @@ import {
 import { formats, publishers } from '../db/repositories/catalogs.js';
 import { getRecommendations } from '../services/recommendations.js';
 import { SUPPORTED_LANGUAGES } from '../../../shared/i18n/index.js';
+import { getTranslator } from '../services/i18n.js';
 import { saveProfilePicture } from '../services/files.js';
 import { databaseStatistics, nukeLocalData } from '../services/database.js';
 import {
@@ -50,18 +51,18 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 
-function requireProfileId(profileId) {
+function requireProfileId(profileId, t = (key) => key) {
   if (!Number.isInteger(profileId) || profileId <= 0) {
-    throw new Error('profileId inválido');
+    throw new Error(t('err.profileIdInvalid'));
   }
 }
 
 // Un perfil borrado (p. ej. tras la "Nuclear Option", que re-siembra el perfil
 // por defecto con un id nuevo) deja la UI con un id viejo; validamos para dar un
 // mensaje claro en vez de un FOREIGN KEY constraint failed.
-function requireProfileExists(db, profileId) {
+function requireProfileExists(db, profileId, t = (key) => key) {
   if (!getProfileById(db, profileId)) {
-    throw new Error('Perfil no encontrado. Volvé a elegir un perfil (la base pudo reiniciarse).');
+    throw new Error(t('err.profileNotFound'));
   }
 }
 
@@ -90,8 +91,9 @@ export const handlers = {
   'manga:list': ({ db }) => listMangas(db),
   'manga:get': ({ db }, id) => getMangaById(db, id),
   'manga:upsert': ({ db }, manga) => saveOrUpdateManga(db, manga),
-  'manga:delete': ({ db }, id) => {
-    if (!Number.isInteger(id) || id <= 0) throw new Error('mangaId inválido');
+  'manga:delete': ({ db, dataDir }, id) => {
+    const t = getTranslator(dataDir);
+    if (!Number.isInteger(id) || id <= 0) throw new Error(t('err.mangaIdInvalid'));
     return { ok: deleteManga(db, id) };
   },
   'format:list': ({ db }) => formats.list(db),
@@ -107,24 +109,28 @@ export const handlers = {
     }),
   'database:statistics': ({ db }) => databaseStatistics(db),
   'database:nuke-local': ({ db }) => nukeLocalData(db),
-  'entry:list': ({ db }, profileId = null) => {
-    if (profileId != null) requireProfileId(profileId);
+  'entry:list': ({ db, dataDir }, profileId = null) => {
+    const t = getTranslator(dataDir);
+    if (profileId != null) requireProfileId(profileId, t);
     return listEntries(db, profileId);
   },
   'entry:get-by-id': ({ db }, id) => getEntryById(db, id),
-  'entry:upsert': ({ db }, entry) => {
-    requireProfileId(entry?.profileId);
-    requireProfileExists(db, entry.profileId);
+  'entry:upsert': ({ db, dataDir }, entry) => {
+    const t = getTranslator(dataDir);
+    requireProfileId(entry?.profileId, t);
+    requireProfileExists(db, entry.profileId, t);
     return entry?.id ? updateEntry(db, entry) : upsertEntry(db, entry);
   },
-  'entry:import': ({ db }, { profileId, tsv }) => {
-    requireProfileId(profileId);
-    requireProfileExists(db, profileId);
-    if (typeof tsv !== 'string' || tsv.length === 0) throw new Error('TSV vacío');
+  'entry:import': ({ db, dataDir }, { profileId, tsv }) => {
+    const t = getTranslator(dataDir);
+    requireProfileId(profileId, t);
+    requireProfileExists(db, profileId, t);
+    if (typeof tsv !== 'string' || tsv.length === 0) throw new Error(t('err.tsvEmpty'));
     return importTsv(db, tsv, profileId);
   },
-  'entry:export': ({ db }, profileId) => {
-    requireProfileId(profileId);
+  'entry:export': ({ db, dataDir }, profileId) => {
+    const t = getTranslator(dataDir);
+    requireProfileId(profileId, t);
     return exportTsv(db, profileId);
   },
   'entry:used-formats': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.format),
@@ -137,8 +143,9 @@ export const handlers = {
   'cover:link': ({ db, dataDir }, { mangaId, candidate } = {}) =>
     linkCover(db, dataDir, { mangaId, candidate }),
   'cover:local': ({ db, dataDir, localFileGrants }, { mangaId, sourcePath } = {}) => {
+    const t = getTranslator(dataDir);
     if (!localFileGrants?.consume(sourcePath)) {
-      throw new Error('sourcePath no autorizado (elegí el archivo con el diálogo)');
+      throw new Error(t('err.sourceNotAuthorized'));
     }
     return linkLocalCover(db, dataDir, { mangaId, sourcePath });
   },
@@ -161,7 +168,7 @@ export const handlers = {
       ...config,
       triggers: { ...prefs.backup.triggers, ...(config.triggers ?? {}) },
     };
-    const errors = validateBackupConfig(backup);
+    const errors = validateBackupConfig(backup, getTranslator(dataDir));
     if (errors.length) throw new Error(errors.join(' '));
     savePrefs(dataDir, { ...prefs, backup });
     return backup;
@@ -182,7 +189,7 @@ export const handlers = {
     const { db, dataDir, logger } = ctx;
     const prefs = resolvePrefs(loadPrefs(dataDir));
     const dest = destinationDir ?? prefs.backup.destinationDir;
-    if (!dest) throw new Error('No hay destino de backup configurado.');
+    if (!dest) throw new Error(getTranslator(dataDir)('err.backupNoDestination'));
     const at = new Date().toISOString();
     try {
       const result = await createBackup(db, dataDir, dest);
@@ -223,17 +230,17 @@ export const handlers = {
     bot.pendingLimitEnabled = bot.pendingLimitEnabled !== false;
     const pendingLimit = Number(bot.pendingLimit);
     if (!Number.isInteger(pendingLimit) || pendingLimit < 1 || pendingLimit > 500) {
-      throw new Error('El límite de /pendientes debe ser un entero entre 1 y 500.');
+      throw new Error(getTranslator(ctx.dataDir)('err.pendingLimitRange'));
     }
     bot.pendingLimit = pendingLimit;
     const confirmTtlMinutes = Number(bot.confirmTtlMinutes);
     if (!Number.isInteger(confirmTtlMinutes) || confirmTtlMinutes < 1 || confirmTtlMinutes > 60) {
-      throw new Error('Los minutos de confirmación deben ser un entero entre 1 y 60.');
+      throw new Error(getTranslator(ctx.dataDir)('err.confirmTtlRange'));
     }
     bot.confirmTtlMinutes = confirmTtlMinutes;
     const recommendLimit = Number(bot.recommendLimit);
     if (!Number.isInteger(recommendLimit) || recommendLimit < 1 || recommendLimit > 10) {
-      throw new Error('Las recomendaciones por defecto deben ser un entero entre 1 y 10.');
+      throw new Error(getTranslator(ctx.dataDir)('err.recommendLimitRange'));
     }
     bot.recommendLimit = recommendLimit;
     bot.ephemeralReplies = bot.ephemeralReplies === true;
@@ -246,7 +253,7 @@ export const handlers = {
     return bot;
   },
   'bot:set-token': async (ctx, token) => {
-    if (typeof token !== 'string' || token.trim().length === 0) throw new Error('Token vacío.');
+    if (typeof token !== 'string' || token.trim().length === 0) throw new Error(getTranslator(ctx.dataDir)('err.tokenEmpty'));
     ctx.secrets?.saveToken(token.trim());
     const prefs = resolvePrefs(loadPrefs(ctx.dataDir));
     try {
@@ -276,7 +283,7 @@ export const handlers = {
   'app:config-set': ({ dataDir, autostart }, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(dataDir));
     if (config.language != null && !SUPPORTED_LANGUAGES.includes(config.language)) {
-      throw new Error(`Idioma no soportado: ${config.language}`);
+      throw new Error(getTranslator(dataDir)('err.languageUnsupported', { language: config.language }));
     }
     const next = {
       ...prefs,

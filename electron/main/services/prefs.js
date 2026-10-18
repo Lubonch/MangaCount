@@ -68,12 +68,12 @@ export function loadResolvedPrefs(dataDir) {
 }
 
 // Gate de config de backup: habilitado exige destino y al menos un disparador.
-export function validateBackupConfig(backup = {}) {
+export function validateBackupConfig(backup = {}, t = (key) => key) {
   const errors = [];
   if (backup.enabled) {
-    if (!backup.destinationDir) errors.push('El backup automático requiere un destino.');
+    if (!backup.destinationDir) errors.push(t('err.backupNeedsDestination'));
     if (!backup.triggers?.onStartup && !backup.triggers?.whileRunning) {
-      errors.push('El backup automático requiere al menos un disparador.');
+      errors.push(t('err.backupNeedsTrigger'));
     }
   }
   return errors;

@@ -324,4 +324,25 @@ export default {
   'app.errorTitle': "Oops! Something went wrong",
 
   'app.retry': "Retry Loading",
+
+  'err.profileIdInvalid': "profileId inválido",
+  'err.profileNotFound': "Perfil no encontrado. Volvé a elegir un perfil (la base pudo reiniciarse).",
+  'err.mangaIdInvalid': "mangaId inválido",
+  'err.tsvEmpty': "TSV vacío",
+  'err.sourceNotAuthorized': "sourcePath no autorizado (elegí el archivo con el diálogo)",
+  'err.backupNoDestination': "No hay destino de backup configurado.",
+  'err.backupNeedsDestination': "El backup automático requiere un destino.",
+  'err.backupNeedsTrigger': "El backup automático requiere al menos un disparador.",
+  'err.pendingLimitRange': "El límite de /pendientes debe ser un entero entre 1 y 500.",
+  'err.confirmTtlRange': "Los minutos de confirmación deben ser un entero entre 1 y 60.",
+  'err.recommendLimitRange': "Las recomendaciones por defecto deben ser un entero entre 1 y 10.",
+  'err.tokenEmpty': "Token vacío.",
+  'err.languageUnsupported': "Idioma no soportado: {language}",
+
+  'tray.open': "Abrir",
+  'tray.botStatus': "Estado del bot: {status}",
+  'tray.autostart': "Iniciar con el sistema",
+  'tray.quit': "Salir",
+
+  'dialog.backupFilter': "Backup MangaCount",
 };
