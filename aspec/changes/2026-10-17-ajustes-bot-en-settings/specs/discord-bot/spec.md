@@ -10,11 +10,14 @@ como cantidad por defecto el valor configurado (`bot.recommendLimit`, default 5)
 `limite`. Los comandos de **lectura** SHALL responder de forma **efímera** (solo el usuario) cuando la
 preferencia `bot.ephemeralReplies` esté activa. `/pendientes` SHALL detallar prioridad,
 `cantidad/total (faltan N)`, el campo `pending` (tomos no consecutivos), formato y editorial, y SHALL
-respetar un **tope configurable** de series listadas (default **20**); con el tope **desactivado** SHALL
-listar **todas** las series. Cuando la respuesta supere el límite de longitud de un mensaje de Discord,
-el bot SHALL repartirla en **varios mensajes** (respuesta + seguimientos) con indicador de continuación,
-sin cortar líneas por la mitad. `/recomendar`, cuando no haya confianza de mercado, SHALL responder con
-el desglose (países detectados y cantidad de series sin país) en vez de solo un mensaje genérico.
+**paginar** el listado completo con botones (`Anterior`/`Siguiente`) usando como tamaño de página el
+valor configurado (`bot.pendingLimit`, default **20**); con el tope desactivado SHALL mostrar todas las
+series en una sola página. La página SHALL indicar `Página X de Y (Total: N series)`, los botones SHALL
+deshabilitarse en los extremos, SHALL poder usarlos solo quien ejecutó el comando o alguien de la
+allowlist, y SHALL expirar sin romper el bot. Cuando **otra** respuesta supere el límite de longitud de
+un mensaje de Discord, el bot SHALL repartirla en varios mensajes con indicador de continuación, sin
+cortar líneas por la mitad. `/recomendar`, cuando no haya confianza de mercado, SHALL responder con el
+desglose (países detectados y cantidad de series sin país) en vez de solo un mensaje genérico.
 
 #### Scenario: Consultar la colección por Discord
 
@@ -31,15 +34,25 @@ el desglose (países detectados y cantidad de series sin país) en vez de solo u
 - **WHEN** el usuario ejecuta `/pendientes`
 - **THEN** cada serie incluye prioridad, `cantidad/total (faltan N)`, el campo `pending` cuando exista, formato y editorial
 
-#### Scenario: Pendientes con el tope activo
+#### Scenario: Pendientes paginados
 
-- **WHEN** el usuario ejecuta `/pendientes` con el tope activo y hay más series que el máximo configurado
-- **THEN** el bot lista hasta el máximo y aclara cuántas series más hay
+- **WHEN** el usuario ejecuta `/pendientes` y hay más series que el tamaño de página
+- **THEN** el bot muestra la primera página con `Página X de Y (Total: N series)` y los botones `Anterior`/`Siguiente`, con `Anterior` deshabilitado en la primera página
+
+#### Scenario: Navegar entre páginas
+
+- **WHEN** el usuario que ejecutó `/pendientes` pulsa `Siguiente`
+- **THEN** el mensaje se actualiza a la página siguiente y `Siguiente` se deshabilita en la última página
+
+#### Scenario: Paginación no autorizada o expirada
+
+- **WHEN** otro usuario (fuera de la allowlist) pulsa los botones, o la paginación expiró
+- **THEN** el bot no cambia de página y, si expiró, avisa que hay que volver a ejecutar el comando
 
 #### Scenario: Pendientes con el tope desactivado
 
-- **WHEN** el usuario ejecuta `/pendientes` con el tope desactivado y hay más series de las que entran en un mensaje
-- **THEN** el bot envía la lista **completa** repartida en varios mensajes, sin el recorte "…y N series más"
+- **WHEN** el usuario ejecuta `/pendientes` con el tope desactivado
+- **THEN** el bot muestra todas las series en una sola página, sin el recorte "…y N series más"
 
 #### Scenario: Respuestas de lectura efímeras
 
@@ -50,7 +63,6 @@ el desglose (países detectados y cantidad de series sin país) en vez de solo u
 
 - **WHEN** el usuario ejecuta `/recomendar` y el mercado no se puede inferir con confianza
 - **THEN** el bot responde con el desglose (países detectados con series/volúmenes y cuántas series quedaron sin país) y qué cargar
-
 ### Requirement: Comandos de escritura de la colección por Discord
 
 The system SHALL exponer slash commands guild-scoped de escritura `/tomo`, `/actualizar`, `/pending`,
