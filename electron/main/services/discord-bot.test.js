@@ -1006,6 +1006,16 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     reply: async () => {},
     ...over,
   });
+  const autocomplete = (focused, over = {}) => ({
+    isAutocomplete: () => true,
+    isButton: () => false,
+    isChatInputCommand: () => false,
+    user: { id: 'u1' },
+    guildId: 'g1',
+    options: { getFocused: () => ({ value: focused }) },
+    respond: async () => {},
+    ...over,
+  });
   const button = (customId, over = {}) => ({
     isButton: () => true,
     user: { id: 'u1' },
@@ -1124,6 +1134,35 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     assert.equal(replies.length, 1);
     assert.ok(followUps.length >= 1);
     assert.match(followUps[followUps.length - 1].content, /\(\d+\/\d+\)/);
+  });
+
+  it('autocompleta títulos de la biblioteca', async () => {
+    for (const name of ['Berserk Deluxe', 'Vinland Saga']) {
+      const manga = createManga(db, { name, volumes: 1 });
+      upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 1 });
+    }
+    const responses = [];
+    await clients[0].handlers.interactionCreate(
+      autocomplete('ber', { respond: async (opts) => responses.push(opts) })
+    );
+    await flush();
+    assert.deepEqual(responses[0].map((o) => o.name), ['Berserk', 'Berserk Deluxe']);
+  });
+
+  it('autocomplete responde vacío sin coincidencias o sin autorización', async () => {
+    const responses = [];
+    await clients[0].handlers.interactionCreate(
+      autocomplete('zzz', { respond: async (opts) => responses.push(opts) })
+    );
+    await flush();
+    assert.deepEqual(responses[0], []);
+
+    const unauthorized = [];
+    await clients[0].handlers.interactionCreate(
+      autocomplete('ber', { user: { id: 'x' }, respond: async (opts) => unauthorized.push(opts) })
+    );
+    await flush();
+    assert.deepEqual(unauthorized[0], []);
   });
 
   it('ignora interacciones no autorizadas', async () => {

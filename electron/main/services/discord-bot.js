@@ -29,7 +29,7 @@ export function slashCommands(t = fallbackTranslator()) {
   {
     name: 'buscar',
     description: t('bot.descBuscar'),
-    options: [{ type: 3, name: 'query', description: t('bot.optQuery'), required: true }],
+    options: [{ type: 3, name: 'query', description: t('bot.optQuery'), required: true, autocomplete: true }],
   },
   { name: 'pendientes', description: t('bot.descPendientes') },
   {
@@ -42,13 +42,13 @@ export function slashCommands(t = fallbackTranslator()) {
   {
     name: 'tomo',
     description: t('bot.descTomo'),
-    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true }],
+    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true }],
   },
   {
     name: 'actualizar',
     description: t('bot.descActualizar'),
     options: [
-      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true },
       { type: 4, name: 'cantidad', description: t('bot.optCantidad'), required: true, min_value: 0, max_value: 9999 },
     ],
   },
@@ -56,20 +56,20 @@ export function slashCommands(t = fallbackTranslator()) {
     name: 'pending',
     description: t('bot.descPending'),
     options: [
-      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true },
       { type: 3, name: 'tomos', description: t('bot.optTomos'), required: false },
     ],
   },
   {
     name: 'prioridad',
     description: t('bot.descPrioridad'),
-    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true }],
+    options: [{ type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true }],
   },
   {
     name: 'nuevo',
     description: t('bot.descNuevo'),
     options: [
-      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true },
+      { type: 3, name: 'titulo', description: t('bot.optTitulo'), required: true, autocomplete: true },
       { type: 4, name: 'total', description: t('bot.optTotal'), required: false, min_value: 0 },
       { type: 4, name: 'cantidad', description: t('bot.optOwned'), required: false, min_value: 0 },
       { type: 3, name: 'formato', description: t('bot.optFormato'), required: false },
@@ -536,7 +536,29 @@ export function createDiscordBot({
     ];
   };
 
+  async function handleAutocomplete(interaction) {
+    const config = getConfig();
+    const args = { userId: interaction.user?.id, guildId: interaction.guildId };
+    if (!isAuthorized(config, args)) {
+      await interaction.respond([]);
+      return;
+    }
+    const focused = interaction.options?.getFocused?.(true)?.value ?? '';
+    const query = String(focused).trim().toLowerCase();
+    const options = listMangas(resolveDb())
+      .filter((manga) => !query || manga.name.toLowerCase().includes(query))
+      .sort(
+        (a, b) =>
+          Number(b.name.toLowerCase().startsWith(query)) -
+          Number(a.name.toLowerCase().startsWith(query))
+      )
+      .slice(0, 25)
+      .map((manga) => ({ name: manga.name.slice(0, 100), value: manga.name.slice(0, 100) }));
+    await interaction.respond(options);
+  }
+
   async function handleInteraction(interaction) {
+    if (interaction.isAutocomplete?.()) return handleAutocomplete(interaction);
     if (interaction.isButton?.()) return handleButton(interaction);
     if (!interaction.isChatInputCommand?.()) return;
     const config = getConfig();
