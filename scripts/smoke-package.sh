@@ -8,11 +8,11 @@
 # run against the repo, where the directory exists.
 #
 # The signal is the app's own startup log ("backend listo"), not the wrapper's
-# PID: with `--appimage-extract-and-run` the tracked process exits while the app
-# keeps running, which produced a false negative.
+# PID: with `--appimage-extract-and-run` the tracked process can exit while the
+# app keeps running.
 #
 # usage: scripts/smoke-package.sh [path-to-AppImage]
-# env:   SMOKE_TIMEOUT (seconds, default 60), SMOKE_EXTRACT=1 to force extract-and-run
+# env:   SMOKE_TIMEOUT (seconds, default 60), SMOKE_EXTRACT=1 to skip the FUSE mount
 set -uo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -25,9 +25,13 @@ applog_dir="${XDG_CONFIG_HOME:-$HOME/.config}/mangacount/logs"
 applog="${applog_dir}/app.txt"
 
 pid=""
+started=0
 cleanup() {
   [ -n "$pid" ] && kill -9 "$pid" 2>/dev/null
-  pkill -9 -f 'mount_Manga' 2>/dev/null
+  # With `--appimage-extract-and-run` the wrapper PID exits while the app keeps
+  # running from the extraction dir, so kill by path too. Safe because the guard
+  # above refused to start if a MangaCount was already running.
+  pkill -9 -f 'mount_Manga|appimage_extracted' 2>/dev/null
   rm -rf "$work" "$out"
 }
 trap cleanup EXIT
@@ -44,33 +48,46 @@ if pgrep -f 'mount_Manga|appimage_extracted' >/dev/null 2>&1; then
   exit 1
 fi
 
-# The app writes its startup log here; remove it so we read this run's.
 mkdir -p "$applog_dir"
-rm -f "$applog"
 
-# Real FUSE mount by default (that is what users run). Extract-and-run only when
-# there is no FUSE; in that mode the wrapper PID is not a reliable signal.
-extra=()
-if [ "${SMOKE_EXTRACT:-0}" = "1" ] || [ ! -e /dev/fuse ]; then
-  extra=(--appimage-extract-and-run)
+# Runs the app once and waits for its startup log.
+# 0 = backend started, 1 = timeout, 2 = no FUSE available.
+attempt() {
+  rm -f "$applog"
+  : >"$out"
+  cd "$work" || return 1
+  setsid "$app" "$@" >"$out" 2>&1 </dev/null &
+  pid=$!
+  local deadline=$((SECONDS + timeout_s))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if grep -q 'backend listo' "$applog" 2>/dev/null; then
+      started=1
+      return 0
+    fi
+    if grep -qiE 'libfuse|AppImages require FUSE' "$out" 2>/dev/null; then
+      return 2
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+rc=1
+if [ "${SMOKE_EXTRACT:-0}" = "1" ]; then
+  attempt --appimage-extract-and-run
+  rc=$?
+else
+  attempt
+  rc=$?
+  if [ "$rc" = "2" ]; then
+    echo "smoke: sin FUSE en el sistema; reintento con --appimage-extract-and-run"
+    attempt --appimage-extract-and-run
+    rc=$?
+  fi
 fi
 
-cd "$work" || exit 1
-setsid "$app" "${extra[@]}" >"$out" 2>&1 </dev/null &
-pid=$!
-
-deadline=$((SECONDS + timeout_s))
-started=0
-while [ "$SECONDS" -lt "$deadline" ]; do
-  if grep -q 'backend listo' "$applog" 2>/dev/null; then
-    started=1
-    break
-  fi
-  sleep 1
-done
-
 failed=0
-if [ "$started" -ne 1 ]; then
+if [ "$rc" -ne 0 ] || [ "$started" -ne 1 ]; then
   echo "smoke: la app no llegó a iniciar el backend en ${timeout_s}s" >&2
   failed=1
 elif ! grep -q "MangaCount v${version}" "$applog"; then
