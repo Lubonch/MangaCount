@@ -45,6 +45,23 @@ export function pendingEntries(entries) {
     });
 }
 
+// Series con huecos: tienen una nota de tomos no consecutivos.
+export function huecosEntries(entries) {
+  return (entries ?? []).filter(
+    (e) => typeof e?.pending === 'string' && e.pending.trim() !== ''
+  );
+}
+
+// Series a punto de completarse: total conocido y faltan 1 o 2 tomos.
+export function almostCompleteEntries(entries) {
+  return (entries ?? [])
+    .filter((e) => {
+      const total = e?.manga?.volumes ?? 0;
+      return total > 0 && e.quantity < total && total - e.quantity <= 2;
+    })
+    .sort((a, b) => a.manga.volumes - a.quantity - (b.manga.volumes - b.quantity));
+}
+
 export function pendingSummary(entries) {
   const pending = pendingEntries(entries);
   return {

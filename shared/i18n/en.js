@@ -434,4 +434,20 @@ export default {
 
   'bot.confirmLabel': "Confirm",
   'bot.cancelLabel': "Cancel",
+
+  'bot.descHuecos': "Series with gaps (pending note)",
+  'bot.descAPunto': "Series 1-2 volumes from completion",
+  'bot.helpHuecos': "• `/huecos` — series with gaps",
+  'bot.helpAPunto': "• `/a-punto` — series almost complete",
+  'bot.huecosHeader': "📋 Gaps ({count} series):",
+  'bot.aPuntoHeader': "📋 Almost complete ({count} series):",
+  'bot.huecosLine': "*{name}* ({quantity}/{total}) — Note: {pending}",
+  'bot.aPuntoLine': "*{name}* ({quantity}/{total}) — {missing} to go",
+  'bot.noHuecos': "🎉 No gaps! Your collection is up to date.",
+  'bot.noAPunto': "🎉 Nothing almost complete.",
+
+  'bot.pendingModalTitle': "Edit pending",
+  'bot.pendingModalLabel': "Pending volumes",
+  'bot.pendingUpdated': "Pending updated.",
+  'bot.confirmAndEdit': "✅ Confirm +1 and edit note",
 };

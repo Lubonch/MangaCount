@@ -434,4 +434,20 @@ export default {
 
   'bot.confirmLabel': "Confirmar",
   'bot.cancelLabel': "Cancelar",
+
+  'bot.descHuecos': "Series con huecos (nota de pendientes)",
+  'bot.descAPunto': "Series a 1-2 tomos de completarse",
+  'bot.helpHuecos': "• `/huecos` — series con huecos",
+  'bot.helpAPunto': "• `/a-punto` — series casi completas",
+  'bot.huecosHeader': "📋 Huecos ({count} series):",
+  'bot.aPuntoHeader': "📋 Casi completas ({count} series):",
+  'bot.huecosLine': "*{name}* ({quantity}/{total}) — Nota: {pending}",
+  'bot.aPuntoLine': "*{name}* ({quantity}/{total}) — faltan {missing}",
+  'bot.noHuecos': "🎉 ¡Sin huecos! Tu colección está al día.",
+  'bot.noAPunto': "🎉 Nada casi completo.",
+
+  'bot.pendingModalTitle': "Editar pendientes",
+  'bot.pendingModalLabel': "Tomos pendientes",
+  'bot.pendingUpdated': "Pendientes actualizados.",
+  'bot.confirmAndEdit': "✅ Confirmar +1 y editar nota",
 };

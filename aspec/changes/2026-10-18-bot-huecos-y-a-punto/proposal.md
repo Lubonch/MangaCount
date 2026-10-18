@@ -16,7 +16,8 @@ Dos comandos de consulta sobre los datos actuales (`cantidad`, `total`, `pending
 3. Ambos **paginados** con el sistema del change
    `2026-10-17-bot-pendientes-limitado-y-paginado` (o repartidos en varios mensajes si ese change no
    está).
-4. Registrar los comandos y actualizar `/ayuda` y la sección del bot del README.
+4. Registrar los comandos y actualizar `/ayuda` (la sección del bot del README se actualiza en
+   `2026-10-18-readme-bot-actualizado`, #126).
 
 ## Scope
 
@@ -24,7 +25,6 @@ Dos comandos de consulta sobre los datos actuales (`cantidad`, `total`, `pending
 
 - `electron/main/services/discord-bot.js`: comandos `huecos` y `a-punto` + registro + `/ayuda`.
 - Tests de ambos filtros y del paginado.
-- README (sección del bot).
 
 **Out of scope**
 

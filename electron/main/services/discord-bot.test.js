@@ -166,6 +166,31 @@ describe('discord-bot: comandos', () => {
     assert.ok(page.content.includes('Serie 24*'));
   });
 
+  it('/huecos lista series con nota y /a-punto las casi completas', async () => {
+    const withGap = createManga(db, { name: 'Con Hueco', volumes: 20 });
+    upsertEntry(db, { mangaId: withGap.id, profileId: profile.id, quantity: 5, pending: '6,9' });
+    const almost = createManga(db, { name: 'Casi', volumes: 12 });
+    upsertEntry(db, { mangaId: almost.id, profileId: profile.id, quantity: 11 });
+    const far = createManga(db, { name: 'Lejos', volumes: 30 });
+    upsertEntry(db, { mangaId: far.id, profileId: profile.id, quantity: 3 });
+
+    const huecos = pageContent(pagination, await commands.huecos({ session: { profileId: profile.id } }));
+    assert.match(huecos, /Con Hueco/);
+    assert.match(huecos, /Nota: 6,9/);
+    assert.doesNotMatch(huecos, /Casi/);
+
+    const aPunto = pageContent(pagination, await commands['a-punto']({ session: { profileId: profile.id } }));
+    assert.match(aPunto, /Casi/);
+    assert.match(aPunto, /faltan 1/);
+    assert.doesNotMatch(aPunto, /Lejos/);
+  });
+
+  it('/huecos saluda sin huecos y /a-punto incluye las casi completas', async () => {
+    assert.match(await commands.huecos({ session: { profileId: profile.id } }), /Sin huecos/);
+    const aPunto = pageContent(pagination, await commands['a-punto']({ session: { profileId: profile.id } }));
+    assert.match(aPunto, /Berserk/);
+  });
+
   it('despacho desconocido no rompe', async () => {
     assert.equal(await dispatch(commands, 'noexiste', {}), 'Comando no disponible.');
   });
@@ -566,9 +591,9 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const out = await commands.pending({ session, titulo: 'Berserk', tomos: '5,7' });
     assert.equal(out.action.type, 'setPending');
     assert.equal(out.action.pending, '5,7');
-    const cleared = await commands.pending({ session, titulo: 'Berserk', tomos: '  ' });
-    assert.equal(cleared.action.pending, null);
-    assert.match(cleared.summary, /pending: —/);
+    const modal = await commands.pending({ session, titulo: 'Berserk', tomos: '  ' });
+    assert.equal(modal.kind, 'modal');
+    assert.equal(modal.value, '');
   });
 
   it('/prioridad propone alternar según el estado', async () => {
@@ -590,10 +615,10 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     assert.match(await commands.prioridad({ session, titulo: 'zzz' }), /No encontré/);
   });
 
-  it('/pending sin tomos limpia el campo', async () => {
+  it('/pending sin tomos abre el modal precargado', async () => {
     const out = await commands.pending({ session, titulo: 'Berserk' });
-    assert.equal(out.action.pending, null);
-    assert.match(out.summary, /pending: —/);
+    assert.equal(out.kind, 'modal');
+    assert.ok(out.entryId > 0);
   });
 
   it('los títulos ambiguos no escriben', async () => {
@@ -944,6 +969,42 @@ function makeFakeDiscord({ restGet } = {}) {
       return this;
     }
   }
+  class ModalBuilder {
+    setCustomId(id) {
+      this.customId = id;
+      return this;
+    }
+    setTitle(title) {
+      this.title = title;
+      return this;
+    }
+    addComponents(...rows) {
+      this.components = rows;
+      return this;
+    }
+  }
+  class TextInputBuilder {
+    setCustomId(id) {
+      this.customId = id;
+      return this;
+    }
+    setLabel(label) {
+      this.label = label;
+      return this;
+    }
+    setStyle(style) {
+      this.style = style;
+      return this;
+    }
+    setRequired(required) {
+      this.required = required;
+      return this;
+    }
+    setValue(value) {
+      this.value = value;
+      return this;
+    }
+  }
   class Client {
     constructor(options) {
       this.options = options;
@@ -976,7 +1037,10 @@ function makeFakeDiscord({ restGet } = {}) {
       Events: { InteractionCreate: 'interactionCreate', ClientReady: 'ready' },
       ActionRowBuilder,
       ButtonBuilder,
-      ButtonStyle: { Success: 3, Secondary: 2 },
+      ButtonStyle: { Primary: 1, Secondary: 2, Success: 3 },
+      ModalBuilder,
+      TextInputBuilder,
+      TextInputStyle: { Short: 1, Paragraph: 2 },
     },
     clients,
   };
@@ -1163,6 +1227,62 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     );
     await flush();
     assert.deepEqual(unauthorized[0], []);
+  });
+
+  it('/pending sin tomos abre el modal y el submit guarda el pending', async () => {
+    const modals = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'pending',
+        options: { getString: (n) => (n === 'titulo' ? 'Berserk' : null), getInteger: () => null },
+        showModal: async (m) => modals.push(m),
+      })
+    );
+    for (let i = 0; i < 20 && modals.length === 0; i += 1) await flush();
+    assert.equal(modals.length, 1);
+    assert.match(modals[0].customId, /^mc:pending:\d+$/);
+
+    const replies = [];
+    await clients[0].handlers.interactionCreate({
+      isModalSubmit: () => true,
+      isButton: () => false,
+      isChatInputCommand: () => false,
+      user: { id: 'u1' },
+      guildId: 'g1',
+      customId: modals[0].customId,
+      fields: { getTextInputValue: () => '3,5' },
+      reply: async (p) => replies.push(p),
+    });
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    assert.match(replies[0].content, /Pendientes actualizados/);
+    const berserk = listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk');
+    assert.equal(berserk.pending, '3,5');
+  });
+
+  it('el botón "confirmar +1 y editar nota" aplica el +1 y abre el modal', async () => {
+    const berserk = listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk');
+    upsertEntry(db, { ...berserk, pending: '2' });
+
+    const replies = [];
+    await clients[0].handlers.interactionCreate(
+      chat({
+        commandName: 'tomo',
+        options: { getString: (n) => (n === 'titulo' ? 'Berserk' : null), getInteger: () => null },
+        reply: async (p) => replies.push(p),
+      })
+    );
+    for (let i = 0; i < 20 && replies.length === 0; i += 1) await flush();
+    const editId = replies[0].components[0].components[2].customId;
+    assert.match(editId, /^mc:confirmedit:/);
+
+    const modals = [];
+    const updates = [];
+    await clients[0].handlers.interactionCreate(
+      button(editId, { showModal: async (m) => modals.push(m), update: async (p) => updates.push(p) })
+    );
+    for (let i = 0; i < 20 && modals.length === 0; i += 1) await flush();
+    assert.match(modals[0].customId, /^mc:pending:/);
+    assert.equal(listEntries(db, profile.id).find((e) => e.manga.name === 'Berserk').quantity, 41);
   });
 
   it('ignora interacciones no autorizadas', async () => {

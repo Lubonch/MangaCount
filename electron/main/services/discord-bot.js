@@ -8,7 +8,13 @@
 import { listEntries } from '../db/repositories/entries.js';
 import { listProfiles, getProfileById, listMangas } from './catalog-base.js';
 import { getRecommendations } from './recommendations.js';
-import { searchResult, pendingSummary, entryStatus } from './search.js';
+import {
+  searchResult,
+  pendingSummary,
+  entryStatus,
+  huecosEntries,
+  almostCompleteEntries,
+} from './search.js';
 import { handlers } from '../ipc/handlers.js';
 import { splitMessage } from './discord-messages.js';
 import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
@@ -32,6 +38,8 @@ export function slashCommands(t = fallbackTranslator()) {
     options: [{ type: 3, name: 'query', description: t('bot.optQuery'), required: true, autocomplete: true }],
   },
   { name: 'pendientes', description: t('bot.descPendientes') },
+  { name: 'huecos', description: t('bot.descHuecos') },
+  { name: 'a-punto', description: t('bot.descAPunto') },
   {
     name: 'recomendar',
     description: t('bot.descRecomendar'),
@@ -86,6 +94,8 @@ export function ayudaText(t = fallbackTranslator()) {
     t('bot.helpPerfil'),
     t('bot.helpBuscar'),
     t('bot.helpPendientes'),
+    t('bot.helpHuecos'),
+    t('bot.helpAPunto'),
     t('bot.helpRecomendar'),
     t('bot.helpTomo'),
     t('bot.helpActualizar'),
@@ -256,6 +266,23 @@ export function createCommands({
     return resolveSessionProfile(session, resolveDb());
   }
 
+  // Tamaño de página: el tope configurado, o todo si está desactivado.
+  function pageSizeFor(config, count) {
+    const enabled = config?.pendingLimitEnabled !== false;
+    const limit = Number.isInteger(config?.pendingLimit) ? config.pendingLimit : 20;
+    return enabled ? limit : Math.max(count, 1);
+  }
+
+  function pagedResult({ lines, userId, header, config }) {
+    const token = pagination.create({
+      lines,
+      pageSize: pageSizeFor(config, lines.length),
+      userId,
+      header,
+    });
+    return { kind: 'paged', token };
+  }
+
   return {
     async perfil({ session, perfil }) {
       const list = listProfiles(resolveDb());
@@ -301,14 +328,52 @@ export function createCommands({
         if (meta.length) parts.push(meta.join(' · '));
         return `${priority}*${e.manga.name}*: ${parts.join(' · ')}`;
       });
-      const pageSize = limitEnabled ? limit : Math.max(summary.count, 1);
-      const token = pagination.create({
+      return pagedResult({
         lines,
-        pageSize,
         userId,
+        config,
         header: t('bot.pendingHeader', { count: summary.count, vols: summary.totalPending }),
       });
-      return { kind: 'paged', token };
+    },
+
+    async huecos({ session, userId }) {
+      const profileId = activeProfile(session).id;
+      const entries = huecosEntries(entriesFor(profileId));
+      if (entries.length === 0) return t('bot.noHuecos');
+      const lines = entries.map((e) =>
+        t('bot.huecosLine', {
+          name: e.manga.name,
+          quantity: e.quantity,
+          total: e.manga.volumes,
+          pending: e.pending,
+        })
+      );
+      return pagedResult({
+        lines,
+        userId,
+        config: getConfig(),
+        header: t('bot.huecosHeader', { count: entries.length }),
+      });
+    },
+
+    async 'a-punto'({ session, userId }) {
+      const profileId = activeProfile(session).id;
+      const entries = almostCompleteEntries(entriesFor(profileId));
+      if (entries.length === 0) return t('bot.noAPunto');
+      const lines = entries.map((e) =>
+        t('bot.aPuntoLine', {
+          name: e.manga.name,
+          quantity: e.quantity,
+          total: e.manga.volumes,
+          missing: e.manga.volumes - e.quantity,
+        })
+      );
+      return pagedResult({
+        lines,
+        userId,
+        config: getConfig(),
+        header: t('bot.aPuntoHeader', { count: entries.length }),
+      });
     },
 
     async recomendar({ session, limite }) {
@@ -385,10 +450,14 @@ export function createCommands({
       if (r.error) return r.error;
       const e = r.entry;
       const value = String(tomos ?? '').trim();
-      return writeProposal(t('bot.summarySetPending', { name: e.manga.name, value: value || '—' }), {
+      // Sin texto: abrir el modal precargado con la nota actual.
+      if (value === '') {
+        return { kind: 'modal', entryId: e.id, value: e.pending ?? '' };
+      }
+      return writeProposal(t('bot.summarySetPending', { name: e.manga.name, value }), {
         type: 'setPending',
         entry: e,
-        pending: value || null,
+        pending: value,
       });
     },
 
@@ -519,21 +588,45 @@ export function createDiscordBot({
     ];
   };
 
-  const confirmRow = (token) => {
+  const pendingModal = (entryId, value) => {
+    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = discordMod;
+    return new ModalBuilder()
+      .setCustomId(`mc:pending:${entryId}`)
+      .setTitle(getT()('bot.pendingModalTitle'))
+      .addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('pending')
+            .setLabel(getT()('bot.pendingModalLabel'))
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false)
+            .setValue(String(value ?? ''))
+        )
+      );
+  };
+
+  const confirmRow = (token, { withEditNote = false } = {}) => {
     if (!discordMod) return [];
     const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = discordMod;
-    return [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`mc:confirm:${token}`)
-          .setLabel(getT()('bot.confirmLabel'))
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId(`mc:cancel:${token}`)
-          .setLabel(getT()('bot.cancelLabel'))
-          .setStyle(ButtonStyle.Secondary)
-      ),
+    const buttons = [
+      new ButtonBuilder()
+        .setCustomId(`mc:confirm:${token}`)
+        .setLabel(getT()('bot.confirmLabel'))
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`mc:cancel:${token}`)
+        .setLabel(getT()('bot.cancelLabel'))
+        .setStyle(ButtonStyle.Secondary),
     ];
+    if (withEditNote) {
+      buttons.push(
+        new ButtonBuilder()
+          .setCustomId(`mc:confirmedit:${token}`)
+          .setLabel(getT()('bot.confirmAndEdit'))
+          .setStyle(ButtonStyle.Primary)
+      );
+    }
+    return [new ActionRowBuilder().addComponents(...buttons)];
   };
 
   async function handleAutocomplete(interaction) {
@@ -557,8 +650,31 @@ export function createDiscordBot({
     await interaction.respond(options);
   }
 
+  async function handleModal(interaction) {
+    const config = getConfig();
+    const args = { userId: interaction.user?.id, guildId: interaction.guildId };
+    if (!isAuthorized(config, args)) return;
+    const match = /^mc:pending:(\d+)$/.exec(interaction.customId ?? '');
+    if (!match) return;
+    const entryId = Number(match[1]);
+    const value = String(interaction.fields?.getTextInputValue?.('pending') ?? '').trim();
+    try {
+      const ctx = { db: resolveDb() };
+      const current = handlers['entry:get-by-id'](ctx, entryId);
+      if (!current) throw new Error(getT()('bot.entryNotFound', { title: entryId }));
+      handlers['entry:upsert'](ctx, { ...current, pending: value === '' ? null : value });
+      await interaction.reply({ content: getT()('bot.pendingUpdated'), ephemeral: true });
+    } catch (err) {
+      await interaction.reply({
+        content: getT()('bot.error', { message: err?.message ?? err }),
+        ephemeral: true,
+      });
+    }
+  }
+
   async function handleInteraction(interaction) {
     if (interaction.isAutocomplete?.()) return handleAutocomplete(interaction);
+    if (interaction.isModalSubmit?.()) return handleModal(interaction);
     if (interaction.isButton?.()) return handleButton(interaction);
     if (!interaction.isChatInputCommand?.()) return;
     const config = getConfig();
@@ -574,8 +690,15 @@ export function createDiscordBot({
       await interaction.reply({
         content: getT()('bot.confirm', { summary: pending.summary }),
         ephemeral: true,
-        components: confirmRow(pending.token),
+        components: confirmRow(pending.token, {
+          withEditNote:
+            reply.action?.type === 'setQuantity' && Boolean(reply.action.entry?.pending),
+        }),
       });
+      return;
+    }
+    if (reply && typeof reply === 'object' && reply.kind === 'modal') {
+      await interaction.showModal(pendingModal(reply.entryId, reply.value));
       return;
     }
     if (reply && typeof reply === 'object' && reply.kind === 'paged') {
@@ -607,6 +730,26 @@ export function createDiscordBot({
     const config = getConfig();
     const args = { userId: interaction.user?.id, guildId: interaction.guildId };
     if (!isAuthorized(config, args)) return;
+    const userSession = session.get(args.userId);
+    const editNote = /^mc:confirmedit:(.+)$/.exec(interaction.customId ?? '');
+    if (editNote) {
+      const consumed = consumePendingWrite(userSession, editNote[1]);
+      if (consumed.error) {
+        await interaction.update({ content: consumed.error, components: [] });
+        return;
+      }
+      try {
+        const result = applyWrite(resolveDb(), consumed.pending.action);
+        await interaction.showModal(pendingModal(result.entry?.id, result.entry?.pending ?? ''));
+      } catch (err) {
+        await interaction.update({
+          content: getT()('bot.error', { message: err?.message ?? err }),
+          components: [],
+        });
+      }
+      return;
+    }
+
     const pend = /^mc:pend:([^:]+):(\d+)$/.exec(interaction.customId ?? '');
     if (pend) {
       const [, token, pageStr] = pend;
@@ -623,7 +766,6 @@ export function createDiscordBot({
     const match = /^mc:(confirm|cancel):(.+)$/.exec(interaction.customId ?? '');
     if (!match) return;
     const [, action, token] = match;
-    const userSession = session.get(args.userId);
     const consumed = consumePendingWrite(userSession, token);
     if (consumed.error) {
       await interaction.update({ content: consumed.error, components: [] });
