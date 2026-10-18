@@ -1,85 +1,88 @@
 # MangaCount
 
-**Gestor de colección de manga para escritorio, local-first.**
+**Local-first desktop manga collection manager.**
+
+> Read this in: **English** · [Español](README.es.md)
 
 [![Tests](https://github.com/Lubonch/MangaCount/actions/workflows/test.yml/badge.svg)](https://github.com/Lubonch/MangaCount/actions/workflows/test.yml)
 [![Dependency Audit](https://github.com/Lubonch/MangaCount/actions/workflows/audit.yml/badge.svg)](https://github.com/Lubonch/MangaCount/actions/workflows/audit.yml)
 [![Latest release](https://img.shields.io/github/v/release/Lubonch/MangaCount?label=release)](https://github.com/Lubonch/MangaCount/releases/latest)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-4b5563)](#descargar-e-instalar)
-[![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#desarrollo)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-4b5563)](#download-and-install)
+[![Node](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](#development)
 
 <p align="center">
-  <img src="docs/screenshots/collection-cards.png" alt="Colección de MangaCount en modo tarjetas" width="960">
+  <img src="docs/screenshots/collection-cards.png" alt="MangaCount collection in card view" width="960">
 </p>
 
-MangaCount organiza tu colección de manga en una aplicación de escritorio autocontenida:
-**Electron** para el proceso principal, **React + Vite** para la interfaz y **SQLite embebida**
-para los datos. No hay servidor, ni base de datos externa, ni cuenta en la nube: todo vive en tu
-equipo. El renderer consume los datos por IPC a través de un proceso main que porta la lógica de
-negocio a Node.
+MangaCount organizes your manga collection in a self-contained desktop application: **Electron** for
+the main process, **React + Vite** for the interface and **embedded SQLite** for the data. There is no
+server, no external database and no cloud account: everything lives on your machine. The renderer gets
+its data over IPC through a main process that ports the business logic to Node.
 
-## Características
+## Features
 
-### Colección
+### Collection
 
-- **Múltiples perfiles**, cada uno con su propia colección y foto de perfil.
-- **CRUD de mangas y entries** con volúmenes comprados, pendientes, prioridad y progreso por serie.
-- **Búsqueda en la Biblioteca** del sidebar y filtros por editorial, formato y estado.
-- **Tres vistas**: tarjetas con portada, tabla y compacta; orden por nombre, progreso, cantidad,
-  prioridad, editorial o formato.
-- **Importación y exportación TSV** de la colección.
-- **Recomendaciones** de series no poseídas con un motor local (`shared/recommendations`).
+- **Multiple profiles**, each with its own collection and profile picture.
+- **CRUD for mangas and entries** with owned volumes, pending volumes, priority and per-series progress.
+- **Sidebar library search** and filters by publisher, format and status.
+- **Three views**: cover cards, table and compact; sort by name, progress, quantity, priority,
+  publisher or format.
+- **TSV import and export** of the collection.
+- **Recommendations** of series you don't own yet, from a local engine (`shared/recommendations`).
 
-### Portadas
+### Covers
 
-- **Búsqueda en AniList sin API key**, con caché local de las imágenes.
-- **Portadas locales** desde el equipo, validadas por *magic bytes*.
-- **Portada generada** (gradiente + iniciales) para las series sin imagen.
-- **Blur y badge `+18`** en portadas adultas, con revelado configurable (hover o click).
+- **AniList search with no API key**, with a local cache of the images.
+- **Local covers** from your machine, validated by *magic bytes*.
+- **Generated cover** (gradient + initials) for series without an image.
+- **Blur and `+18` badge** on adult covers, with configurable reveal (hover or click).
 
-### Datos y sistema
+### Data and system
 
-- **SQLite local** con migraciones versionadas y estado inicial vacío.
-- **Backup y restore** del sistema completo en `.zip` (base + fotos), con backup automático opcional.
-- **App residente en la bandeja** con autostart opcional: cerrar la ventana no cierra la app.
-- **Diagnóstico** con logs rotativos, copia del diagnóstico al portapapeles y apertura de la carpeta
-  de logs desde Settings.
+- **Local SQLite** with versioned migrations and an empty initial state.
+- **Backup and restore** of the whole system to a `.zip` (database + pictures), with optional automatic
+  backup.
+- **Tray-resident app** with optional autostart: closing the window does not close the app.
+- **Diagnostics** with rotating logs, copy-diagnostics-to-clipboard and opening the logs folder from
+  Settings.
 
-### Integraciones
+### Integrations
 
-- **Bot de Discord embebido** (opcional) para consultar y editar la colección desde Discord.
-- **Chequeo de actualizaciones** en el footer: en Windows y AppImage la app descarga e instala sola;
-  en `.deb` y `makepkg` (Arch) enlaza a la release de GitHub.
+- **Embedded Discord bot** (optional) to query and edit the collection from Discord.
+- **Update check** in the footer: on Windows and AppImage the app downloads and installs on its own; on
+  `.deb` and `makepkg` (Arch) it links to the GitHub release.
 
-### Interfaz
+### Interface
 
-- Temas **claro/oscuro** (oscuro por defecto) sobre design tokens, tipografía **Inter** y logo propio.
-- **Sidebar colapsable** y pantalla de **Settings** que reúne configuración, backup, intercambio TSV,
-  bot y diagnóstico.
+- **Light/dark themes** (dark by default) on design tokens, **Inter** typography and its own logo.
+- **ES/EN interface** (English by default), switchable in Settings.
+- **Collapsible sidebar** and a **Settings** screen that gathers configuration, backup, TSV exchange,
+  bot and diagnostics.
 
-## Capturas de pantalla
+## Screenshots
 
-| Vista tabla | Tema claro |
+| Table view | Light theme |
 | --- | --- |
-| ![Colección en vista tabla](docs/screenshots/collection-table.png) | ![Colección en tema claro](docs/screenshots/collection-light.png) |
+| ![Collection in table view](docs/screenshots/collection-table.png) | ![Collection in light theme](docs/screenshots/collection-light.png) |
 
-| Alta de entry | Alta de manga |
+| Add entry | Add manga |
 | --- | --- |
-| ![Modal de alta de entry](docs/screenshots/add-entry.png) | ![Modal de alta de manga](docs/screenshots/add-manga.png) |
+| ![Add entry modal](docs/screenshots/add-entry.png) | ![Add manga modal](docs/screenshots/add-manga.png) |
 
-| Settings | Selector de perfiles |
+| Settings | Profile selector |
 | --- | --- |
-| ![Pantalla de Settings](docs/screenshots/settings.png) | ![Selector de perfiles](docs/screenshots/profile-selector.png) |
+| ![Settings screen](docs/screenshots/settings.png) | ![Profile selector](docs/screenshots/profile-selector.png) |
 
-## Descargar e instalar
+## Download and install
 
-Los instaladores se publican en **[GitHub Releases](https://github.com/Lubonch/MangaCount/releases)**
-para cada tag `v*`:
+Installers are published on **[GitHub Releases](https://github.com/Lubonch/MangaCount/releases)** for
+each `v*` tag:
 
-- **Windows**: `MangaCount.Setup.<version>.exe` (instalador NSIS)
+- **Windows**: `MangaCount.Setup.<version>.exe` (NSIS installer)
 - **Debian / Ubuntu**: `mangacount_<version>_amd64.deb`
-- **Arch y otras distros**: `MangaCount-<version>.AppImage`
+- **Arch and other distros**: `MangaCount-<version>.AppImage`
 
 ```bash
 # Debian / Ubuntu
@@ -90,116 +93,181 @@ chmod +x MangaCount-<version>.AppImage
 ./MangaCount-<version>.AppImage
 ```
 
-> El `.exe` no está firmado con un certificado de pago: Windows SmartScreen puede advertir. Elegí
-> *Más información → Ejecutar de todas formas*.
+> The `.exe` is not signed with a paid certificate: Windows SmartScreen may warn you. Choose
+> *More info → Run anyway*.
 >
-> Si el AppImage no arranca por falta de FUSE: `./MangaCount-<version>.AppImage --appimage-extract-and-run`
-> o instalá `libfuse2`.
+> If the AppImage fails to start because of a missing FUSE: `./MangaCount-<version>.AppImage --appimage-extract-and-run`
+> or install `libfuse2`.
 
-### Arch Linux y derivadas (makepkg)
+### Arch Linux and derivatives (makepkg)
 
-El repo incluye [`packaging/arch/PKGBUILD`](packaging/arch/PKGBUILD), que reempaqueta el AppImage
-publicado e integra la app en el sistema (binario en `/usr/bin`, lanzador de escritorio e iconos),
-sin depender de FUSE:
+The repo ships [`packaging/arch/PKGBUILD`](packaging/arch/PKGBUILD), which repackages the published
+AppImage and integrates the app into the system (binary in `/usr/bin`, desktop launcher and icons),
+without depending on FUSE:
 
 ```bash
-sudo pacman -S --needed base-devel git   # makepkg no se corre como root
+sudo pacman -S --needed base-devel git   # makepkg must not run as root
 git clone https://github.com/Lubonch/MangaCount.git
 cd MangaCount/packaging/arch
 makepkg -si
 ```
 
-`makepkg` descarga el `MangaCount-<version>.AppImage` del release `v<version>` y lo instala como el
-paquete `mangacount`. Para actualizar, cambiá `pkgver` en el `PKGBUILD` y regenerá checksums con
-`updpkgsums`. Desinstalar: `sudo pacman -R mangacount`.
+`makepkg` downloads `MangaCount-<version>.AppImage` from the `v<version>` release and installs it as the
+`mangacount` package. To update, bump `pkgver` in the `PKGBUILD` and regenerate the checksums with
+`updpkgsums`. Uninstall: `sudo pacman -R mangacount`.
 
-## Datos de la app
+## App data
 
-Todo vive en la carpeta `userData` del sistema, fuera del bundle:
+Everything lives in the system's `userData` folder, outside the bundle:
 
 - Windows: `%APPDATA%\mangacount\`
 - Linux: `~/.config/mangacount/`
 
-| Archivo / carpeta | Contenido |
+| File / folder | Contents |
 | --- | --- |
-| `mangacount.db` (+ `-wal`, `-shm`) | Base SQLite con perfiles, mangas, entries, formatos y editoriales |
-| `profiles/` | Fotos de perfil, servidas al renderer por `mangacount://profiles/<archivo>` |
-| `covers/` | Caché de portadas (AniList y locales) |
-| `logs/` | `app.txt` con rotación diaria (`app.YYYY-MM-DD.txt`) |
-| `preferences.json` | Preferencias de tray, backup y bot |
-| `discord-token.bin` | Token del bot cifrado con `safeStorage` |
-| `backups-restore/` | Backups de seguridad previos a un restore |
+| `mangacount.db` (+ `-wal`, `-shm`) | SQLite database with profiles, mangas, entries, formats and publishers |
+| `profiles/` | Profile pictures, served to the renderer via `mangacount://profiles/<file>` |
+| `covers/` | Cover cache (AniList and local) |
+| `logs/` | `app.txt` with daily rotation (`app.YYYY-MM-DD.txt`) |
+| `preferences.json` | Tray, backup, bot and recommendation preferences |
+| `discord-token.bin` | Bot token encrypted with `safeStorage` |
+| `backups-restore/` | Safety backups taken before a restore |
 
-Detalles de esquema, backup, tray/autostart, bot y troubleshooting por plataforma:
+Schema, backup, tray/autostart, bot and per-platform troubleshooting details:
 [`docs/desktop.md`](docs/desktop.md).
 
-## Bot de Discord (opcional)
+## Discord bot (optional)
 
-MangaCount puede exponer la colección por un bot **embebido** en la app (arranca y se detiene con
-ella, sobre la misma base local). Permite consultar y editar la colección:
+MangaCount can expose your collection through a bot **embedded** in the app (it starts and stops with
+it, over the same local database). It lets you query and edit the collection from Discord.
 
-- **Consulta**: `/perfil`, `/buscar`, `/pendientes`, `/recomendar`.
-- **Edición**: `/tomo` (+1 volumen), `/actualizar` (fijar cantidad), `/pending` (tomos no
-  consecutivos), `/prioridad` (activar/desactivar), `/nuevo` (crear manga + entry en 0) y `/ayuda`.
+**Each user runs their own bot**: your own Discord application, your own token and your own server. The
+app does not use the *Application ID* at runtime; you only need it once to build the invite URL.
 
-Las operaciones de edición piden **confirmación** (botones Confirmar/Cancelar) y solo las puede usar
-alguien de la allowlist. Si el título coincide con 0 o más de una serie, el bot no escribe y pide
-desambiguar.
+### Setup (once per user)
 
-**Cada usuario usa su propio bot**: su aplicación de Discord, su token y su servidor. La app no usa
-el *Application ID* en runtime; solo lo necesitás una vez para armar la URL de invitación.
-
-Pasos (una vez por usuario):
-
-1. **Crear la aplicación**: en el [Discord Developer Portal](https://discord.com/developers/applications)
-   → *New Application*. Copiá el **Application ID** de *General Information*.
-2. **Token**: pestaña *Bot* → *Reset Token* → copiar. Guardalo en un gestor de secretos (nunca en el
-   repo ni en el chat).
-3. **Invitar el bot** con el Application ID:
+1. **Create the application**: in the [Discord Developer Portal](https://discord.com/developers/applications)
+   → *New Application*. Copy the **Application ID** from *General Information*.
+2. **Token**: *Bot* tab → *Reset Token* → copy. Store it in a secrets manager (never in the repo or the
+   chat).
+3. **Invite the bot** with the Application ID:
    `https://discord.com/api/oauth2/authorize?client_id=<APPLICATION_ID>&permissions=83968&scope=bot%20applications.commands`
    (83968 = *Send Messages* + *Embed Links* + *Read Message History*).
-4. **Guild ID y User ID**: activá *Modo desarrollador* en Discord (Configuración → Avanzado) y copiá
-   el ID del servidor y el de tu usuario.
-5. **Configurar en la app**: ⚙️ **Settings → Bot**: Token, Guild ID y *Usuarios permitidos* → *Habilitar
-   bot* → *Guardar*. El estado debe quedar **conectado**.
+4. **Guild ID and User ID**: enable *Developer Mode* in Discord (Settings → Advanced) and copy the
+   server ID and your user ID.
+5. **Configure it in the app**: ⚙️ **Settings → Bot**: Token, Guild ID and *Allowed users* → *Enable bot*
+   → *Save*. The status should read **connected**.
 
-## Desarrollo
+### Commands
 
-Requisitos: **Node.js 20+** y npm. La CI corre sobre Node 22.
+Query commands:
+
+| Command | Description |
+| --- | --- |
+| `/perfil [profile]` | View or switch the active profile |
+| `/buscar query:<title>` | Search a series in your collection |
+| `/pendientes` | Ongoing series and missing volumes |
+| `/huecos` | Series with gaps (pending note) |
+| `/a-punto` | Series 1–2 volumes away from completion |
+| `/stats` | Collection stats |
+| `/status` | App and database status |
+| `/recomendar [limit]` | Recommendations for the active profile |
+
+Editing and administration commands:
+
+| Command | Description |
+| --- | --- |
+| `/tomo titulo:<series>` | Add 1 volume |
+| `/actualizar titulo:<series> cantidad:<n>` | Set how many volumes you own |
+| `/pending titulo:<series> tomos:<5,7>` | Set non-consecutive pending volumes (empty = clear) |
+| `/prioridad titulo:<series>` | Toggle the priority of a series |
+| `/nuevo titulo:<series> [total] [cantidad] [formato] [editorial]` | Add a new series (entry starts at 0) |
+| `/backup` | Run a backup now (asks for confirmation and runs it in the background) |
+| `/ayuda` | List the available commands |
+
+> Command and option **names** are fixed and in Spanish (e.g. `/ayuda`, `titulo:`). What follows the
+> app's language (ES/EN) are the descriptions, responses and help text.
+
+### Bot UX
+
+- **Autocomplete** on the series parameter (`/buscar`, `/tomo`, `/actualizar`, `/pending`, `/prioridad`,
+  `/nuevo`).
+- **Pagination with buttons** on long listings (`/pendientes`, `/huecos`, `/a-punto`, `/buscar`).
+- **Preloaded modal** for `/pending` when a series has no pending volumes, and a *Confirm +1 and edit
+  note* shortcut on `/tomo`.
+- **Action buttons** on `/buscar` results (add a volume, toggle priority, edit the pending note).
+- Editing operations ask for **confirmation** (Confirm/Cancel buttons) and only someone on the allowlist
+  can use them. If the title matches zero or more than one series, the bot does not write and asks you
+  to disambiguate.
+- Adult covers are posted as a Discord **spoiler**.
+
+### Bot settings
+
+**Settings → Bot** gathers the token, the guild, the allowed users, *Enable bot*, the per-page limit
+(1–500, default 20), ephemeral replies, the confirmation TTL (1–60 min, default 5) and the default
+number of recommendations (1–10, default 5).
+
+## Recommendations
+
+**Recommendations** suggest series you don't own yet. There are two sources, in this order:
+
+1. **AniList (dynamic)** — starting from the series in your collection, the app walks AniList's
+   collaborative recommendation graph (no API key needed) and scores the candidates by community rating
+   plus thematic similarity with your collection.
+2. **Local engine (fallback)** — if AniList is unreachable (offline, timeout, rate limit), the app falls
+   back to a purely local, lexical engine over a small bundled catalog (`shared/recommendations`).
+
+### Feedback
+
+- **I already own it** — links the recommendation to one of your mangas (or creates it with the name you
+  choose). It never comes back, even if your local title differs from AniList's.
+- **Not viable** — permanently dismisses it for that profile.
+- **↻ Refresh** — asks for a new batch. The list always keeps its full size (a dismissed card is
+  replaced by the next candidate), and what you already saw is remembered for a while so it doesn't
+  repeat.
+
+### Recommendation settings
+
+**Settings → Recommendations**: enable/disable, list size (1–25, default 10) and for how many days a
+seen recommendation is remembered (1–365, default 30).
+
+## Development
+
+Requirements: **Node.js 20+** and npm. CI runs on Node 22.
 
 ```bash
 npm ci
 npm ci --prefix mangacount.client
 ```
 
-### Modo desarrollo (Electron + hot-reload)
+### Development mode (Electron + hot-reload)
 
-En una terminal:
+In one terminal:
 
 ```bash
-npm run dev            # Vite en http://localhost:5173
+npm run dev            # Vite on http://localhost:5173
 ```
 
-En otra:
+In another:
 
 ```bash
 MANGACOUNT_DEV_URL=http://localhost:5173 npx electron .
 ```
 
-El proceso main abre la ventana apuntando al dev server y expone los canales IPC a través del
-preload. El modo soportado es Electron.
+The main process opens the window pointing at the dev server and exposes the IPC channels through the
+preload. Electron is the only supported mode.
 
-### Build y empaquetado
+### Build and packaging
 
 ```bash
-npm run build:renderer   # build del renderer (mangacount.client/dist)
-npm run dist             # build:renderer + electron-builder (según el OS)
+npm run build:renderer   # renderer build (mangacount.client/dist)
+npm run dist             # build:renderer + electron-builder (per OS)
 npm run dist:linux       # .deb + .AppImage
 npm run dist:win         # .exe (NSIS)
 ```
 
-`electron-builder` reconstruye el módulo nativo `better-sqlite3` para el ABI de Electron. Si después
-necesitás correr los tests bajo Node, reconstruilo para Node:
+`electron-builder` rebuilds the `better-sqlite3` native module for Electron's ABI. If you later need to
+run the tests under Node, rebuild it for Node:
 
 ```bash
 npm run rebuild:node
@@ -208,71 +276,71 @@ npm run rebuild:node
 ## Tests
 
 ```bash
-npm test                                      # proceso main (node --test)
+npm test                                      # main process (node --test)
 npm run test:renderer                         # renderer (vitest)
-npm run test:renderer:coverage                # renderer + cobertura
-npm run lint:renderer                         # ESLint del renderer
+npm run test:renderer:coverage                # renderer + coverage
+npm run lint:renderer                         # renderer ESLint
 ```
 
-La CI (`.github/workflows/test.yml`) exige **cobertura ≥ 90%** en main y renderer, y corre además
+CI (`.github/workflows/test.yml`) requires **≥ 90% coverage** in main and renderer, and also runs
 `npm audit` (`.github/workflows/audit.yml`).
 
-## Publicar una release
+## Publishing a release
 
-El workflow [`release.yml`](.github/workflows/release.yml) compila los instaladores en runners
-Windows y Linux y crea un GitHub Release **draft** con los artefactos:
+The [`release.yml`](.github/workflows/release.yml) workflow builds the installers on Windows and Linux
+runners and creates a **draft** GitHub Release with the artifacts:
 
 ```bash
 git tag vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-También se puede disparar manualmente desde *Actions* (`workflow_dispatch`) para generar solo los
-artefactos, sin release. El `.exe` no se cross-compila: se genera en el runner Windows.
+It can also be triggered manually from *Actions* (`workflow_dispatch`) to generate the artifacts only,
+without a release. The `.exe` is not cross-compiled: it is built on the Windows runner.
 
-## Migrar desde una instalación con servidor (PostgreSQL)
+## Migrating from a server install (PostgreSQL)
 
-Si venías usando la versión cliente-servidor, hay un script de traspaso único que copia las 5 tablas
-(perfiles, mangas, entries, formatos y editoriales) de PostgreSQL a la SQLite local y verifica
-conteos, la constraint `UNIQUE(ProfileId, MangaId)`, que no se descarten filas y un spot-check de 20
+If you were using the client-server version, there is a one-off script that copies the 5 tables
+(profiles, mangas, entries, formats and publishers) from PostgreSQL to the local SQLite and verifies the
+counts, the `UNIQUE(ProfileId, MangaId)` constraint, that no rows are dropped and a spot-check of 20
 entries.
 
-Requisitos: app **cerrada**, `npm ci` en la raíz (el script usa `pg`) y, de ser posible, la base
-PostgreSQL en solo lectura.
+Requirements: app **closed**, `npm ci` at the root (the script uses `pg`) and, if possible, the
+PostgreSQL database in read-only mode.
 
 ```bash
 PG_CONNECTION_STRING="Host=localhost;Database=MangaCount;Username=mangacount;Password=***;Port=5432" \
-  node electron/main/db/migrate-from-postgres.js "<carpeta-de-datos>"
+  node electron/main/db/migrate-from-postgres.js "<data-folder>"
 ```
 
-`<carpeta-de-datos>` es la de `userData` (ver [Datos de la app](#datos-de-la-app)). El script falla
-con código ≠ 0 ante cualquier diferencia para no dejar una migración a medias.
+`<data-folder>` is the `userData` one (see [App data](#app-data)). The script exits with a non-zero code
+on any difference, so it never leaves a half-done migration.
 
-## Estructura
+## Structure
 
 ```text
 MangaCount/
-├── electron/               # proceso main: SQLite, handlers IPC, servicios, preload
+├── electron/               # main process: SQLite, IPC handlers, services, preload
 │   ├── main/
-│   │   ├── db/             # esquema, cliente SQLite y repositorios
-│   │   ├── ipc/            # handlers por canal
-│   │   └── services/       # portadas, backup, bot, updater, prefs, logs
-│   └── assets/             # iconos de la app y del tray
-├── mangacount.client/      # renderer React + Vite (adaptador IPC en src/api)
-├── shared/recommendations/ # motor de recomendaciones compartido (JS)
-├── docs/                   # documentación desktop y capturas
-├── packaging/arch/         # PKGBUILD para Arch Linux
-├── scripts/                # utilidades de release
-└── aspec/                  # specs y changes (spec-driven)
+│   │   ├── db/             # schema, SQLite client and repositories
+│   │   ├── ipc/            # handlers per channel
+│   │   └── services/       # covers, backup, bot, updater, prefs, logs
+│   └── assets/             # app and tray icons
+├── mangacount.client/      # React + Vite renderer (IPC adapter in src/api)
+├── shared/recommendations/ # shared recommendation engine (JS)
+├── docs/                   # desktop documentation and screenshots
+├── packaging/arch/         # PKGBUILD for Arch Linux
+├── scripts/                # release utilities
+└── aspec/                  # specs and changes (spec-driven)
 ```
 
-> El backend .NET/PostgreSQL queda fuera del alcance de la app de escritorio. El antiguo bot de
-> WhatsApp se eliminó del repo: lo reemplaza el bot de Discord embebido en el proceso main.
+> The .NET/PostgreSQL backend is out of scope for the desktop app. The old WhatsApp bot was removed
+> from the repo: it is replaced by the Discord bot embedded in the main process.
 
-## Contribuir
+## Contributing
 
-Los cambios se documentan con el flujo **aspec** en `aspec/changes/` (proposal, design, tasks y delta
-specs). Antes de abrir un PR:
+Changes are documented with the **aspec** flow in `aspec/changes/` (proposal, design, tasks and delta
+specs). Before opening a PR:
 
 ```bash
 npm test
@@ -281,20 +349,20 @@ npm run lint:renderer
 npm run build:renderer
 ```
 
-### Protocolo de rama
+### Branch protocol
 
-`main` es la rama de release y **solo se actualiza por PR desde `develop`**:
+`main` is the release branch and **is only updated by PR from `develop`**:
 
-- No se pushea directo a `main` (tampoco force-push ni borrado).
-- Los PRs hacia `main` **deben** tener `develop` como rama de origen: el workflow
-  [`branch-enforcement.yml`](.github/workflows/branch-enforcement.yml) falla si no.
-- El merge exige los checks de CI en verde (`Tests`, `Dependency Audit`) y el check
-  `Require develop source`.
-- El flujo normal es: trabajar en una rama → mergear a `develop` → PR `develop → main` → release.
+- Do not push directly to `main` (nor force-push or delete it).
+- PRs into `main` **must** have `develop` as the source branch: the
+  [`branch-enforcement.yml`](.github/workflows/branch-enforcement.yml) workflow fails otherwise.
+- The merge requires the CI checks in green (`Tests`, `Dependency Audit`) and the
+  `Require develop source` check.
+- The normal flow is: work on a branch → merge into `develop` → PR `develop → main` → release.
 
-**Hotfix**: si hiciera falta saltear el protocolo, se desactiva el ruleset **“PR only”** en
-*Settings → Rules* (acción manual y excepcional) y se vuelve a activar al terminar.
+**Hotfix**: if the protocol ever had to be bypassed, disable the **“PR only”** ruleset in
+*Settings → Rules* (a manual, exceptional action) and re-enable it when done.
 
-## Licencia
+## License
 
-MIT. Ver [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE).
