@@ -109,7 +109,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         setBackupListStatus('idle');
         setBot((b) => ({ ...b, ...botConfig }));
       } catch (err) {
-        if (!cancelled) setGeneralMessage(`No se pudo cargar la configuración: ${err.message}`);
+        if (!cancelled) setGeneralMessage(t('settings.loadFailed', { error: err.message }));
       }
     })();
     return () => {
@@ -148,9 +148,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       else if (key === 'diagnosticsCopy') await appConfigSet({ diagnosticsCopy: value });
       else if (key === 'showAdultCovers') await appConfigSet({ showAdultCovers: value });
       else await botAutostartSet(value);
-      setGeneralMessage('Guardado.');
+      setGeneralMessage(t('settings.saved'));
     } catch (err) {
-      setGeneralMessage(`No se pudo guardar: ${err.message}`);
+      setGeneralMessage(t('settings.saveFailed', { error: err.message }));
     }
   };
 
@@ -163,13 +163,13 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     setBackupError('');
     setBackupMessage('');
     if (backupInvalid) {
-      setBackupError('Habilitar el backup automático requiere un destino y al menos un disparador.');
+      setBackupError(t('settings.backupNeedsConfig'));
       return;
     }
     try {
       const saved = await backupConfigSet(backup);
       setBackup({ ...EMPTY_BACKUP, ...saved, triggers: { ...EMPTY_BACKUP.triggers, ...(saved.triggers ?? {}) } });
-      setBackupMessage('Configuración guardada.');
+      setBackupMessage(t('settings.backupSaved'));
     } catch (err) {
       setBackupError(err.message);
     }
@@ -199,9 +199,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       setBackups(res?.backups ?? []);
       setBackupListStatus(res?.status ?? 'ok');
       setBackup(await backupConfigGet());
-      setBackupMessage('Backup creado.');
+      setBackupMessage(t('settings.backupCreated'));
     } catch (err) {
-      setBackupError(`Backup falló: ${err.message}`);
+      setBackupError(t('settings.backupFailed', { error: err.message }));
     } finally {
       setBusy(false);
     }
@@ -215,10 +215,10 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     setBackupError('');
     try {
       const result = await backupRestore(zipPath);
-      setBackupMessage(`Restaurado. Backup de seguridad: ${result?.safetyBackup ?? '—'}`);
+      setBackupMessage(t('settings.restoreDone', { path: result?.safetyBackup ?? '—' }));
       onImportSuccess?.();
     } catch (err) {
-      setBackupError(`Restore falló: ${err.message}`);
+      setBackupError(t('settings.restoreFailed', { error: err.message }));
     } finally {
       setBusy(false);
     }
@@ -246,10 +246,10 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     try {
       await botSetToken(token);
       setToken('');
-      setBotMessage('Token guardado.');
+      setBotMessage(t('settings.tokenSaved'));
       pollBotStatus();
     } catch (err) {
-      setBotMessage(`No se pudo guardar el token: ${err.message}`);
+      setBotMessage(t('settings.tokenSaveFailed', { error: err.message }));
     }
   };
 
@@ -266,10 +266,10 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         confirmTtlMinutes: Number(bot.confirmTtlMinutes) || 5,
         recommendLimit: Number(bot.recommendLimit) || 5,
       });
-      setBotMessage('Configuración del bot guardada.');
+      setBotMessage(t('settings.botSaved'));
       pollBotStatus();
     } catch (err) {
-      setBotMessage(`No se pudo guardar: ${err.message}`);
+      setBotMessage(t('settings.saveFailed', { error: err.message }));
     }
   };
 
@@ -280,10 +280,12 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       const result = await checkUpdatesRequest();
       setUpdate(result);
       setUpdateMessage(
-        result?.hasUpdate ? `Hay una versión nueva: v${result.latest}` : 'Estás al día.'
+        result?.hasUpdate
+          ? t('settings.updateAvailable', { version: result.latest })
+          : t('settings.upToDate')
       );
     } catch (err) {
-      setUpdateMessage(`No se pudo verificar: ${err.message}`);
+      setUpdateMessage(t('settings.updateCheckFailed', { error: err.message }));
     } finally {
       setCheckingUpdate(false);
     }
@@ -294,7 +296,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     try {
       await downloadUpdateRequest();
     } catch (err) {
-      setUpdateMessage(`No se pudo descargar: ${err.message}`);
+      setUpdateMessage(t('settings.updateDownloadFailed', { error: err.message }));
     }
   };
 
@@ -325,17 +327,17 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     const file = event.target.files[0];
     if (!file) return;
     if (!file.name.endsWith('.tsv')) {
-      setImportMessage('Seleccioná un archivo TSV');
+      setImportMessage(t('settings.importNoFile'));
       return;
     }
     setIsImporting(true);
-    setImportMessage('Importando archivo…');
+    setImportMessage(t('settings.importRunning'));
     try {
       const formData = new FormData();
       formData.append('file', file);
       const response = await fetch(`/api/entry/import/${selectedProfile.id}`, { method: 'POST', body: formData });
       if (response.ok) {
-        setImportMessage('¡Importación exitosa!');
+        setImportMessage(t('settings.importOk'));
         onImportSuccess?.();
         event.target.value = '';
       } else {
@@ -353,9 +355,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     try {
       const tsv = await entryExport(selectedProfile.id);
       downloadTsv(tsv, `mangacount-${selectedProfile.id}.tsv`);
-      setImportMessage('¡Exportación lista!');
+      setImportMessage(t('settings.exportOk'));
     } catch (error) {
-      setImportMessage('Falló la exportación: ' + error.message);
+      setImportMessage(t('settings.exportFailed', { error: error.message }));
     }
   };
 
@@ -371,18 +373,18 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     const cooldownSec =
       Math.min(Math.max(Number.parseInt(bulkCooldownMin, 10) || 0, 0), 60) * 60;
 
-    setCoverBulk({ running: true, done: 0, total: 0, message: 'Buscando mangas…', cooldownLeft: 0 });
+    setCoverBulk({ running: true, done: 0, total: 0, message: t('settings.bulkSearching'), cooldownLeft: 0 });
     let mangas;
     let covers;
     try {
       [mangas, covers] = await Promise.all([mangaList(), coverAll()]);
     } catch {
-      setCoverBulk({ running: false, done: 0, total: 0, message: 'No se pudo leer la colección.', cooldownLeft: 0 });
+      setCoverBulk({ running: false, done: 0, total: 0, message: t('settings.bulkReadFailed'), cooldownLeft: 0 });
       return;
     }
     const missing = mangas.filter((manga) => !covers[manga.id]?.url);
     if (missing.length === 0) {
-      setCoverBulk({ running: false, done: 0, total: 0, message: 'Todas las portadas ya están vinculadas.', cooldownLeft: 0 });
+      setCoverBulk({ running: false, done: 0, total: 0, message: t('settings.bulkAllLinked'), cooldownLeft: 0 });
       return;
     }
 
@@ -408,7 +410,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
         return;
       }
       done += 1;
-      setCoverBulk({ running: true, done, total: missing.length, message: `${linked} portadas nuevas hasta ahora`, cooldownLeft: 0 });
+      setCoverBulk({ running: true, done, total: missing.length, message: t('settings.bulkProgress', { count: linked }), cooldownLeft: 0 });
 
       if (i === missing.length - 1) break; // terminó: sin espera final
 
@@ -420,7 +422,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
             ...prev,
             running: true,
             cooldownLeft: s,
-            message: `Lote de ${batchSize} hecho — pausa para no superar el límite de AniList`,
+            message: t('settings.bulkBatchDone', { size: batchSize }),
           }));
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
@@ -432,7 +434,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       running: false,
       done,
       total: missing.length,
-      message: `Listo: ${linked} portadas nuevas${coverBulkCancelRef.current ? ' (detenido)' : ''}.`,
+      message: t('settings.bulkDone', { count: linked, stopped: coverBulkCancelRef.current ? t('settings.bulkStopped') : '' }),
       cooldownLeft: 0,
     });
     onImportSuccess?.();
@@ -442,13 +444,13 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     <div className="modal-overlay settings-modal-overlay">
       <div className="modal-content settings-modal-content">
         <div className="modal-header">
-          <h2>⚙️ Settings</h2>
+          <h2>{t('settings.header')}</h2>
           <button className="close-button" onClick={onClose} aria-label="Close settings">&times;</button>
         </div>
 
         <div className="settings-body">
           <section className="settings-section">
-            <h3>General</h3>
+            <h3>{t('settings.general')}</h3>
 
             <label className="settings-field">
               {t('language.label')}
@@ -467,7 +469,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 checked={general.startInTray}
                 onChange={(e) => toggleGeneral('startInTray', e.target.checked)}
               />
-              Arrancar en la bandeja
+              {t('settings.startInTray')}
             </label>
             <label className="settings-check">
               <input
@@ -475,7 +477,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 checked={general.autostart}
                 onChange={(e) => toggleGeneral('autostart', e.target.checked)}
               />
-              Iniciar con el sistema
+              {t('settings.autostart')}
             </label>
             <label className="settings-check">
               <input
@@ -483,33 +485,33 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 checked={general.updateCheck}
                 onChange={(e) => toggleGeneral('updateCheck', e.target.checked)}
               />
-              Buscar actualizaciones al abrir la app
+              {t('settings.updateCheck')}
             </label>
-            <p className="settings-hint">Versión actual: {version ?? '—'}</p>
+            <p className="settings-hint">{t('settings.currentVersion', { version: version ?? '—' })}</p>
             <div className="settings-actions">
               {update?.status === 'downloaded' ? (
-                <button type="button" aria-label="Reiniciar para actualizar" onClick={installUpdate}>
-                  Reiniciar para actualizar
+                <button type="button" aria-label={t('settings.ariaRestartUpdate')} onClick={installUpdate}>
+                  {t('settings.restartToUpdate')}
                 </button>
               ) : update?.status === 'downloading' ? (
-                <button type="button" disabled>Descargando… {update.percent}%</button>
+                <button type="button" disabled>{t('settings.downloading', { percent: update.percent })}</button>
               ) : update?.hasUpdate && update?.mode === 'auto' ? (
-                <button type="button" aria-label="Descargar actualización" onClick={downloadUpdate}>
-                  Descargar v{update.latest}
+                <button type="button" aria-label={t('settings.ariaDownloadUpdate')} onClick={downloadUpdate}>
+                  {t('settings.downloadVersion', { version: update.latest })}
                 </button>
               ) : (
                 <button
                   type="button"
-                  aria-label="Buscar actualización"
+                  aria-label={t('settings.ariaCheckUpdate')}
                   onClick={runUpdateCheck}
                   disabled={checkingUpdate}
                 >
-                  {checkingUpdate ? 'Buscando…' : 'Buscar actualización'}
+                  {t(checkingUpdate ? 'settings.checking' : 'settings.checkUpdate')}
                 </button>
               )}
               {update?.hasUpdate && update?.mode !== 'auto' && update?.url && (
                 <a className="settings-link" href={update.url} target="_blank" rel="noreferrer">
-                  Descargar v{update.latest}
+                  {t('settings.downloadVersion', { version: update.latest })}
                 </a>
               )}
             </div>
@@ -518,30 +520,30 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           </section>
 
           <section className="settings-section">
-            <h3>Backup</h3>
+            <h3>{t('settings.backup')}</h3>
             <label className="settings-check">
               <input
                 type="checkbox"
                 checked={backup.enabled}
                 onChange={(e) => setBackup((b) => ({ ...b, enabled: e.target.checked }))}
               />
-              Habilitar backup automático
+              {t('settings.backupEnabled')}
             </label>
 
             <label className="settings-field">
-              Destino
+              {t('settings.destination')}
               <span className="settings-inline">
-                <input type="text" value={backup.destinationDir ?? ''} readOnly placeholder="Elegí una carpeta" />
-                <button type="button" onClick={chooseDestination}>Elegir…</button>
+                <input type="text" value={backup.destinationDir ?? ''} readOnly placeholder={t('settings.destinationPlaceholder')} />
+                <button type="button" onClick={chooseDestination}>{t('settings.choose')}</button>
               </span>
             </label>
 
             <label className="settings-field">
-              Cada (minutos)
+              {t('settings.interval')}
               <input
                 type="number"
                 min="1"
-                aria-label="Intervalo de backup"
+                aria-label={t('settings.ariaInterval')}
                 value={backup.intervalMinutes}
                 onChange={(e) => setBackup((b) => ({ ...b, intervalMinutes: Number(e.target.value) }))}
               />
@@ -554,7 +556,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                   checked={backup.triggers.onStartup}
                   onChange={(e) => setBackup((b) => ({ ...b, triggers: { ...b.triggers, onStartup: e.target.checked } }))}
                 />
-                Al iniciar
+                {t('settings.onStartup')}
               </label>
               <label className="settings-check">
                 <input
@@ -562,28 +564,28 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                   checked={backup.triggers.whileRunning}
                   onChange={(e) => setBackup((b) => ({ ...b, triggers: { ...b.triggers, whileRunning: e.target.checked } }))}
                 />
-                Mientras la app corre
+                {t('settings.whileRunning')}
               </label>
             </div>
 
             <p className="settings-hint">
-              {backups.length} backups · último OK: {backup.lastBackupAt ?? '—'}
-              {lastStatus && !lastStatus.ok ? ` · último error: ${lastStatus.error}` : ''}
-              {backupListStatus === 'unresponsive' ? ' · el destino no responde' : ''}
+              {t('settings.backupsCount', { count: backups.length, date: backup.lastBackupAt ?? '—' })}
+              {lastStatus && !lastStatus.ok ? t('settings.lastError', { error: lastStatus.error }) : ''}
+              {backupListStatus === 'unresponsive' ? t('settings.destinationUnresponsive') : ''}
             </p>
 
             <div className="settings-actions">
-              <button type="button" aria-label="Guardar backup" onClick={saveBackup}>Guardar</button>
+              <button type="button" aria-label={t('settings.ariaSaveBackup')} onClick={saveBackup}>{t('settings.save')}</button>
               <button
                 type="button"
-                aria-label="Refrescar backups"
+                aria-label={t('settings.ariaRefreshBackups')}
                 onClick={loadBackups}
                 disabled={backupListStatus === 'loading'}
               >
-                {backupListStatus === 'loading' ? 'Refrescando…' : 'Refrescar'}
+                {t(backupListStatus === 'loading' ? 'settings.refreshing' : 'settings.refresh')}
               </button>
-              <button type="button" aria-label="Backup ahora" onClick={runBackupNow} disabled={busy || !backup.destinationDir}>Backup ahora</button>
-              <button type="button" className="settings-btn settings-btn--danger" aria-label="Restaurar" onClick={restore} disabled={busy}>Restaurar…</button>
+              <button type="button" aria-label={t('settings.ariaBackupNow')} onClick={runBackupNow} disabled={busy || !backup.destinationDir}>{t('settings.backupNow')}</button>
+              <button type="button" className="settings-btn settings-btn--danger" aria-label={t('settings.ariaRestore')} onClick={restore} disabled={busy}>{t('settings.restore')}</button>
             </div>
 
             {backupError && <p className="settings-message error">{backupError}</p>}
@@ -591,7 +593,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           </section>
 
           <section className="settings-section">
-            <h3>Importar / Exportar (TSV)</h3>
+            <h3>{t('settings.exchange')}</h3>
             <div className="settings-exchange">
               <input
                 type="file"
@@ -602,38 +604,35 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 id="settings-tsv-import"
               />
               <label htmlFor="settings-tsv-import" className="settings-file-label">
-                {isImporting ? 'Importando…' : 'Elegir archivo TSV'}
+                {t(isImporting ? 'settings.importing' : 'settings.chooseFile')}
               </label>
-              {!selectedProfile && <small className="import-note">Elegí un perfil primero</small>}
+              {!selectedProfile && <small className="import-note">{t('settings.needProfile')}</small>}
               <button
                 type="button"
                 className="settings-btn settings-btn--primary"
                 onClick={handleExport}
                 disabled={!selectedProfile}
               >
-                Exportar TSV
+                {t('settings.export')}
               </button>
               {importMessage && <p className="settings-message">{importMessage}</p>}
             </div>
           </section>
 
           <section className="settings-section">
-            <h3>Portadas (AniList)</h3>
-            <p className="settings-hint">
-              Busca y vincula las portadas de los mangas que todavía no tienen. Va de a **lotes** (por
-              defecto 20) y **pausa** entre lotes, para no acercarse al límite de AniList (~30/min).
-            </p>
+            <h3>{t('settings.covers')}</h3>
+            <p className="settings-hint">{t('settings.coversHint')}</p>
             <label className="settings-check">
               <input
                 type="checkbox"
                 checked={general.showAdultCovers}
                 onChange={(e) => toggleGeneral('showAdultCovers', e.target.checked)}
               />
-              Incluir resultados +18 (por defecto ocultos)
+              {t('settings.showAdult')}
             </label>
             <div className="settings-field settings-inline">
               <label>
-                Tamaño de lote
+                {t('settings.batchSize')}
                 <input
                   type="number"
                   min="1"
@@ -644,7 +643,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 />
               </label>
               <label>
-                Pausa entre lotes (min)
+                {t('settings.cooldown')}
                 <input
                   type="number"
                   min="0"
@@ -662,7 +661,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 onClick={runCoverBulk}
                 disabled={coverBulk.running}
               >
-                {coverBulk.running ? `Buscando… ${coverBulk.done}/${coverBulk.total}` : 'Traer portadas faltantes'}
+                {t(coverBulk.running ? 'settings.bulkRunning' : 'settings.bulkRun', { done: coverBulk.done, total: coverBulk.total })}
               </button>
               {coverBulk.running && (
                 <button
@@ -672,58 +671,58 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                     coverBulkCancelRef.current = true;
                   }}
                 >
-                  Detener
+                  {t('settings.bulkStop')}
                 </button>
               )}
             </div>
             {coverBulk.message && (
               <p className="settings-message">
                 {coverBulk.message}
-                {coverBulk.cooldownLeft > 0 && ` — reanuda en ${formatClock(coverBulk.cooldownLeft)}`}
+                {coverBulk.cooldownLeft > 0 && t('settings.bulkCooldown', { clock: formatClock(coverBulk.cooldownLeft) })}
               </p>
             )}
           </section>
 
           <section className="settings-section">
-            <h3>Bot (Discord)</h3>
+            <h3>{t('settings.bot')}</h3>
             <label className="settings-check">
               <input
                 type="checkbox"
                 checked={bot.enabled}
                 onChange={(e) => setBot((b) => ({ ...b, enabled: e.target.checked }))}
               />
-              Habilitar bot
+              {t('settings.botEnabled')}
             </label>
 
             <label className="settings-field">
-              Token
+              {t('settings.token')}
               <span className="settings-inline">
                 <input
                   type="password"
-                  aria-label="Token de Discord"
+                  aria-label={t('settings.ariaToken')}
                   value={token}
-                  placeholder={bot.hasToken ? '••••••••' : 'Sin token'}
+                  placeholder={bot.hasToken ? '••••••••' : t('settings.noToken')}
                   onChange={(e) => setToken(e.target.value)}
                 />
-                <button type="button" onClick={saveBotToken}>Guardar token</button>
+                <button type="button" onClick={saveBotToken}>{t('settings.saveToken')}</button>
               </span>
             </label>
 
             <label className="settings-field">
-              Guild ID
+              {t('settings.guildId')}
               <input
                 type="text"
-                aria-label="Guild ID"
+                aria-label={t('settings.guildId')}
                 value={bot.guildId ?? ''}
                 onChange={(e) => setBot((b) => ({ ...b, guildId: e.target.value }))}
               />
             </label>
 
             <label className="settings-field">
-              Usuarios permitidos (separados por coma)
+              {t('settings.allowlist')}
               <input
                 type="text"
-                aria-label="Usuarios permitidos"
+                aria-label={t('settings.ariaAllowlist')}
                 value={(bot.allowedUserIds ?? []).join(',')}
                 onChange={(e) =>
                   setBot((b) => ({
@@ -740,16 +739,16 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 checked={bot.pendingLimitEnabled !== false}
                 onChange={(e) => setBot((b) => ({ ...b, pendingLimitEnabled: e.target.checked }))}
               />
-              Limitar /pendientes
+              {t('settings.limitPending')}
             </label>
 
             <label className="settings-field">
-              Series máximas
+              {t('settings.maxSeries')}
               <input
                 type="number"
                 min="1"
                 max="500"
-                aria-label="Series máximas en /pendientes"
+                aria-label={t('settings.ariaMaxSeries')}
                 value={bot.pendingLimit ?? 20}
                 disabled={bot.pendingLimitEnabled === false}
                 onChange={(e) => setBot((b) => ({ ...b, pendingLimit: Number(e.target.value) }))}
@@ -762,12 +761,12 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 checked={bot.ephemeralReplies === true}
                 onChange={(e) => setBot((b) => ({ ...b, ephemeralReplies: e.target.checked }))}
               />
-              Respuestas efímeras
+              {t('settings.ephemeral')}
             </label>
 
             <div className="settings-field settings-inline">
               <label>
-                Minutos para confirmar escrituras
+                {t('settings.confirmTtl')}
                 <input
                   type="number"
                   min="1"
@@ -777,7 +776,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 />
               </label>
               <label>
-                Recomendaciones por defecto
+                {t('settings.recommendLimit')}
                 <input
                   type="number"
                   min="1"
@@ -788,30 +787,30 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
               </label>
             </div>
 
-            <p className="settings-hint">Estado: {bot.status}</p>
+            <p className="settings-hint">{t('settings.botStatus', { status: bot.status })}</p>
             <div className="settings-actions">
-              <button type="button" aria-label="Guardar bot" onClick={saveBotConfig}>Guardar</button>
+              <button type="button" aria-label={t('settings.ariaSaveBot')} onClick={saveBotConfig}>{t('settings.save')}</button>
             </div>
             {botMessage && <p className="settings-message">{botMessage}</p>}
           </section>
 
           <section className="settings-section">
-            <h3>Diagnóstico</h3>
+            <h3>{t('settings.diagnostics')}</h3>
             <label className="settings-check">
               <input
                 type="checkbox"
                 checked={general.diagnosticsCopy}
                 onChange={(e) => toggleGeneral('diagnosticsCopy', e.target.checked)}
               />
-              Habilitar diagnóstico
+              {t('settings.diagnosticsEnabled')}
             </label>
             {general.diagnosticsCopy && (
               <div className="settings-actions">
-                <button type="button" aria-label="Copiar diagnóstico" onClick={copyDiagnostics}>
-                  Copiar diagnóstico
+                <button type="button" aria-label={t('settings.ariaCopyDiagnostics')} onClick={copyDiagnostics}>
+                  {t('settings.copyDiagnostics')}
                 </button>
-                <button type="button" aria-label="Abrir carpeta de logs" onClick={openLogsFolder}>
-                  Abrir carpeta de logs
+                <button type="button" aria-label={t('settings.ariaOpenLogs')} onClick={openLogsFolder}>
+                  {t('settings.openLogs')}
                 </button>
               </div>
             )}
@@ -819,23 +818,23 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           </section>
 
           <section className="settings-section danger-zone">
-            <h3>⚠️ Zona de peligro</h3>
+            <h3>{t('settings.danger')}</h3>
             <div className="danger-actions">
               <button
                 type="button"
                 className="settings-btn settings-btn--danger nuke-button"
-                aria-label="Nuclear Option"
+                aria-label={t('settings.ariaNuke')}
                 onClick={() => setShowNuke(true)}
               >
-                💥 Nuclear Option
+                {t('settings.nuke')}
               </button>
-              <small className="danger-warning">¡Esto borrará TODOS los datos de forma permanente!</small>
+              <small className="danger-warning">{t('settings.nukeWarning')}</small>
             </div>
           </section>
         </div>
 
         <div className="modal-actions">
-          <button type="button" className="cancel-button" onClick={onClose}>Cerrar</button>
+          <button type="button" className="cancel-button" onClick={onClose}>{t('settings.close')}</button>
         </div>
       </div>
 

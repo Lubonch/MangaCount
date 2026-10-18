@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { useT } from './contexts/I18nContext';
 import Sidebar from './components/Sidebar';
 import CollectionView from './components/CollectionView';   
 import LoadingSpinner from './components/LoadingSpinner';
@@ -13,6 +14,7 @@ import catalog from '@shared/recommendations/catalog.json';
 import publisherCountries from '@shared/recommendations/publisher-countries.json';
 import { recommendManga } from '@shared/recommendations/recommendationEngine.js';
 function App() {
+    const t = useT();
     const [entries, setEntries] = useState([]);
     const [mangas, setMangas] = useState([]);
     const [profiles, setProfiles] = useState([]);
@@ -142,7 +144,7 @@ function App() {
                 setAppPhase('profile-selection');
             }
         } catch (err) {
-            setError('Failed to initialize application');
+            setError(t('app.errInit'));
             console.error('Error initializing app:', err);
             setAppPhase('error');
         } finally {
@@ -178,7 +180,7 @@ function App() {
             // Reload manga library
             await loadMangas();
         } catch (err) {
-            setError('Failed to load data');
+            setError(t('app.errLoadData'));
             console.error('Error loading data:', err);
         } finally {
             setLoading(false);
@@ -222,7 +224,7 @@ function App() {
             
             setAppPhase('main-app');
         } catch (err) {
-            setError('Failed to load profile data');
+            setError(t('app.errLoadProfile'));
             console.error('Error loading profile data:', err);
         }
     };
@@ -287,7 +289,7 @@ function App() {
             });
 
             if (!response.ok) {
-                throw new Error('Recommendation service unavailable');
+                throw new Error(t('app.errRecommend'));
             }
 
             const data = await response.json();
@@ -299,7 +301,7 @@ function App() {
             setRecommendationData(data);
 
             if (!data?.isConfident) {
-                setRecommendationError('Could not infer a country from the current collection.');
+                setRecommendationError(t('app.errNoCountry'));
             }
         } catch (error) {
             if (controller.signal.aborted || error?.name === 'AbortError') {
@@ -347,10 +349,10 @@ function App() {
         return (
             <ThemeProvider>
                 <div className="app-error">
-                    <h2>Oops! Something went wrong</h2>
+                    <h2>{t('app.errorTitle')}</h2>
                     <p>{error}</p>
                     <button onClick={() => initializeApp()}>
-                        Retry Loading
+                        {t('app.retry')}
                     </button>
                 </div>
             </ThemeProvider>
