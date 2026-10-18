@@ -1,4 +1,4 @@
-﻿/* Los tokens de color por tema viven en `styles/theme.css` (importado desde index.css). */
+﻿/* Per-theme color tokens live in `styles/theme.css` (imported from index.css). */
 
 * {
     margin: 0;
@@ -24,8 +24,8 @@
     max-width: 100%;
 }
 
-/* Shell principal: alto de viewport con scroll INTERNO, para que la sidebar y el
-   footer queden fijos y no haya que scrollear toda la página con muchas entries. */
+/* Main shell: viewport height with INTERNAL scroll, so the sidebar and the
+   footer stay fixed and the whole page does not scroll with many entries. */
 .app--shell {
     height: 100vh;
     overflow: hidden;
@@ -42,7 +42,6 @@
     overflow-y: auto;
 }
 
-/* NEW: Profile selection container */
 .profile-selection-container {
     display: flex;
     align-items: center;
@@ -86,7 +85,6 @@
     transform: translateY(-2px);
 }
 
-/* Responsive sidebar */
 @media (max-width: 768px) {
     .main-content {
         width: 100%;

@@ -17,9 +17,9 @@ describe('services/discord-messages', () => {
     assert.ok(chunks.length > 1);
     assert.ok(chunks.every((c) => c.length <= DISCORD_MESSAGE_LIMIT));
     assert.ok(chunks.every((c) => /\(\d+\/\d+\)$/.test(c.trimEnd())));
-    // Ninguna línea quedó partida.
+    // No line was split.
     assert.ok(!chunks.some((c) => /\nSerie \d+: 1\/10 \(falta$/.test(c)));
-    // Todo el contenido está presente.
+    // All the content is present.
     const joined = chunks.join('\n');
     assert.ok(joined.includes('Serie 0:'));
     assert.ok(joined.includes('Serie 119:'));

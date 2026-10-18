@@ -123,7 +123,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     };
   }, [isOpen]);
 
-  // Estado de update en vivo (push del main) mientras el modal está abierto.
+  // Live update state (pushed from main) while the modal is open.
   useEffect(() => {
     if (!isOpen) return undefined;
     const off = onUpdateState((state) => setUpdate(state));
@@ -181,14 +181,14 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     }
   };
 
-  // La lista de backups se pide bajo demanda (no al abrir Settings): el destino
-  // puede ser un montaje de red lento.
+  // The backup list is requested on demand (not when opening Settings): the
+  // destination may be a slow network mount.
   const loadBackups = async () => {
     setBackupListStatus('loading');
     try {
       const res = await backupList();
       const status = res?.status ?? 'ok';
-      // Si el destino no responde, se conserva la última lista conocida.
+      // If the destination does not respond, the last known list is preserved.
       setBackups((prev) => (status === 'unresponsive' ? prev : res?.backups ?? []));
       setBackupListStatus(status);
     } catch {
@@ -230,8 +230,8 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
     }
   };
 
-  // El estado del bot pasa a 'conectando' y luego 'conectado' de forma asíncrona;
-  // reconsultamos unas veces para reflejarlo sin recargar la pantalla.
+  // The bot state moves to 'connecting' and then 'connected' asynchronously;
+  // we re-query a few times to reflect it without reloading the screen.
   const pollBotStatus = (tries = 4) => {
     let n = 0;
     const run = async () => {
@@ -383,9 +383,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
 
   const lastStatus = backup.lastBackupStatus;
 
-  // Bulk de portadas faltantes: de a lotes para no acercarse al rate limit de
-  // AniList (~30 req/min). Dentro del lote espacia ~2.2s; cada N mangas hace una
-  // pausa larga (configurable). Se detiene ante un error (incluido 429).
+  // Bulk of missing covers: in batches to stay away from AniList's rate limit
+  // (~30 req/min). Within a batch it spaces ~2.2s; every N mangas it takes a
+  // long pause (configurable). It stops on an error (including 429).
   const COVER_BULK_INTRA_DELAY_MS = 2200;
 
   const runCoverBulk = async () => {
@@ -432,10 +432,10 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
       done += 1;
       setCoverBulk({ running: true, done, total: missing.length, message: t('settings.bulkProgress', { count: linked }), cooldownLeft: 0 });
 
-      if (i === missing.length - 1) break; // terminó: sin espera final
+      if (i === missing.length - 1) break; // finished: no trailing wait
 
       if (done % batchSize === 0 && cooldownSec > 0) {
-        // Pausa larga entre lotes, con cuenta regresiva cancelable.
+        // Long pause between batches, with a cancellable countdown.
         for (let s = cooldownSec; s > 0; s -= 1) {
           if (coverBulkCancelRef.current) break;
           setCoverBulk((prev) => ({

@@ -42,7 +42,7 @@ describe('services/remote-fs', () => {
   });
 
   it('corta con timeout y marca timedOut cuando el worker no responde', async () => {
-    // Worker falso que nunca contesta.
+    // Fake worker that never answers.
     const fake = new EventEmitter();
     fake.postMessage = () => {};
     fake.terminate = () => {};

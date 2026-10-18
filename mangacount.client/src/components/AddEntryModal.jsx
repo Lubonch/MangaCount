@@ -8,7 +8,7 @@ const AddEntryModal = ({
     mangas, 
     onSuccess, 
     editEntry = null,
-    selectedProfile // Add this prop
+    selectedProfile
 }) => {
     const t = useT();
     const [formData, setFormData] = useState({

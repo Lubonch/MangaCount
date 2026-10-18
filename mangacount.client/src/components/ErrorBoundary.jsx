@@ -2,13 +2,13 @@ import { Component } from 'react';
 import { logError, isElectron } from '../api/localAdapter.js';
 import I18nContext from '../contexts/I18nContext';
 
-// Reporta el error del render al log del main (solo dentro de Electron; fuera no
-// hay IPC y no queremos recursión por fetch fallido).
+// Reports render errors to the main log (only inside Electron; outside there is
+// no IPC and we do not want recursion from a failed fetch).
 function report(payload) {
   try {
     if (isElectron()) logError(payload);
   } catch {
-    /* el reporte nunca debe romper la UI */
+    /* reporting must never break the UI */
   }
 }
 

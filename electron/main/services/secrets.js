@@ -1,9 +1,9 @@
-// Guardado del token de Discord.
+// Discord token storage.
 //
-// Con `safeStorage` disponible (keychain en macOS, DPAPI en Windows, libsecret
-// en Linux) el token se cifra. Si no está disponible, se cae a texto plano en
-// `<userData>/discord-token.bin` para no dejar la función inutilizable; el
-// archivo vive en userData (nunca en el repo ni en preferences.json).
+// With `safeStorage` available (keychain on macOS, DPAPI on Windows, libsecret
+// on Linux) the token is encrypted. If it is not available, it falls back to plain text in
+// `<userData>/discord-token.bin` so the feature is not left unusable; the
+// file lives in userData (never in the repo nor in preferences.json).
 
 import fs from 'node:fs';
 import path from 'node:path';

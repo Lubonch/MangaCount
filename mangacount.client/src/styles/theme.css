@@ -1,5 +1,5 @@
-/* Tokens de color por tema. `:root` = dark (default; evita FOUC antes de que
-   ThemeContext setee data-theme). */
+/* Per-theme color tokens. `:root` = dark (default; avoids FOUC before
+   ThemeContext sets data-theme). */
 
 :root,
 :root[data-theme="dark"] {

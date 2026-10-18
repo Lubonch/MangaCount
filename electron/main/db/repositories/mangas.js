@@ -1,13 +1,13 @@
-// Port directo de MangaRepository.cs. DTO: {id, name, volumes, formatId, publisherId, isAdult}.
+// Direct port of MangaRepository.cs. DTO: {id, name, volumes, formatId, publisherId, isAdult}.
 
 const SELECT =
   'Id AS id, Title AS name, TotalVolumes AS volumes, FormatId AS formatId, ' +
   'PublisherId AS publisherId, IsAdult AS isAdult FROM Manga';
 
-// SQLite guarda el flag como 0/1; el DTO lo expone como booleano.
+// SQLite stores the flag as 0/1; the DTO exposes it as a boolean.
 const toManga = (row) => (row ? { ...row, isAdult: row.isAdult === 1 || row.isAdult === true } : row);
 
-// TotalVolumes es NOT NULL: vacío/`null`/inválido -> 0 (serie en publicación).
+// TotalVolumes is NOT NULL: empty/`null`/invalid -> 0 (ongoing series).
 const safeVolumes = (value) => {
   const n = Number.parseInt(value, 10);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -37,14 +37,14 @@ export function updateManga(db, { id, name, volumes, formatId, publisherId, isAd
   return getMangaById(db, id);
 }
 
-// Marca/desmarca el contenido +18 sin tocar el resto del manga (lo usa el
-// vínculo de portada para promover el flag cuando el candidato es +18).
+// Sets/clears the +18 content without touching the rest of the manga (used by the
+// cover link to promote the flag when the candidate is +18).
 export function setMangaIsAdult(db, id, isAdult) {
   db.prepare('UPDATE Manga SET IsAdult = ? WHERE Id = ?').run(isAdult ? 1 : 0, id);
   return getMangaById(db, id);
 }
 
-// Borra el manga (sus Entry caen por ON DELETE CASCADE).
+// Deletes the manga (its Entry rows fall via ON DELETE CASCADE).
 export function deleteManga(db, id) {
   return db.prepare('DELETE FROM Manga WHERE Id = ?').run(id).changes > 0;
 }

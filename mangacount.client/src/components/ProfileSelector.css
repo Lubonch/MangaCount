@@ -120,7 +120,6 @@
     border-color: var(--color-info);
 }
 
-/* FIXED: Profile image positioning */
 .profile-circle-image {
     position: absolute;
     top: 0;
@@ -133,7 +132,6 @@
     transition: opacity 0.3s ease;
 }
 
-/* FIXED: Placeholder positioning */
 .profile-circle-placeholder {
     position: absolute;
     top: 0;
@@ -173,8 +171,6 @@
     color: var(--color-complete);
 }
 
-/* REMOVED: Old button styles that were on the circles */
-
 .profile-circle-name {
     margin-top: 20px;
     margin-bottom: 12px;
@@ -189,7 +185,6 @@
     color: var(--color-info);
 }
 
-/* NEW: Action buttons positioned below the profile name */
 .profile-action-buttons {
     display: flex;
     gap: 8px;
@@ -242,7 +237,6 @@
     height: 16px;
 }
 
-/* Legacy card view styles (keep for fallback) */
 .profiles-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -377,7 +371,6 @@
     border: 2px solid var(--bg-primary);
 }
 
-/* Loading and Error States */
 .loading-container,
 .error-container {
     text-align: center;
@@ -425,7 +418,6 @@
     box-shadow: var(--shadow-hover);
 }
 
-/* Mobile responsive */
 @media (max-width: 768px) {
     .main-title {
         font-size: 2rem;
@@ -467,7 +459,6 @@
         height: 14px;
     }
     
-    /* Legacy card styles for mobile */
     .profiles-grid {
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
         gap: 16px;
@@ -524,7 +515,6 @@
         height: 12px;
     }
     
-    /* Legacy card styles for small mobile */
     .profiles-grid {
         grid-template-columns: 1fr 1fr;
     }

@@ -266,7 +266,6 @@
     transform: none;
 }
 
-/* Animations */
 @keyframes modalOverlayFadeIn {
     from {
         opacity: 0;
@@ -287,7 +286,6 @@
     }
 }
 
-/* Mobile responsive */
 @media (max-width: 600px) {
     .modal-content {
         width: 95%;

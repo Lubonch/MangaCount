@@ -77,10 +77,10 @@ describe('services/entries', () => {
   it('parsea filas cortas, campos vacíos y números inválidos', () => {
     const text = [
       'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial',
-      'naruto', // fila de 1 campo: todo por default
-      '\t5\t10', // sin título: se omite
-      'bleach\tabc\t', // cantidad no numérica y total vacío
-      'onepiece\t1\t10\t\tFalse\t\t\t', // formato/editorial/pendiente vacíos
+      'naruto', // row with 1 field: everything by default
+      '\t5\t10', // no title: skipped
+      'bleach\tabc\t', // non-numeric quantity and empty total
+      'onepiece\t1\t10\t\tFalse\t\t\t', // empty format/publisher/pending
     ].join('\n');
     const rows = parseTsv(text, 1);
     assert.equal(rows.length, 3);
@@ -107,9 +107,9 @@ describe('services/entries', () => {
     const HEADER = 'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial';
     const row = (fmt, pub) => `${HEADER}\nserie\t1\t5\t\tFalse\tFalse\t${fmt}\t${pub}`;
     importTsv(db, row('Tankoubon', 'Panini'), 1);
-    importTsv(db, row('Tankoubon', 'Ivrea'), 1); // mismo formato, editorial distinta
-    importTsv(db, row('Tankoubon', 'Ivrea'), 1); // ambos iguales: no actualiza
-    importTsv(db, row('Kanzenban', 'Ivrea'), 1); // formato distinto: short-circuit
+    importTsv(db, row('Tankoubon', 'Ivrea'), 1); // same format, different publisher
+    importTsv(db, row('Tankoubon', 'Ivrea'), 1); // both equal: does not update
+    importTsv(db, row('Kanzenban', 'Ivrea'), 1); // different format: short-circuit
     const mangas = handlers['manga:list']({ db });
     assert.equal(mangas.length, 1);
     const ivrea = handlers['publisher:list']({ db }).find((p) => p.name === 'Ivrea');
@@ -139,22 +139,22 @@ describe('services/entries', () => {
     upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 0, priority: false });
     const row = exportTsv(db, profile.id).split('\n')[1].split('\t');
     assert.equal(row[0], 'en publicación');
-    assert.equal(row[2], '0'); // volúmenes 0
-    assert.equal(row[4], 'False'); // completa false
-    assert.equal(row[5], 'False'); // prioridad false
+    assert.equal(row[2], '0'); // volumes 0
+    assert.equal(row[4], 'False'); // complete false
+    assert.equal(row[5], 'False'); // priority false
     assert.equal(row[6], 'Unknown');
     assert.equal(row[7], 'Unknown');
   });
 
   it('exporta entradas huérfanas (manga null en el JOIN)', () => {
-    // Entrada sin Manga válido: el LEFT JOIN devuelve manga null.
+    // Entry without a valid Manga: the LEFT JOIN returns manga null.
     db.pragma('foreign_keys = OFF');
     db.prepare('INSERT INTO Entry (ProfileId, MangaId, PurchasedVolumes) VALUES (?, 999999, 3)').run(
       profile.id
     );
     db.pragma('foreign_keys = ON');
     const row = exportTsv(db, profile.id).split('\n')[1].split('\t');
-    assert.equal(row[0], ''); // sin nombre
+    assert.equal(row[0], ''); // no name
     assert.equal(row[3], ''); // pending null
     assert.equal(row[4], 'False');
     assert.equal(row[5], 'False');

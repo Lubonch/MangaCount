@@ -1,5 +1,5 @@
-// Port directo de EntryRepository.cs, incluyendo el JOIN con manga/format/publisher
-// y el upsert ON CONFLICT(ProfileId, MangaId) (SQLite soporta la misma sintaxis).
+// Direct port of EntryRepository.cs, including the JOIN with manga/format/publisher
+// and the upsert ON CONFLICT(ProfileId, MangaId) (SQLite supports the same syntax).
 // DTO: {id, mangaId, profileId, quantity, pending, priority, manga: {...}}.
 
 function mapRow(r) {

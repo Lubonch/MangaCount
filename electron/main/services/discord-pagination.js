@@ -1,6 +1,6 @@
-// Paginación de listados del bot: guarda las líneas ya formateadas + el tamaño
-// de página y expone el render de cada página. Puro (sin discord.js): el bot
-// arma los botones a partir del descriptor que devuelve `renderPage`.
+// Bot listing pagination: stores the already formatted lines + the page
+// size and exposes the render of each page. Pure (no discord.js): the bot
+// builds the buttons from the descriptor returned by `renderPage`.
 
 export const PAGINATION_TTL_MS = 300000;
 

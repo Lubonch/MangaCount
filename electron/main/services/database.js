@@ -1,7 +1,7 @@
-// Reconversión de NukeDataModal: "borrar todos los datos locales" contra SQLite.
-// Borra entries, mangas y perfiles, pero conserva los catálogos. Deja la base en
-// **estado cero de perfiles** (sin re-sembrar): el usuario crea uno al volver a
-// la selección de perfiles.
+// Reimplementation of NukeDataModal: "delete all local data" against SQLite.
+// Deletes entries, mangas and profiles, but keeps the catalogs. Leaves the DB in
+// **zero-profile state** (without re-seeding): the user creates one when returning to
+// the profile selection.
 
 import { getCounts } from '../db/client.js';
 

@@ -2,8 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { appConfigGet } from '../api/localAdapter';
 import { createAppTranslator, resolveLanguage } from '@shared/i18n/index.js';
 
-// `globalThis.__MANGACOUNT_LANG__` es un seam de tests: el renderer no puede leer
-// `process.env`, así que los tests fijan el idioma acá (ver src/test/setup.js).
+// `globalThis.__MANGACOUNT_LANG__` is a test seam: the renderer cannot read
+// `process.env`, so tests pin the language here (see src/test/setup.js).
 const envLanguage = () => globalThis.__MANGACOUNT_LANG__;
 const fallbackLanguage = () => resolveLanguage({ env: envLanguage() });
 const initial = fallbackLanguage();

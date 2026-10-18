@@ -43,8 +43,8 @@ describe('db/client', () => {
 
   it('openDb cierra y propaga si falla la aplicación del esquema', () => {
     db = openDb(dir);
-    // Provoca que el esquema vuelva a correr y falle: un objeto con el nombre de
-    // uno de sus índices revienta el `db.exec`.
+    // Forces the schema to run again and fail: an object named after one of its
+    // indexes blows up the `db.exec`.
     db.exec('DROP INDEX IX_Entry_ProfileId');
     db.prepare('CREATE TABLE IX_Entry_ProfileId (x)').run();
     db.pragma('user_version = 0');
@@ -53,7 +53,7 @@ describe('db/client', () => {
       () => openDb(dir),
       /there is already a table named IX_Entry_ProfileId/
     );
-    db = null; // la conexión interna ya se cerró dentro de openDb
+    db = null; // the internal connection was already closed inside openDb
   });
 
   it('respeta UNIQUE(ProfileId, MangaId) y FK con CASCADE', () => {
@@ -89,8 +89,8 @@ describe('db/client', () => {
 
   it('migra v3 → v4 agregando IsAdult con default 0, y reabrir es idempotente', () => {
     const file = path.join(dir, 'mangacount.db');
-    // Base con el esquema previo (v3): se construye con el esquema actual y se
-    // quita la columna para simular una instalación anterior a la migración.
+    // DB with the previous schema (v3): built with the current schema and the
+    // column removed to simulate an install before the migration.
     const legacy = new Database(file);
     legacy.exec(fs.readFileSync(new URL('./schema.sqlite.sql', import.meta.url), 'utf8'));
     legacy.exec('ALTER TABLE MangaExternalRef DROP COLUMN IsAdult');
@@ -109,7 +109,7 @@ describe('db/client', () => {
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
     assert.equal(db.prepare('SELECT IsAdult FROM MangaExternalRef').get().IsAdult, 0);
 
-    // Reabrir no falla aunque la columna ya esté: `ensureColumn` es idempotente.
+    // Reopening does not fail even if the column already exists: `ensureColumn` is idempotent.
     db.close();
     db = openDb(dir);
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
@@ -129,7 +129,7 @@ describe('db/client', () => {
 
   it('migra v4 → v5: agrega Manga.IsAdult y hace backfill desde el vínculo +18', () => {
     const file = path.join(dir, 'mangacount.db');
-    // Base con el esquema previo (v4): quita Manga.IsAdult y deja un vínculo +18.
+    // DB with the previous schema (v4): removes Manga.IsAdult and leaves a +18 link.
     const legacy = new Database(file);
     legacy.exec(fs.readFileSync(new URL('./schema.sqlite.sql', import.meta.url), 'utf8'));
     legacy.exec('ALTER TABLE Manga DROP COLUMN IsAdult');
@@ -158,7 +158,7 @@ describe('db/client', () => {
     assert.equal(row(adult), 1);
     assert.equal(row(plain), 0);
 
-    // Reabrir es idempotente: el backfill no rompe ni cambia nada.
+    // Reopening is idempotent: the backfill breaks nothing and changes nothing.
     db.close();
     db = openDb(dir);
     assert.equal(row(adult), 1);

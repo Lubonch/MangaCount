@@ -1,7 +1,7 @@
-// Handlers IPC. Cada entrada es una función pura `(ctx, ...args)` donde
-// `ctx = { db }`, para poder testearla con `node --test` sin Electron.
-// `registerHandlers(ipcMain, ctx)` las conecta al runtime real.
-// Canales según parity-matrix.md (filas 1-15; recommendation y database llegan después).
+// IPC handlers. Each entry is a pure function `(ctx, ...args)` where
+// `ctx = { db }`, so it can be tested with `node --test` without Electron.
+// `registerHandlers(ipcMain, ctx)` wires them to the real runtime.
+// Channels per parity-matrix.md (rows 1-15; recommendation and database come later).
 
 import { listEntries, getEntryById, upsertEntry, updateEntry } from '../db/repositories/entries.js';
 import { deleteManga } from '../db/repositories/mangas.js';
@@ -62,24 +62,24 @@ function requireProfileId(profileId, t = (key) => key) {
   }
 }
 
-// Un perfil borrado (p. ej. tras la "Nuclear Option", que re-siembra el perfil
-// por defecto con un id nuevo) deja la UI con un id viejo; validamos para dar un
-// mensaje claro en vez de un FOREIGN KEY constraint failed.
+// A deleted profile (e.g. after the "Nuclear Option", which re-seeds the default
+// profile with a new id) leaves the UI with an old id; we validate to give a
+// clear message instead of a FOREIGN KEY constraint failed.
 function requireProfileExists(db, profileId, t = (key) => key) {
   if (!getProfileById(db, profileId)) {
     throw new Error(t('err.profileNotFound'));
   }
 }
 
-// Asegura que el perfil tenga un Entry del manga sin pisar uno existente (a
-// diferencia de `upsertEntry`, que sobreescribe la cantidad comprada).
+// Ensures the profile has an Entry for the manga without overwriting an existing
+// one (unlike `upsertEntry`, which overwrites the purchased quantity).
 function ensureEntry(db, profileId, mangaId) {
   const exists = listEntries(db, profileId).some((entry) => entry.mangaId === mangaId);
   if (!exists) upsertEntry(db, { mangaId, profileId, quantity: 0 });
 }
 
-// Agrupa formatos/editoriales usados por la colección como {id, name, count}[],
-// ordenados por nombre: misma forma que EntryController.GetUsedFormats/Publishers.
+// Groups formats/publishers used by the collection as {id, name, count}[],
+// sorted by name: same shape as EntryController.GetUsedFormats/Publishers.
 function usedCatalog(entries, pick) {
   const byId = new Map();
   for (const entry of entries) {
@@ -112,8 +112,8 @@ export const handlers = {
   'format:create': ({ db }, { name }) => formats.create(db, name),
   'publisher:list': ({ db }) => publishers.list(db),
   'publisher:create': ({ db }, { name }) => publishers.create(db, name),
-  // Recomendaciones: AniList si está habilitado; si devuelve `null` (sin semillas
-  // resolubles o fallo total) cae al motor local con `provider: 'local'`.
+  // Recommendations: AniList if enabled; if it returns `null` (no resolvable
+  // seeds or a total failure) it falls back to the local engine with `provider: 'local'`.
   'recommendation:get': async ({ db, dataDir }, { profileId, limit } = {}) => {
     const prefs = dataDir ? loadResolvedPrefs(dataDir) : resolvePrefs({});
     if (prefs.recommendations.enabled) {
@@ -208,8 +208,8 @@ export const handlers = {
   'entry:used-formats': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.format),
   'entry:used-publishers': ({ db }, profileId = null) => usedCatalog(listEntries(db, profileId), (e) => e.manga?.publisher),
 
-  // Portadas + vínculo externo (AniList, sin key). Guarda solo el vínculo; el
-  // nombre local del manga no se toca. El contenido +18 sigue la preferencia.
+  // Covers + external link (AniList, no key). Only the link is stored; the local
+  // manga name is not touched. Adult content follows the preference.
   'cover:search': ({ db, dataDir }, { query } = {}) =>
     searchManga(query, { includeAdult: loadResolvedPrefs(dataDir).showAdultCovers }),
   'cover:link': ({ db, dataDir }, { mangaId, candidate } = {}) =>
@@ -231,7 +231,6 @@ export const handlers = {
       includeAdult: loadResolvedPrefs(dataDir).showAdultCovers,
     }),
 
-  // Backup y restore del sistema.
   'backup:config-get': ({ dataDir }) => loadResolvedPrefs(dataDir).backup,
   'backup:config-set': ({ dataDir }, config = {}) => {
     const prefs = resolvePrefs(loadPrefs(dataDir));
@@ -286,7 +285,6 @@ export const handlers = {
     return { restored: true, safetyBackup: result.safetyBackup, manifest: result.manifest };
   },
 
-  // Config del bot de Discord.
   'bot:config-get': (ctx) => {
     const { bot: config } = loadResolvedPrefs(ctx.dataDir);
     return {
@@ -337,11 +335,9 @@ export const handlers = {
   },
   'bot:status': (ctx) => ({ status: ctx.bot?.status?.() ?? 'apagado' }),
 
-  // Autostart por sistema operativo.
   'bot:autostart-get': (ctx) => ({ enabled: !!ctx.autostart?.get?.() }),
   'bot:autostart-set': (ctx, enabled) => ({ enabled: !!ctx.autostart?.set?.(!!enabled) }),
 
-  // Config general de la app (arranque en bandeja, chequeo de updates).
   'app:config-get': ({ dataDir }) => {
     const prefs = loadResolvedPrefs(dataDir);
     return {
@@ -366,8 +362,8 @@ export const handlers = {
       showAdultCovers: config.showAdultCovers ?? prefs.showAdultCovers,
     };
     savePrefs(dataDir, next);
-    // Si cambió "Arranque en bandeja" y el autostart está activo, reescribe la
-    // entrada para que arranque (o no) oculto según la preferencia.
+  // If "Start in tray" changed and autostart is active, rewrite the entry so it
+  // starts hidden (or not) according to the preference.
     if (autostart?.get?.()) autostart.set(true);
     return {
       language: next.language,
@@ -378,7 +374,6 @@ export const handlers = {
     };
   },
 
-  // Diagnóstico: copiar estado+log o abrir la carpeta de logs.
   'diagnostics:copy': ({ dataDir, app, clipboard }, maxLines = 100) => {
     const logPath = path.join(dataDir, 'logs', 'app.txt');
     const logText = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : '';
@@ -398,7 +393,6 @@ export const handlers = {
     return { opened: true };
   },
 
-  // Errores del renderer → log del main.
   'log:error': ({ logger }, payload = {}) => {
     const scope = payload?.scope ? `/${payload.scope}` : '';
     const where = payload?.component ? ` (${payload.component})` : '';
@@ -412,13 +406,11 @@ export const handlers = {
     arch: process.arch,
     packaged: !!app?.isPackaged,
   }),
-  // Chequeo y aplicación de actualizaciones (controller en ctx.update).
   'update:check': (ctx) => ctx.update.check(),
   'update:get-state': (ctx) => ctx.update.state(),
   'update:download': (ctx) => ctx.update.download(),
   'update:install': (ctx) => ctx.update.install(),
 
-  // Diálogos nativos de archivo.
   'dialog:pick-directory': async (ctx) =>
     ctx.dialog?.pickDirectory ? ctx.dialog.pickDirectory() : null,
   'dialog:pick-file': async (ctx, filters) => {

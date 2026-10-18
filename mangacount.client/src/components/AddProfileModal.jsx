@@ -50,7 +50,6 @@ const AddProfileModal = ({
                 profilePicture: file
             }));
 
-            // Create preview
             const reader = new FileReader();
             reader.onload = (e) => setPreviewImage(e.target.result);
             reader.readAsDataURL(file);
@@ -69,7 +68,6 @@ const AddProfileModal = ({
         }
 
         try {
-            // First, create/update the profile
             const profileData = {
                 id: editProfile ? editProfile.id : 0,
                 name: formData.name.trim(),
@@ -87,7 +85,6 @@ const AddProfileModal = ({
             });
 
             if (response.ok) {
-                // If there's a new image, upload it
                 if (formData.profilePicture) {
                     const profileId = editProfile ? editProfile.id : await getLatestProfileId();
                     await uploadProfilePicture(profileId, formData.profilePicture);

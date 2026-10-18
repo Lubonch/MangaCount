@@ -12,22 +12,20 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
     const [sortBy, setSortBy] = useState('name');
     const [viewMode, setViewMode] = useState('cards');
     
-    // New filter states
     const [publisherFilter, setPublisherFilter] = useState('all');
     const [formatFilter, setFormatFilter] = useState('all');
     const [availablePublishers, setAvailablePublishers] = useState([]);
     const [availableFormats, setAvailableFormats] = useState([]);
     const [filtersLoading, setFiltersLoading] = useState(false);
     
-    // Edit modal states
     const [showEditEntry, setShowEditEntry] = useState(false);
     const [showEditManga, setShowEditManga] = useState(false);
     const [editingEntry, setEditingEntry] = useState(null);
     const [editingManga, setEditingManga] = useState(null);
 
-    // Portadas: mapa { mangaId: { url, isAdult } } (se pintan en las cards).
+    // Covers: map { mangaId: { url, isAdult } } (rendered on the cards).
     const [coverMap, setCoverMap] = useState({});
-    // Portadas +18 reveladas por click (solo con la preferencia apagada).
+    // +18 covers revealed by click (only when the preference is off).
     const [revealedCovers, setRevealedCovers] = useState({});
 
     useEffect(() => {
@@ -42,8 +40,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         };
     }, [entries, selectedProfile]);
 
-    // Acepta `{ url, isAdult }` (o `null` al desvincular). El auto-match sigue
-    // devolviendo solo la URL: en ese caso no hay dato de +18 (se asume false).
+    // Accepts `{ url, isAdult }` (or `null` on unlink). Auto-match still
+    // returns only the URL: in that case there is no +18 data (assumed false).
     const handleCoverLinked = (mangaId, cover) => {
         const url = typeof cover === 'string' ? cover : cover?.url;
         const isAdult = typeof cover === 'object' && cover !== null && cover.isAdult === true;
@@ -61,14 +59,14 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         });
     };
 
-    // Reveal por click: consume el evento para no disparar la acción de la card.
+    // Reveal by click: consume the event so the card action does not fire.
     const handleCoverReveal = (event, mangaId) => {
         event.stopPropagation();
         setRevealedCovers((prev) => ({ ...prev, [mangaId]: !prev[mangaId] }));
     };
 
-    // Auto-match best-effort al agregar: cuando aparece un manga nuevo, se
-    // intenta vincular su portada (solo si hay match único; fire-and-forget).
+    // Best-effort auto-match on add: when a new manga shows up, try to
+    // link its cover (only if there is a unique match; fire-and-forget).
     const knownMangasRef = useRef(null);
     useEffect(() => {
         const ids = entries.map((entry) => entry.manga.id);
@@ -81,7 +79,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         fresh.forEach((id) => known.add(id));
         if (fresh.length === 0) return;
 
-        // Secuencial: no saturar AniList (rate limit). Se detiene ante un 429.
+        // Sequential: do not flood AniList (rate limit). Stops on a 429.
         let cancelled = false;
         (async () => {
             for (const id of fresh) {
@@ -99,7 +97,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         };
     }, [entries]);
 
-    // Load filter options when entries or profile changes
     useEffect(() => {
         if (selectedProfile && entries.length > 0) {
             loadFilterOptions();
@@ -111,14 +108,12 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         
         setFiltersLoading(true);
         try {
-            // Load publishers
             const publishersResponse = await fetch(`/api/entry/filters/publishers?profileId=${selectedProfile.id}`);
             if (publishersResponse.ok) {
                 const publishers = await publishersResponse.json();
                 setAvailablePublishers(publishers);
             }
 
-            // Load formats
             const formatsResponse = await fetch(`/api/entry/filters/formats?profileId=${selectedProfile.id}`);
             if (formatsResponse.ok) {
                 const formats = await formatsResponse.json();
@@ -131,14 +126,12 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         }
     };
 
-    // Reset filters when profile changes
     useEffect(() => {
         setPublisherFilter('all');
         setFormatFilter('all');
         setFilter('all');
     }, [selectedProfile]);
 
-    // Helper functions (keeping existing ones)
     const getCompletionPercentage = (entry) => {
         if (!entry.manga.volumes || entry.manga.volumes === 0) return null;
         return Math.round((entry.quantity / entry.manga.volumes) * 100);
@@ -156,7 +149,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         }
     };
 
-    // Identidad visual generada por título (fallback sin portada): gradiente + iniciales.
+    // Visual identity generated from the title (fallback without cover): gradient + initials.
     const titleHash = (value) => {
         let hash = 0;
         const text = value || '';
@@ -195,10 +188,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         return counts;
     };
 
-    // Enhanced filtering logic
     const getFilteredEntries = () => {
         return entries.filter(entry => {
-            // Publisher filter
             if (publisherFilter !== 'all') {
                 const publisherId = entry.manga?.publisher?.id || entry.manga?.publisherId;
                 if (publisherId !== parseInt(publisherFilter)) {
@@ -206,7 +197,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 }
             }
 
-            // Format filter
             if (formatFilter !== 'all') {
                 const formatId = entry.manga?.format?.id || entry.manga?.formatId;
                 if (formatId !== parseInt(formatFilter)) {
@@ -214,7 +204,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 }
             }
 
-            // Status filter
             const status = getEntryStatus(entry);
             switch (filter) {
                 case 'complete':
@@ -233,7 +222,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         });
     };
 
-    // Edit handlers
     const handleEditEntry = (entry) => {
         setEditingEntry(entry);
         setShowEditEntry(true);
@@ -248,7 +236,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         try {
             const entryData = {
                 ...entry,
-                id: entry.id, // Include the ID for update
+                id: entry.id,
                 quantity: newQuantity
             };
 
@@ -302,17 +290,14 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
 
     const statusCounts = getStatusCounts();
 
-    // Helper function to clear all filters
     const clearAllFilters = () => {
         setFilter('all');
         setPublisherFilter('all');
         setFormatFilter('all');
     };
 
-    // Check if any filters are active
     const hasActiveFilters = filter !== 'all' || publisherFilter !== 'all' || formatFilter !== 'all';
 
-    // Skeleton loading (keeping existing)
     const renderSkeleton = () => {
         const skeletonCount = viewMode === 'table' ? 10 : viewMode === 'compact' ? 12 : 6;
         
@@ -325,7 +310,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         );
     };
 
-    // Enhanced render methods with edit buttons
     const renderTableView = () => (
         <div className="table-container">
             <table className="entries-table">
@@ -487,8 +471,8 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 const completionPercent = getCompletionPercentage(entry);
                 const cover = coverMap[entry.manga.id];
                 const isAdult = cover?.isAdult === true;
-                // Con el pref ON el reveal es por hover (momentáneo); con el pref
-                // OFF requiere click y queda hasta deshacerlo.
+                // With the pref ON reveal is on hover (momentary); with the pref
+                // OFF it needs a click and stays until undone.
                 const revealOnHover = isAdult && showAdultCovers;
                 const revealed = isAdult && !showAdultCovers && revealedCovers[entry.manga.id] === true;
                 const coverClassName = [
@@ -743,7 +727,6 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 )}
             </div>
 
-            {/* Edit Modals */}
             <AddEntryModal 
                 isOpen={showEditEntry}
                 onClose={() => {

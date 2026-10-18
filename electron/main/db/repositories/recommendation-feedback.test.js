@@ -36,11 +36,11 @@ describe('repositories/recommendation-feedback', () => {
     assert.equal(row.provider, 'anilist');
     assert.equal(listDismissed(db, profile.id).length, 1);
 
-    // Idempotente: repetir no duplica.
+    // Idempotent: repeating does not duplicate.
     dismiss(db, profile.id, 'anilist', 30001);
     assert.equal(listDismissed(db, profile.id).length, 1);
 
-    // Otro perfil no lo ve.
+    // Another profile does not see it.
     const other = createProfile(db, 'otro');
     assert.equal(listDismissed(db, other.id).length, 0);
 
@@ -59,7 +59,7 @@ describe('repositories/recommendation-feedback', () => {
       ['b']
     );
 
-    // Repetir actualiza SeenAt (mismo par, sin duplicar).
+    // Repeating updates SeenAt (same pair, no duplicate).
     markSeen(db, profile.id, 'anilist', 'a', '2026-04-01T00:00:00.000Z');
     assert.equal(listSeen(db, profile.id).length, 2);
     assert.deepEqual(

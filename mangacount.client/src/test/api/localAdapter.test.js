@@ -1,10 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as api from '../../api/localAdapter.js'
 
-// ---------------------------------------------------------------------------
-// Funciones tipadas — camino Electron (`window.mangaCount.invoke`)
-// ---------------------------------------------------------------------------
-
 describe('localAdapter · funciones tipadas (IPC de Electron)', () => {
   let invoke
 
@@ -92,10 +88,6 @@ describe('localAdapter · funciones tipadas (IPC de Electron)', () => {
   })
 })
 
-// ---------------------------------------------------------------------------
-// Funciones tipadas — fallback `fetch` (navegador)
-// ---------------------------------------------------------------------------
-
 describe('localAdapter · fallback fetch (navegador)', () => {
   beforeEach(() => {
     delete window.mangaCount
@@ -122,10 +114,6 @@ describe('localAdapter · fallback fetch (navegador)', () => {
     await expect(api.profileGet(7)).rejects.toThrow('HTTP 503 en /api/profile/7')
   })
 })
-
-// ---------------------------------------------------------------------------
-// Helpers y `isElectron`
-// ---------------------------------------------------------------------------
 
 describe('localAdapter · isElectron y onUpdateState', () => {
   afterEach(() => {
@@ -161,10 +149,6 @@ describe('localAdapter · isElectron y onUpdateState', () => {
     expect(result).toBe(off)
   })
 })
-
-// ---------------------------------------------------------------------------
-// installApiFetchShim
-// ---------------------------------------------------------------------------
 
 describe('localAdapter · installApiFetchShim', () => {
   let realFetch

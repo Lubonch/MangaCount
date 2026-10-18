@@ -5,10 +5,10 @@ import { useT } from '../contexts/I18nContext';
 
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp', 'gif'];
 
-// Vincula la portada de un manga con AniList: busca (prellenado con el título
-// local), el usuario elige un candidato y se descarga/cachea la portada.
-// También permite elegir una imagen local del equipo (para mangas que no están
-// en AniList). Se guarda SOLO el vínculo; el nombre local no cambia.
+// Links a manga cover with AniList: searches (pre-filled with the local
+// title), the user picks a candidate and the cover is downloaded/cached.
+// It also lets the user pick a local image from the machine (for mangas not
+// on AniList). Only the link is saved; the local name does not change.
 export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCovers = false }) {
   const t = useT();
   const [query, setQuery] = useState(manga?.name ?? '');
@@ -18,7 +18,7 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
   const [localBusy, setLocalBusy] = useState(false);
   const [error, setError] = useState('');
   const [status, setStatus] = useState(null);
-  // Candidatos +18 revelados por click (solo con la preferencia apagada).
+  // +18 candidates revealed by click (only when the preference is off).
   const [revealedCandidates, setRevealedCandidates] = useState({});
 
   useEffect(() => {
@@ -66,8 +66,8 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
     }
   };
 
-  // Elige una imagen del equipo y la vincula como portada local. Cancelar el
-  // diálogo no es un error: no se llama a `coverLocal`.
+  // Picks an image from the machine and links it as the local cover. Cancelling
+  // the dialog is not an error: `coverLocal` is not called.
   const pickLocal = async () => {
     setError('');
     setLocalBusy(true);
@@ -107,8 +107,8 @@ export default function LinkCoverModal({ manga, onClose, onLinked, showAdultCove
     ].filter(Boolean).join(' ');
   };
 
-  // Con el pref OFF el primer click revela y el segundo ejecuta la vinculación
-  // real; con el pref ON el hover ya revela y el click vincula directo.
+  // With the pref OFF the first click reveals and the second performs the real
+  // link; with the pref ON hover already reveals and the click links directly.
   const handleCandidateClick = (candidate) => {
     if (candidate.isAdult === true && !showAdultCovers && !revealedCandidates[candidate.id]) {
       setRevealedCandidates((prev) => ({ ...prev, [candidate.id]: true }));

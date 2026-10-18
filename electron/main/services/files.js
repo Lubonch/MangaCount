@@ -1,8 +1,8 @@
-// Fotos de perfil: de wwwroot/profiles (servidor) a <userData>/profiles (desktop).
-// Paridad con ProfileController.UploadProfilePicture: valida imagen, guarda como
-// profile_{id}_{uuid}{ext} y actualiza el perfil (aunque falte, igual devuelve la URL).
-// El original persistía una URL http; acá se persiste `mangacount://profiles/<file>`,
-// servida por el protocolo custom registrado en main.
+// Profile photos: from wwwroot/profiles (server) to <userData>/profiles (desktop).
+// Parity with ProfileController.UploadProfilePicture: validates image, saves as
+// profile_{id}_{uuid}{ext} and updates the profile (even if missing, it still returns the URL).
+// The original persisted an http URL; here `mangacount://profiles/<file>` is persisted,
+// served by the custom protocol registered in main.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -25,7 +25,7 @@ export function saveProfilePicture(db, dataDir, profileId, { originalName, buffe
   try {
     setProfilePicture(db, profileId, url);
   } catch {
-    // Paridad con el original: el upload vale aunque el perfil no exista.
+    // Parity with the original: the upload is valid even if the profile does not exist.
   }
   return { fileName, url };
 }

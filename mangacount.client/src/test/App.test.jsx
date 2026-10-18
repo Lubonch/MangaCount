@@ -95,7 +95,7 @@ describe('App Component', () => {
     localStorage.getItem.mockReturnValue(undefined)
     mockRecommendManga.mockReset()
     api.isElectron.mockReturnValue(false)
-    // App lee la preferencia +18 al montar; sin esto el mock devolvería undefined.
+    // App reads the +18 preference on mount; without this the mock would return undefined.
     api.appConfigGet.mockResolvedValue({})
   })
 
@@ -111,7 +111,6 @@ describe('App Component', () => {
     ]
     const mockMangas = [createMockManga()]
 
-    // Mock the ProfileSelector to work within the App component
     global.fetch
       .mockResolvedValueOnce({
         ok: true,
@@ -129,7 +128,6 @@ describe('App Component', () => {
 
     render(<App />)
 
-    // Wait for the profile selector to load and show profiles
     await waitFor(() => {
       expect(screen.getByText('Profile 1')).toBeInTheDocument()
     }, { timeout: 5000 })
@@ -206,7 +204,6 @@ describe('App Component', () => {
   it('handles retry on error', async () => {
     const user = userEvent.setup()
     
-    // First call fails
     global.fetch.mockRejectedValueOnce(new Error('API Error'))
 
     render(<App />)
@@ -215,7 +212,6 @@ describe('App Component', () => {
       expect(screen.getByText('Oops! Something went wrong')).toBeInTheDocument()
     }, { timeout: 5000 })
 
-    // Clear previous fetch calls and set up new ones for retry
     vi.clearAllMocks()
     const mockProfiles = [createMockProfile({ id: 1, name: 'Test Profile' })]
     const mockMangas = [createMockManga()]
@@ -237,15 +233,12 @@ describe('App Component', () => {
 
     await user.click(screen.getByRole('button', { name: 'Retry Loading' }))
 
-    // Wait for success - check for any sign of successful retry
     await waitFor(() => {
-      // Look for any of these success indicators
       const errorGone = !screen.queryByText('Oops! Something went wrong')
       const profileFound = screen.queryByText('Test Profile')
       const chooseFound = screen.queryByText('Choose whose manga collection to explore')
       const loadingFound = screen.queryByText('Initializing Manga Collection App...')
       
-      // At least one positive indicator should be present
       expect(errorGone || profileFound || chooseFound || loadingFound).toBeTruthy()
     }, { timeout: 10000 })
   }, 15000) // Increase test timeout
@@ -273,7 +266,6 @@ describe('App Component', () => {
         ok: true,
         json: async () => mockProfiles,
       })
-      // When profile is selected, load entries
       .mockResolvedValueOnce({
         ok: true,
         json: async () => mockEntries,
@@ -285,7 +277,6 @@ describe('App Component', () => {
       expect(screen.getByText('Profile 1')).toBeInTheDocument()
     }, { timeout: 5000 })
 
-    // Click on first profile
     await user.click(screen.getByText('Profile 1'))
 
     await waitFor(() => {
@@ -657,7 +648,7 @@ describe('App Component', () => {
     await user.click(screen.getByLabelText('Settings'))
     await user.click(await screen.findByText('app-settings-close'))
 
-    // Relee la preferencia sin recargar la app.
+    // Re-reads the preference without reloading the app.
     await waitFor(() => expect(screen.getByTestId('adult-pref')).toHaveTextContent('false'))
     expect(api.appConfigGet).toHaveBeenCalledTimes(2)
   })

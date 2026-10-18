@@ -315,7 +315,7 @@ describe('services/covers: ramas de normalización y búsqueda', () => {
     assert.equal(pickAutoMatch('', [{ id: 1, title: 'x' }]), null);
     assert.equal(pickAutoMatch('x', null), null);
     assert.equal(pickAutoMatch('Berserk', [{ id: 7, title: 'Otro', altTitles: ['Berserk'] }]).id, 7);
-    // candidato sin altTitles definido: no rompe.
+    // candidate without altTitles defined: does not break.
     assert.equal(pickAutoMatch('Berserk', [{ id: 8, title: 'Berserk' }]).id, 8);
   });
 
@@ -437,7 +437,7 @@ describe('services/covers: ramas de normalización y búsqueda', () => {
         }),
       /too large/
     );
-    // Sin headers: content-type vacío -> no es imagen.
+    // No headers: empty content-type -> not an image.
     await assert.rejects(
       () =>
         fetchCover('https://x/y.png', {
@@ -497,7 +497,7 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     });
     assert.equal(first.coverUrl, `mangacount://covers/${manga.id}.png`);
 
-    // Mismo ext -> mismo nombre: no borra nada (rama false de la comparación).
+    // Same ext -> same name: deletes nothing (false branch of the comparison).
     const same = await linkCover(db, dir, {
       mangaId: manga.id,
       candidate: { id: 11, coverUrl: 'https://x/b.png' },
@@ -505,7 +505,7 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     });
     assert.equal(same.coverUrl, first.coverUrl);
 
-    // Otro ext -> reemplaza y borra el archivo previo.
+    // Different ext -> replaces and deletes the previous file.
     const second = await linkCover(db, dir, {
       mangaId: manga.id,
       candidate: { id: 12, coverUrl: 'https://x/c.webp' },
@@ -530,7 +530,7 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     assert.equal(getMangaById(db, manga.id).isAdult, true);
     assert.equal(coverMap(db)[manga.id].isAdult, true);
 
-    // Vincular un candidato no adulto (otro ext) no apaga el flag.
+    // Linking a non-adult candidate (different ext) does not clear the flag.
     await linkCover(db, dir, {
       mangaId: manga.id,
       candidate: { id: 2, coverUrl: 'https://x/b.jpg', isAdult: false },
@@ -600,12 +600,12 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
     await assert.rejects(() => unlinkCover(db, dir, 'abc'), /mangaId inválido/);
     assert.throws(() => statusCover(db, 'abc'), /mangaId inválido/);
 
-    // Vínculo sin archivo: no intenta borrar nada y status devuelve coverUrl null.
+    // Link without file: tries to delete nothing and status returns coverUrl null.
     upsertRef(db, { mangaId: manga.id, provider: 'anilist', externalId: 2 });
     assert.equal(statusCover(db, manga.id).coverUrl, null);
     assert.deepEqual(await unlinkCover(db, dir, manga.id), { ok: true });
 
-    // Vínculo con archivo: lo borra del disco.
+    // Link with file: deletes it from disk.
     await linkCover(db, dir, {
       mangaId: manga.id,
       candidate: { id: 3, coverUrl: 'https://x/y.png' },
@@ -618,7 +618,7 @@ describe('services/covers: linkCover / refreshCover / unlink / status / coverMap
 
   it('autoMatchCover devuelve null sin match o sin portada', async () => {
     const manga = createManga(db, { name: 'Zzz', volumes: 1 });
-    // Sin manga (id inexistente): ni consulta la red.
+    // No manga (nonexistent id): doesn't even hit the network.
     assert.equal(
       await autoMatchCover(db, dir, 999, {
         fetchImpl: async () => {
@@ -735,7 +735,7 @@ describe('services/covers: autoMatchCover', () => {
       const url = await autoMatchCover(db, dir, manga.id, { fetchImpl });
       assert.equal(url, `mangacount://covers/${manga.id}.png`);
 
-      // Ya vinculado: no vuelve a consultar la red.
+      // Already linked: doesn't hit the network again.
       const again = await autoMatchCover(db, dir, manga.id, {
         fetchImpl: () => {
           throw new Error('no debería consultar la red');
@@ -777,7 +777,7 @@ describe('services/covers: filtro +18 en la búsqueda', () => {
     const results = await searchManga('x', { fetchImpl });
     assert.match(query(), /isAdult:\s*false/);
     assert.equal(results[0].isAdult, true);
-    assert.equal(results[1].isAdult, false); // ausente => false
+    assert.equal(results[1].isAdult, false); // absent => false
   });
 
   it('includeAdult: true consulta sin el filtro', async () => {
@@ -786,8 +786,6 @@ describe('services/covers: filtro +18 en la búsqueda', () => {
     assert.doesNotMatch(query(), /isAdult:\s*false/);
   });
 });
-
-// --- Portadas locales ---
 
 const PREFIXES = {
   png: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
@@ -815,9 +813,9 @@ describe('services/covers: sniffImageExt (magic bytes)', () => {
     assert.equal(sniffImageExt(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>')), null);
     assert.equal(sniffImageExt(Buffer.from('esto no es una imagen')), null);
     assert.equal(sniffImageExt(Buffer.from([0x00, 0x01, 0x02, 0x03])), null);
-    assert.equal(sniffImageExt(Buffer.from([0x89, 0x50])), null); // PNG truncado
-    assert.equal(sniffImageExt(Buffer.from('RIFF')), null); // RIFF sin 'WEBP'
-    assert.equal(sniffImageExt(Buffer.from('RIFF0000XXXX')), null); // RIFF con tag ajeno
+    assert.equal(sniffImageExt(Buffer.from([0x89, 0x50])), null); // truncated PNG
+    assert.equal(sniffImageExt(Buffer.from('RIFF')), null); // RIFF without 'WEBP'
+    assert.equal(sniffImageExt(Buffer.from('RIFF0000XXXX')), null); // RIFF with a foreign tag
     assert.equal(sniffImageExt(null), null);
     assert.equal(sniffImageExt(undefined), null);
   });
@@ -901,7 +899,7 @@ describe('services/covers: linkLocalCover', () => {
     assert.equal(res.coverUrl, `mangacount://covers/${manga.id}.png`);
     assert.equal(fs.existsSync(path.join(dir, 'covers', `${manga.id}.png`)), true);
 
-    // Otra extensión -> reemplaza y borra la imagen anterior.
+    // Other extension -> replaces and deletes the previous image.
     const jpg = writeSource('dos.jpg', imageBuffer('jpg', 'datos'));
     const again = await linkLocalCover(db, dir, { mangaId: manga.id, sourcePath: jpg });
     assert.match(again.coverUrl, /\.jpg$/);
@@ -1009,7 +1007,7 @@ describe('services/covers: un solo cover activo (procedencia)', () => {
     assert.equal(status.externalId, '');
     assert.equal(status.coverUrl, linked.coverUrl);
     assert.equal(coverMap(db)[manga.id].url, linked.coverUrl);
-    assert.equal(coverMap(db)[manga.id].isAdult, false); // local: nunca adulto
+    assert.equal(coverMap(db)[manga.id].isAdult, false); // local: never adult
 
     assert.deepEqual(await unlinkCover(db, dir, manga.id), { ok: true });
     assert.equal(statusCover(db, manga.id), null);

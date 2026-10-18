@@ -1,8 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Preload en CommonJS: con `sandbox` (default de Electron) no se admiten
-// `import` en el preload; `require('electron')` sí está permitido y expone
-// contextBridge/ipcRenderer. Superficie IPC hacia el renderer.
+// Preload runs in CommonJS: with Electron's default `sandbox`, `import` is not
+// allowed in the preload; `require('electron')` is, and exposes
+// contextBridge/ipcRenderer.
 const channels = [
   'profile:list', 'profile:get', 'profile:upsert', 'profile:delete',
   'entry:list', 'entry:get-by-id', 'entry:upsert', 'entry:import', 'entry:export',
@@ -33,7 +33,6 @@ contextBridge.exposeInMainWorld('mangaCount', {
     }
     return ipcRenderer.invoke(channel, ...args);
   },
-  // Evento push del estado de actualización (devuelve un `off`).
   onUpdateState: (cb) => {
     const listener = (_event, state) => cb(state);
     ipcRenderer.on('update:state', listener);

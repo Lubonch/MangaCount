@@ -55,7 +55,7 @@ describe('services/search: buscar', () => {
   it('sugiere títulos por palabra cuando no hay coincidencia', () => {
     const result = searchResult(collection(), 'berserk vagabond');
     assert.equal(result.results.length, 0);
-    // 'berserk' no matchea ninguno como subcadena completa... sí: 'berserk vagabond' no está contenido
+    // 'berserk' does not match any as a full substring... yes: 'berserk vagabond' is not contained
     assert.ok(result.suggestions.includes('Berserk'));
   });
 

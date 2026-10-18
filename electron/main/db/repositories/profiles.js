@@ -1,8 +1,8 @@
-// Port directo de ProfileRepository.cs (PostgreSQL -> better-sqlite3).
-// DTOs en camelCase como los serializa ASP.NET Core (los consume el renderer).
-// Diferencia con el original: el UPDATE roto del C# (columnas ProfilePicture/IsActive
-// inexistentes en PG) aquí funciona porque el esquema SQLite sí tiene ProfilePicture.
-// Borrado físico (hard delete), igual que el original.
+// Direct port of ProfileRepository.cs (PostgreSQL -> better-sqlite3).
+// DTOs in camelCase as ASP.NET Core serializes them (consumed by the renderer).
+// Difference from the original: the broken C# UPDATE (ProfilePicture/IsActive
+// columns nonexistent in PG) works here because the SQLite schema does have ProfilePicture.
+// Hard delete, same as the original.
 
 const SELECT = 'Id AS id, Name AS name, ProfilePicture AS profilePicture, CreatedAt AS createdDate FROM Profile';
 

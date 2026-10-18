@@ -31,7 +31,6 @@ const ProfileSelector = ({
                 const data = await response.json();
                 console.log('🔍 Raw profiles data from API:', data);
                 
-                // Debug each profile's image data
                 data.forEach(profile => {
                     console.log(`🖼️ Profile "${profile.name}":`, {
                         id: profile.id,
@@ -99,7 +98,6 @@ const ProfileSelector = ({
         }
     };
 
-    // Helper function to handle image loading errors
     const handleImageError = (e) => {
         console.error('❌ Failed to load profile image:', {
             src: e.target.src,
@@ -109,7 +107,6 @@ const ProfileSelector = ({
         e.target.style.display = 'none';
     };
 
-    // ENHANCED: Helper function to check if image URL is valid with better debugging
     const getImageUrl = (profilePicture) => {
         console.log('🔧 Processing profilePicture:', profilePicture);
         
@@ -120,28 +117,24 @@ const ProfileSelector = ({
         
         let finalUrl;
         
-        // If it's already a full URL, use it
         if (profilePicture.startsWith('http')) {
             finalUrl = profilePicture;
             console.log('🌐 Using full URL:', finalUrl);
         }
-        // Desktop: foto servida por el protocolo custom de Electron
+        // Desktop: picture served through Electron's custom protocol
         else if (profilePicture.startsWith('mangacount://')) {
             finalUrl = profilePicture;
             console.log('🖼️ Using custom protocol URL:', finalUrl);
         }
-        // If it starts with /, it's a relative path from the server
         else if (profilePicture.startsWith('/')) {
             finalUrl = profilePicture;
             console.log('📁 Using relative path:', finalUrl);
         }
-        // Otherwise, assume it needs to be prefixed
         else {
             finalUrl = `/profiles/${profilePicture}`;
             console.log('🔧 Generated path:', finalUrl);
         }
         
-        // Test if the URL is accessible
         const testUrl = window.location.origin + finalUrl;
         console.log('🧪 Testing full URL:', testUrl);
         
@@ -179,7 +172,6 @@ const ProfileSelector = ({
 
     return (
         <div className="profile-selector-fullscreen">
-            {/* Debug panel - remove this later */}
             <div style={{
                 position: 'absolute',
                 top: '10px',
@@ -203,7 +195,6 @@ const ProfileSelector = ({
                 ))}
             </div>
 
-            {/* Back button */}
             {showBackButton && lastSelectedProfile && (
                 <button 
                     className="back-to-collection-btn"
@@ -234,12 +225,10 @@ const ProfileSelector = ({
                                         className="profile-circle-avatar"
                                         onClick={() => handleProfileSelect(profile)}
                                     >
-                                        {/* Always show placeholder */}
                                         <div className="profile-circle-placeholder">
                                             {profile.name.charAt(0).toUpperCase()}
                                         </div>
                                         
-                                        {/* Show image on top if available */}
                                         {imageUrl && (
                                             <img 
                                                 src={imageUrl} 
@@ -252,7 +241,6 @@ const ProfileSelector = ({
                                                         naturalWidth: e.target.naturalWidth,
                                                         naturalHeight: e.target.naturalHeight
                                                     });
-                                                    // Successfully loaded, hide placeholder
                                                     const placeholder = e.target.previousElementSibling;
                                                     if (placeholder) {
                                                         placeholder.style.opacity = '0';
@@ -296,7 +284,6 @@ const ProfileSelector = ({
                             );
                         })}
 
-                        {/* Add New Profile Circle */}
                         <div 
                             className="profile-circle add-profile-circle"
                             onClick={() => setShowAddProfile(true)}
@@ -310,7 +297,6 @@ const ProfileSelector = ({
                 </div>
             </div>
 
-            {/* Modals */}
             <AddProfileModal 
                 isOpen={showAddProfile}
                 onClose={() => setShowAddProfile(false)}

@@ -1,15 +1,15 @@
-// Recomendaciones dinámicas vía el grafo de AniList.
+// Dynamic recommendations via the AniList graph.
 //
-// A partir de las obras de la colección del perfil (semillas) se consulta
-// `Media.recommendations`, se agrega el `rating` colaborativo y se puntúa la
-// similitud de tags/géneros contra el perfil de gustos local. Provee el universo
-// de candidatas; el motor local (`getRecommendations`) queda como fallback.
+// From the profile's collection works (seeds) it queries
+// `Media.recommendations`, adds the collaborative `rating` and scores the
+// similarity of tags/genres against the local taste profile. Provides the universe
+// of candidates; the local engine (`getRecommendations`) remains as fallback.
 //
-// Semántica cerrada (ver aspec/changes/2026-10-18-recomendaciones-dinamicas-anilist):
-// - "No viable"  -> RecommendationDismissal (permanente).
-// - "Ya lo tengo"-> MangaExternalRef del perfil (permanente).
-// - "Ya visto"   -> RecommendationSeen con TTL (`seenTtlDays`).
-// Aislado del runtime para poder testearlo con un `fetch` inyectado.
+// Closed semantics (see aspec/changes/2026-10-18-recomendaciones-dinamicas-anilist):
+// - "not viable"      -> RecommendationDismissal (permanent).
+// - "already have it" -> MangaExternalRef of the profile (permanent).
+// - "already seen"    -> RecommendationSeen with TTL (`seenTtlDays`).
+// Isolated from the runtime so it can be tested with an injected `fetch`.
 
 import { ANILIST_URL, PROVIDER, searchManga, pickAutoMatch } from './covers.js';
 import { getRef } from '../db/repositories/manga-external-refs.js';
@@ -18,14 +18,14 @@ import { buildUserTasteProfile } from '../../../shared/recommendations/recommend
 import { normalizeTitle, tokenizeText } from '../../../shared/recommendations/normalize.js';
 import { listDismissed, listSeen, markSeen, pruneSeen } from '../db/repositories/recommendation-feedback.js';
 
-const MAX_SEEDS = 12; // tope de semillas para acotar requests
-const SEED_CONCURRENCY = 3; // concurrencia acotada (rate limit de AniList)
+const MAX_SEEDS = 12; // seed cap to bound requests
+const SEED_CONCURRENCY = 3; // bounded concurrency (AniList rate limit)
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TAG_WEIGHT = 2.4;
 const COSINE_WEIGHT = 1.5;
 const SEED_BONUS = 0.5;
 
-// Query verificada en vivo: `rating` = cuántos usuarios recomendaron la obra.
+// Query verified live: `rating` = how many users recommended the work.
 const GRAPH_QUERY = `query ($id: Int) {
   Media(id: $id, type: MANGA) {
     id
@@ -102,9 +102,9 @@ async function fetchSeed(seed, { fetchImpl, timeoutMs }) {
   }
 }
 
-// Semillas: mangas del perfil con `MangaExternalRef(anilist)`; los que no tienen
-// vínculo se resuelven por búsqueda de título (auto-match estricto). Tope de 12,
-// las más recientes (mayor id de entry).
+// Seeds: profile mangas with `MangaExternalRef(anilist)`; those without a
+// link are resolved by title search (strict auto-match). Cap of 12,
+// the most recent (highest entry id).
 async function resolveSeeds(db, entries, { fetchImpl, timeoutMs, includeAdult }) {
   const seeds = [];
   const recent = [...entries]
@@ -131,13 +131,13 @@ async function resolveSeeds(db, entries, { fetchImpl, timeoutMs, includeAdult })
       const match = pickAutoMatch(name, candidates);
       if (match?.id) seeds.push({ externalId: match.id, title: name });
     } catch {
-      // Semilla sin resolver: se ignora (el resto puede seguir).
+      // Unresolved seed: ignored (the rest can continue).
     }
   }
   return seeds;
 }
 
-// Pool de concurrencia acotada: preserva el orden de entrada en `results`.
+// Bounded concurrency pool: preserves the input order in `results`.
 async function mapWithConcurrency(items, limit, fn) {
   const results = new Array(items.length);
   let index = 0;
@@ -153,8 +153,8 @@ async function mapWithConcurrency(items, limit, fn) {
   return results;
 }
 
-// Agrega por `mediaRecommendation.id`: suma de `rating`, cuántas semillas la
-// trajeron y la unión de semillas (para el `reason`).
+// Aggregates by `mediaRecommendation.id`: sum of `rating`, how many seeds brought
+// it and the union of seeds (for the `reason`).
 function aggregate(seedResults) {
   const byId = new Map();
   for (const { seed, nodes } of seedResults) {
@@ -200,12 +200,12 @@ export async function getAnilistRecommendations(
     }
   });
 
-  // Una semilla que falla no aborta el resto; si fallan todas -> fallback local.
+  // A failing seed does not abort the rest; if all fail -> local fallback.
   const successful = settled.filter((result) => result.ok);
   if (successful.length === 0) return null;
 
   const sinceIso = new Date(now.getTime() - seenTtlDays * DAY_MS).toISOString();
-  // Poda las vistas vencidas: evita que `RecommendationSeen` crezca sin límite.
+  // Prunes expired seen rows: prevents `RecommendationSeen` from growing without bound.
   pruneSeen(db, profileId, sinceIso);
   const dismissed = new Set(
     listDismissed(db, profileId)
@@ -240,8 +240,8 @@ export async function getAnilistRecommendations(
     const similarity = cosineSimilarity(profile.tokenWeights, candidateTokenWeights(media));
     const score =
       Math.log1p(aggregated.ratingTotal) + similarity * COSINE_WEIGHT + aggregated.seedCount * SEED_BONUS;
-    // `reason` es la semilla con mayor rating que trajo la candidata; la frase se
-    // compone en la UI con i18n (`rec.reason`).
+    // `reason` is the highest-rated seed that brought the candidate; the phrase is
+    // composed in the UI with i18n (`rec.reason`).
     const bestSeed = aggregated.seeds.reduce((a, b) => (b.rating > a.rating ? b : a), aggregated.seeds[0]);
     candidates.push({
       externalId: String(media.id),
@@ -259,7 +259,7 @@ export async function getAnilistRecommendations(
     return a.title.localeCompare(b.title);
   });
 
-  // Buffer `limit * 3`: devolvemos `limit` y marcamos solo esas como vistas.
+  // Buffer `limit * 3`: we return `limit` and mark only those as seen.
   const buffer = candidates.slice(0, safeLimit * 3);
   const items = buffer.slice(0, safeLimit);
   const seenAt = now.toISOString();

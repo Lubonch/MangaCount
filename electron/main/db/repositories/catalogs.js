@@ -1,6 +1,6 @@
-// Port directo de FormatRepository.cs y PublisherRepository.cs (CRUD idéntico).
-// Diferencia: el alta/consulta de nombre es **case-insensitive** (y con trim),
-// para no crear duplicados tipo "Ivrea" vs "ivrea".
+// Direct port of FormatRepository.cs and PublisherRepository.cs (identical CRUD).
+// Difference: name lookup/creation is **case-insensitive** (and trimmed),
+// to avoid creating duplicates like "Ivrea" vs "ivrea".
 
 function catalog(table) {
   return {
@@ -19,7 +19,7 @@ function catalog(table) {
           .get(clean) ?? null
       );
     },
-    // Reusa una entrada existente que sólo difiera en mayúsculas/espacios.
+    // Reuses an existing entry that differs only in case/whitespace.
     create(db, name) {
       const clean = String(name ?? '').trim();
       if (!clean) throw new Error('Nombre requerido');

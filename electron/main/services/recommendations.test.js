@@ -45,7 +45,7 @@ describe('services/recommendations', () => {
 
   it('colección Ivrea: mercado Argentina, sin owned ni fuera de mercado', async () => {
     const profile = createProfile(db, 'yo');
-    // Ivrea -> Argentina. Tomo un título del catálogo como owned.
+    // Ivrea -> Argentina. Take a catalog title as owned.
     const { default: catalog } = await import('../../../shared/recommendations/catalog.json', {
       with: { type: 'json' },
     });

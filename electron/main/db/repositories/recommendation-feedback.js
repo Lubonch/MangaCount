@@ -1,9 +1,9 @@
-// Memoria del recomendador por perfil:
-// - `dismiss`/`listDismissed`/`clearDismissal`: "No viable" (descarte permanente).
-// - `markSeen`/`listSeen`/`pruneSeen`: "Ya visto" con vencimiento (TTL).
-// `SeenAt` se guarda como ISO 8601 (UTC) para poder compararlo como texto contra
-// el corte de TTL; `CURRENT_TIMESTAMP` (formato SQLite, separado por espacio) no
-// es comparable con un ISO, por eso el repositorio recibe la fecha explícita.
+// Recommender memory per profile:
+// - `dismiss`/`listDismissed`/`clearDismissal`: "not viable" (permanent dismissal).
+// - `markSeen`/`listSeen`/`pruneSeen`: "already seen" with expiry (TTL).
+// `SeenAt` is stored as ISO 8601 (UTC) so it can be compared as text against the
+// TTL cutoff; `CURRENT_TIMESTAMP` (SQLite format, space-separated) is not
+// comparable with an ISO, hence the repository receives the date explicitly.
 // DTO: { id, profileId, provider, externalId, createdAt | seenAt }.
 
 const DISMISSAL_SELECT =
@@ -49,7 +49,7 @@ export function markSeen(db, profileId, provider, externalId, seenAt = new Date(
     .get(profileId, provider, String(externalId));
 }
 
-// Vistas desde `sinceIso` (inclusive). Sin `sinceIso` devuelve todas las del perfil.
+// Seen since `sinceIso` (inclusive). Without `sinceIso` returns all of the profile.
 export function listSeen(db, profileId, sinceIso = null) {
   if (sinceIso) {
     return db
@@ -59,7 +59,7 @@ export function listSeen(db, profileId, sinceIso = null) {
   return db.prepare(`SELECT ${SEEN_SELECT} WHERE ProfileId = ?`).all(profileId);
 }
 
-// Poda las vistas anteriores a `beforeIso` (vencidas). Devuelve cuántas borró.
+// Prunes seen rows older than `beforeIso` (expired). Returns how many it deleted.
 export function pruneSeen(db, profileId, beforeIso) {
   return db
     .prepare('DELETE FROM RecommendationSeen WHERE ProfileId = ? AND SeenAt < ?')

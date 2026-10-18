@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from './test-utils'
 import React from 'react'
 
-// Simple component for testing
 const TestComponent = ({ name = 'World' }) => (
     <div>
         <h1>Hello {name}!</h1>

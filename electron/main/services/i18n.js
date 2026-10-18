@@ -1,5 +1,5 @@
-// Traductor del proceso main: lee el idioma de `prefs.language` (o del env
-// `MANGACOUNT_LANG` en tests) y cachea el traductor por idioma.
+// Main-process translator: reads the language from `prefs.language` (or the env
+// `MANGACOUNT_LANG` in tests) and caches the translator per language.
 import { createAppTranslator, resolveLanguage } from '../../../shared/i18n/index.js';
 import { loadResolvedPrefs } from './prefs.js';
 

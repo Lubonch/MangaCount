@@ -3,12 +3,12 @@ import { defineConfig } from 'vite';
 import plugin from '@vitejs/plugin-react';
 import { env } from 'node:process';
 
-// Configuración local-first: sin certificados ni proxy /api (el renderer
-// habla por IPC en Electron o usa el adaptador con fallback), puerto 5173 estándar.
-// MANGACOUNT_DEV_URL debe apuntar a este puerto (ver electron/main/index.js).
+// Local-first config: no certificates or /api proxy (the renderer talks over IPC
+// in Electron or uses the adapter with fallback); standard port 5173.
+// MANGACOUNT_DEV_URL must point to this port (see electron/main/index.js).
 export default defineConfig({
-    // Rutas relativas para que el bundle funcione con `loadFile` de Electron
-    // (file://) y en dev por HTTP.
+    // Relative paths so the bundle works with Electron's `loadFile` (file://)
+    // and over HTTP in dev.
     base: './',
     plugins: [plugin()],
     resolve: {

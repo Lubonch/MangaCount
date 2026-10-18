@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
-// setup.js mockea CollectionView globalmente para el resto de los tests; acá lo usamos real.
+// setup.js mocks CollectionView globally for the rest of the tests; here we use the real one.
 vi.unmock('../../components/CollectionView')
 
 vi.mock('../../api/localAdapter', () => ({
@@ -10,7 +10,7 @@ vi.mock('../../api/localAdapter', () => ({
   coverAuto: vi.fn(),
 }))
 
-// Modales controlables para poder disparar onSuccess/onClose desde el test.
+// Controllable modals to fire onSuccess/onClose from the test.
 vi.mock('../../components/AddEntryModal', () => ({
   default: ({ isOpen, onSuccess, onClose, selectedProfile }) =>
     isOpen ? (
@@ -165,7 +165,7 @@ describe('CollectionView: series sin total de tomos', () => {
 
   it('muestra la portada generada (iniciales) cuando no hay vínculo', () => {
     render(<CollectionView entries={[mkEntry({ id: 2, quantity: 1 })]} mangas={[]} selectedProfile={null} />)
-    // 'Alpha' -> iniciales 'A' en la portada generada.
+    // 'Alpha' -> initials 'A' in the generated cover.
     expect(screen.getByText('A')).toBeInTheDocument()
   })
 })
@@ -667,7 +667,7 @@ describe('CollectionView: portadas +18 (blur y reveal)', () => {
 
     await user.click(cover())
     await waitFor(() => expect(cover().className).toContain('card-cover--revealed'))
-    // El click de reveal no dispara la acción real de la card.
+    // The reveal click does not fire the card's real action.
     expect(screen.queryByText('edit-entry-open')).not.toBeInTheDocument()
 
     await user.click(cover())

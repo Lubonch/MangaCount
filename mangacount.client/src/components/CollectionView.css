@@ -128,7 +128,6 @@
     padding: 4px;
 }
 
-/* TABLE VIEW */
 .table-container {
     background: var(--bg-secondary);
     border-radius: 6px;
@@ -278,7 +277,6 @@
     font-size: 1.1em;
 }
 
-/* COMPACT VIEW */
 .compact-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
@@ -417,7 +415,6 @@
     white-space: nowrap;
 }
 
-/* ORIGINAL CARDS VIEW */
 .entries-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
@@ -596,8 +593,6 @@
     transform: translateY(-1px);
 }
 
-/* Add these new styles to your existing CollectionView.css */
-
 .filters-row {
     display: flex;
     gap: 16px;
@@ -666,7 +661,6 @@
     flex-wrap: wrap;
 }
 
-/* Hover-lift de tarjetas (cards y compactas) */
 .entry-card,
 .compact-card {
     transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out),
@@ -679,14 +673,12 @@
     box-shadow: var(--shadow-3);
 }
 
-/* Barra de progreso animada */
 .progress-fill,
 .compact-fill,
 .table-progress-fill {
     transition: width var(--dur-normal) var(--ease-out);
 }
 
-/* Portada generada en las cards (full-bleed) */
 .entry-card {
     padding: 0;
     overflow: hidden;
@@ -721,7 +713,7 @@
     transition: filter var(--dur-fast) var(--ease-out);
 }
 
-/* Portada +18: blur siempre; el pref decide cómo se revela. */
+/* +18 cover: always blurred; the pref decides how it is revealed. */
 .card-cover--adult .card-cover-img {
     filter: blur(12px);
 }

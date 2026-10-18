@@ -1,11 +1,11 @@
-// Worker de filesystem para operaciones sobre el directorio de destino de backup.
+// Filesystem worker for operations on the backup destination directory.
 //
-// Corre en un `worker_threads` aparte del hilo principal: un destino de red lento
-// (p. ej. un FUSE de rclone) puede bloquear un syscall durante mucho tiempo, y en
-// el hilo principal eso congela toda la app. Acá queda aislado y la envoltura
-// (`remote-fs.js`) lo corta con timeout.
+// Runs in a separate `worker_threads` from the main thread: a slow network destination
+// (e.g. an rclone FUSE) can block a syscall for a long time, and on
+// the main thread that freezes the whole app. Here it is isolated and the wrapper
+// (`remote-fs.js`) cuts it with a timeout.
 //
-// No accede a la base ni a módulos del main: sólo recibe rutas y bytes.
+// It does not access the DB or main modules: it only receives paths and bytes.
 
 import { parentPort } from 'node:worker_threads';
 import fs from 'node:fs';
@@ -50,7 +50,7 @@ export const fsOps = {
   },
 };
 
-// Sólo cuando corre como worker (en tests se importa `fsOps` sin listener).
+// Only when running as a worker (in tests `fsOps` is imported without a listener).
 if (parentPort) {
   parentPort.on('message', ({ id, op, args = [] }) => {
     try {

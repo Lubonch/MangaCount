@@ -19,13 +19,13 @@ export function createTranslator(locale, dictionaries = {}) {
   return (key, params) => interpolate(primary[key] ?? fallback[key] ?? key, params);
 }
 
-// Traductor con los diccionarios incluidos (para renderer, main y bot).
+// Translator preloaded with the bundled dictionaries (renderer, main and bot).
 export function createAppTranslator(locale) {
   return createTranslator(locale, dictionaries);
 }
 
-// Prioridad: explicit → MANGACOUNT_LANG (tests) → prefs.language → 'en'.
-// `process` no existe en el renderer: se accede de forma segura.
+// Resolution order: explicit → MANGACOUNT_LANG (tests) → prefs.language → 'en'.
+// `process` does not exist in the renderer, so it is accessed safely.
 export function resolveLanguage({ explicit, env, prefs } = {}) {
   const fromEnv =
     env ?? (typeof process !== 'undefined' ? process.env?.MANGACOUNT_LANG : undefined);
@@ -36,7 +36,7 @@ export function resolveLanguage({ explicit, env, prefs } = {}) {
   return DEFAULT_LANGUAGE;
 }
 
-// Claves presentes en `a` y ausentes en `b` (test de paridad).
+// Keys present in `a` but missing in `b` (parity test).
 export function missingKeys(a, b) {
   const other = new Set(Object.keys(b ?? {}));
   return Object.keys(a ?? {}).filter((key) => !other.has(key));

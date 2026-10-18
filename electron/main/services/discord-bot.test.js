@@ -89,7 +89,7 @@ describe('discord-bot: comandos', () => {
   });
 
   it('exige perfil activo', async () => {
-    createProfile(db, 'Otro'); // con ≥2 perfiles no auto-selecciona
+    createProfile(db, 'Otro'); // with ≥2 profiles it does not auto-select
     const reply = await dispatch(commands, 'pendientes', { session: { profileId: null } });
     assert.match(reply, /perfil/i);
   });
@@ -943,7 +943,7 @@ describe('discord-bot: registerGuildCommands', () => {
   });
 });
 
-// Fake mínimo de discord.js para ejercitar el ciclo del bot sin conexión real.
+// Minimal discord.js fake to exercise the bot cycle without a real connection.
 function makeFakeDiscord({ restGet } = {}) {
   const clients = [];
   class ButtonBuilder {
@@ -1175,7 +1175,7 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     assert.match(replies[0].content, /Página 1 de 2/);
     assert.ok(replies[0].components?.length >= 1);
 
-    // Navegar a la página 2 con el botón Siguiente.
+    // Navigate to page 2 with the Next button.
     const nextId = replies[0].components[0].components[1].customId;
     const updates = [];
     await clients[0].handlers.interactionCreate(button(nextId, { update: async (p) => updates.push(p) }));
@@ -1460,7 +1460,7 @@ describe('discord-bot: interacciones con discord inyectado', () => {
     );
     await flush();
     const token = tokenFrom(replies[0]);
-    // El perfil desaparece entre la propuesta y la confirmación.
+    // The profile disappears between the proposal and the confirmation.
     db.prepare('DELETE FROM Profile WHERE Id = ?').run(profile.id);
     const updates = [];
     await clients[0].handlers.interactionCreate(

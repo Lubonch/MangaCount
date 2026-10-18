@@ -53,9 +53,9 @@ describe('services/update-controller: modo auto', () => {
 
     controller.install();
     assert.equal(autoUpdater.wasInstalled(), true);
-    // isForceRunAfter=true → en AppImage reabre con la versión nueva.
+    // isForceRunAfter=true → on AppImage it reopens with the new version.
     assert.deepEqual(autoUpdater.wasInstalledArgs(), [false, true]);
-    // el hook marca isQuitting antes de instalar (para que el tray no bloquee el quit).
+    // the hook marks isQuitting before installing (so the tray does not block the quit).
     assert.equal(beforeInstallCalled, true);
     assert.ok(states.length > 0);
   });
@@ -103,7 +103,7 @@ describe('services/update-controller: modo auto', () => {
     autoUpdater.emit('download-progress'); // p undefined → percent 0
     assert.equal(controller.state().percent, 0);
 
-    autoUpdater.emit('error', 'boom'); // sin message → String(err)
+    autoUpdater.emit('error', 'boom'); // no message → String(err)
     assert.equal(controller.state().error, 'boom');
 
     controller.install(); // default onBeforeInstall
@@ -151,7 +151,7 @@ describe('services/update-controller: modo link', () => {
     await controller.check();
     assert.equal(controller.state().hasUpdate, true);
     assert.equal(controller.state().url, 'https://x/2.0.0');
-    // download/install son no-op en link
+    // download/install are no-op in link
     await controller.download();
     controller.install();
     assert.equal(controller.state().mode, 'link');
@@ -198,7 +198,7 @@ describe('services/update-controller: modo link', () => {
     await controller.check();
     assert.equal(controller.state().hasUpdate, true);
     assert.equal(controller.state().url, 'https://x/2.0.0');
-    // download/install sin autoUpdater son no-op
+    // download/install without autoUpdater are no-op
     await controller.download();
     controller.install();
     assert.equal(controller.state().mode, 'auto');

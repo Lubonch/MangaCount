@@ -1,7 +1,7 @@
-// Tests de los handlers IPC como funciones puras `(ctx, ...args)`: sin Electron,
-// con `openDb` sobre un tmpdir y stubs de `fetch`/secrets/bot/dialog según el
-// canal. Cubre validaciones, ramas de error y los canales de
-// covers/backup/bot/diagnostics/dialog, además de channelNames/registerHandlers.
+// IPC handler tests as pure functions `(ctx, ...args)`: no Electron, with `openDb`
+// over a tmpdir and stubs of `fetch`/secrets/bot/dialog per channel. Covers
+// validations, error branches and the covers/backup/bot/diagnostics/dialog
+// channels, plus channelNames/registerHandlers.
 
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,7 +42,7 @@ describe('ipc handlers (ctx puro)', () => {
       try {
         handle?.close();
       } catch {
-        // ya cerrada (p. ej. tras backup:restore)
+        // already closed (e.g. after backup:restore)
       }
     }
     fs.rmSync(dir, { recursive: true, force: true });
@@ -140,7 +140,7 @@ describe('ipc handlers (ctx puro)', () => {
       publisherId: publisher.id,
     });
     const m4 = handlers['manga:upsert'](ctx, { name: 'd', formatId: otherFormat.id });
-    const m3 = handlers['manga:upsert'](ctx, { name: 'c' }); // sin catálogos: se omite
+    const m3 = handlers['manga:upsert'](ctx, { name: 'c' }); // no catalogs: skipped
     for (const m of [m1, m2, m3, m4]) {
       handlers['entry:upsert'](ctx, { mangaId: m.id, profileId: profile.id, quantity: 1 });
     }
@@ -308,7 +308,7 @@ describe('ipc handlers (ctx puro)', () => {
       assert.equal(listed.status, 'ok');
       assert.equal(listed.backups.length, 1);
 
-      // Destino que no responde: devuelve la última lista y status unresponsive.
+      // Unresponsive destination: returns the last list and status unresponsive.
       setRemoteFs({ call: async () => { const e = new Error('timeout'); e.timedOut = true; throw e; } });
       const unresponsive = await handlers['backup:list'](ctx);
       assert.equal(unresponsive.status, 'unresponsive');
@@ -468,7 +468,7 @@ describe('ipc handlers (ctx puro)', () => {
     assert.equal(out.secretsAvailable, true);
     assert.equal(savedToken, 'abc');
     assert.equal(warned.length, 1);
-    // Sin secrets ni bot: no rompe y reporta secrets no disponibles.
+    // No secrets or bot: does not break and reports secrets unavailable.
     assert.deepEqual(await handlers['bot:set-token'](ctx, 'xyz'), {
       saved: true,
       secretsAvailable: false,
@@ -521,8 +521,8 @@ describe('ipc handlers (ctx puro)', () => {
       },
       {}
     );
-    assert.equal(partial.startInTray, false); // conserva lo guardado
-    assert.equal(partial.showAdultCovers, true); // conserva lo guardado
+    assert.equal(partial.startInTray, false); // keeps the stored value
+    assert.equal(partial.showAdultCovers, true); // keeps the stored value
     assert.equal(autostart, true);
   });
 
@@ -547,7 +547,7 @@ describe('ipc handlers (ctx puro)', () => {
     assert.match(copied, /tres/);
     assert.ok(!copied.includes('dos'));
 
-    // Sin app ni clipboard: no rompe.
+    // No app or clipboard: does not break.
     assert.equal(handlers['diagnostics:copy'](ctx).copied, true);
     assert.equal(handlers['diagnostics:copy']({ ...ctx, clipboard: null }).copied, true);
 
@@ -640,7 +640,7 @@ describe('ipc handlers (ctx puro)', () => {
     await assert.rejects(() => registered['manga:delete']({}, 0), /mangaId inválido/);
     assert.equal(errs.length, 1);
 
-    // Error sin `.message`: usa String(err) en el log.
+    // Error without `.message`: uses String(err) in the log.
     const bareErrs = [];
     registerHandlers(ipcMain, {
       ...ctx,

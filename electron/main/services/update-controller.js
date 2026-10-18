@@ -1,6 +1,6 @@
-// Controller de actualizaciones: encapsula electron-updater (modo 'auto') y el
-// chequeo+link (modo 'link'), con un estado observable. `autoUpdater` y
-// `fetchLatestRelease` son inyectables para testear sin red ni Electron.
+// Update controller: wraps electron-updater ('auto' mode) and the
+// check+link ('link' mode), with an observable state. `autoUpdater` and
+// `fetchLatestRelease` are injectable to test without network or Electron.
 
 export function createUpdateController({
   mode,
@@ -53,7 +53,7 @@ export function createUpdateController({
     state: () => state,
 
     async check() {
-      // En desarrollo (no empaquetada) no se chequea: no hay canal de update.
+      // In development (not packaged) it is not checked: there is no update channel.
       if (!isPackaged) {
         set({ skipped: true });
         return state;
@@ -83,8 +83,8 @@ export function createUpdateController({
     },
 
     install() {
-      // isSilent=false, isForceRunAfter=true: reabre la app con la versión nueva.
-      // `onBeforeInstall` marca isQuitting para que el cierre de ventana (tray) no bloquee el quit.
+      // isSilent=false, isForceRunAfter=true: reopens the app with the new version.
+      // `onBeforeInstall` marks isQuitting so the window close (tray) does not block the quit.
       if (mode === 'auto' && autoUpdater) {
         onBeforeInstall();
         autoUpdater.quitAndInstall(false, true);

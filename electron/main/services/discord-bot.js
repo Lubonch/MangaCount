@@ -1,9 +1,9 @@
-// Bot de Discord embebido en el proceso main (solo consulta).
+// Discord bot embedded in the main process (read-only).
 //
-// Reutiliza la misma conexión SQLite y los mismos servicios que la app; el
-// despacho es un registro nombre → función, con el seam abierto para sumar un
-// comando de escritura (`actualizar`) sin infraestructura nueva. La parte pura
-// (autorización, comandos, despacho, sesión) se testea sin conexión real.
+// Reuses the same SQLite connection and the same services as the app; the
+// dispatch is a name → function registry, with the seam open to add a
+// write command (`actualizar`) without new infrastructure. The pure part
+// (authorization, commands, dispatch, session) is tested without a real connection.
 
 import { listEntries } from '../db/repositories/entries.js';
 import { listProfiles, getProfileById, listMangas } from './catalog-base.js';
@@ -22,7 +22,7 @@ import { createPaginationStore, renderPage } from './discord-pagination.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Traductor por defecto (tests): sigue el env `MANGACOUNT_LANG`/default.
+// Default translator (tests): follows the env `MANGACOUNT_LANG`/default.
 const fallbackTranslator = () => createAppTranslator(resolveLanguage({}));
 
 export function slashCommands(t = fallbackTranslator()) {
@@ -111,7 +111,7 @@ export function ayudaText(t = fallbackTranslator()) {
   ].join('\n');
 }
 
-// Autorización por guild/user IDs; allowlist vacía no responde a nadie.
+// Authorization by guild/user IDs; an empty allowlist responds to nobody.
 export function isAuthorized(config, { userId, guildId } = {}) {
   if (!config?.guildId || String(config.guildId) !== String(guildId)) return false;
   const allowed = config.allowedUserIds ?? [];
@@ -119,8 +119,8 @@ export function isAuthorized(config, { userId, guildId } = {}) {
   return allowed.map(String).includes(String(userId));
 }
 
-// Sesión por usuario de Discord (clave = user id): recuerda el perfil activo.
-// `get` devuelve el objeto mutable guardado para que los comandos lo actualicen.
+// Session per Discord user (key = user id): remembers the active profile.
+// `get` returns the stored mutable object so commands can update it.
 export function createSessionStore() {
   const map = new Map();
   return {
@@ -148,9 +148,9 @@ function formatEntryLine(entry, t = fallbackTranslator()) {
   return `${priority}*${entry.manga.name}*\n  ${meta}\n  ${describe}`;
 }
 
-// Perfil de sesión válido: si el id recordado no existe (p. ej. tras una Nuclear
-// Option/restore que re-siembra los perfiles), no se opera; se pide /perfil. Si no
-// hay perfil y existe uno solo, se auto-selecciona.
+// Valid session profile: if the remembered id does not exist (e.g. after a Nuclear
+// Option/restore that re-seeds the profiles), it does not operate; it asks for /perfil. If there
+// is no profile and only one exists, it is auto-selected.
 export function resolveSessionProfile(session, db) {
   const profiles = listProfiles(db);
   const current = profiles.find((p) => p.id === session.profileId);
@@ -162,8 +162,8 @@ export function resolveSessionProfile(session, db) {
   throw new Error(fallbackTranslator()('bot.profileRequired'));
 }
 
-// Crea format/editorial por nombre si no existe (mismo criterio que el import:
-// vacío → 'Unknown'). Devuelve el id.
+// Creates format/publisher by name if it does not exist (same criterion as the import:
+// empty → 'Unknown'). Returns the id.
 function getOrCreateCatalog(kind, db, name) {
   const clean = String(name ?? '').trim() || 'Unknown';
   const key = kind === 'format' ? 'format' : 'publisher';
@@ -172,7 +172,7 @@ function getOrCreateCatalog(kind, db, name) {
   return found ? found.id : handlers[`${key}:create`]({ db }, { name: clean }).id;
 }
 
-// Ejecuta una acción de escritura reusando los handlers (validan el perfil).
+// Runs a write action reusing the handlers (they validate the profile).
 export function applyWrite(db, action) {
   if (!action || typeof action !== 'object') throw new Error(fallbackTranslator()('bot.writeInvalid'));
   const ctx = { db };
@@ -220,7 +220,7 @@ export function applyWrite(db, action) {
   throw new Error(`Acción de escritura desconocida: ${action.type}`);
 }
 
-// Resuelve un título a una entrada única de la colección. No adivina: 0 o >1 → error.
+// Resolves a title to a single entry of the collection. Does not guess: 0 or >1 → error.
 export function resolveEntry(entries, title, t = fallbackTranslator()) {
   const q = String(title ?? '').trim().toLowerCase();
   if (!q) return { error: t('bot.missingTitle') };
@@ -239,7 +239,7 @@ function writeProposal(summary, action) {
   return { kind: 'write', summary, action };
 }
 
-// Escritura pendiente de confirmación por usuario (token + expiración).
+// Write pending confirmation per user (token + expiry).
 export function beginPendingWrite(session, { summary, action, ttlMs = 300000, now = Date.now, token } = {}) {
   const t = token ?? Math.random().toString(36).slice(2, 10);
   session.pending = { token: t, summary, action, expiresAt: now() + ttlMs };
@@ -274,7 +274,7 @@ export function createCommands({
     return resolveSessionProfile(session, resolveDb());
   }
 
-  // Tamaño de página: el tope configurado, o todo si está desactivado.
+  // Page size: the configured cap, or everything if disabled.
   function pageSizeFor(config, count) {
     const enabled = config?.pendingLimitEnabled !== false;
     const limit = Number.isInteger(config?.pendingLimit) ? config.pendingLimit : 20;
@@ -462,7 +462,7 @@ export function createCommands({
       if (r.error) return r.error;
       const e = r.entry;
       const value = String(tomos ?? '').trim();
-      // Sin texto: abrir el modal precargado con la nota actual.
+      // No text: open the modal preloaded with the current note.
       if (value === '') {
         return { kind: 'modal', entryId: e.id, value: e.pending ?? '' };
       }
@@ -550,7 +550,7 @@ export function createCommands({
   };
 }
 
-// Despacho nombre → función; los errores se convierten en respuesta, sin romper el bot.
+// Dispatch name → function; errors become a response, without breaking the bot.
 export async function dispatch(commands, name, args, t = fallbackTranslator()) {
   const fn = commands[name];
   if (!fn) return t('bot.unknownCommand');
@@ -561,7 +561,7 @@ export async function dispatch(commands, name, args, t = fallbackTranslator()) {
   }
 }
 
-// Extrae los argumentos de una interacción como objeto plano (testeable).
+// Extracts an interaction's arguments as a plain object (testable).
 export function readInteraction(interaction) {
   const opt = interaction.options;
   return {
@@ -594,7 +594,7 @@ export async function registerGuildCommands({
   });
 }
 
-// Cliente de Discord. `loadDiscord` es inyectable para no conectar en tests.
+// Discord client. `loadDiscord` is injectable to avoid connecting in tests.
 export function createDiscordBot({
   getConfig,
   getToken,
@@ -1005,9 +1005,9 @@ export function createDiscordBot({
     }
   }
 
-  // Agent HTTP con keep-alive largo. En redes con DNS/resolución lenta, reconectar
-  // puede tardar >3s y la respuesta a la interacción llegaría tarde (Unknown
-  // interaction); con la conexión caliente se reusa.
+  // HTTP agent with long keep-alive. On networks with slow DNS/resolution, reconnecting
+  // can take >3s and the interaction response would arrive late (Unknown
+  // interaction); with a warm connection it is reused.
   async function createHttpAgent() {
     try {
       const { Agent } = await import('undici');
@@ -1021,7 +1021,7 @@ export function createDiscordBot({
     }
   }
 
-  // Ping liviano para no dejar cerrar la conexión REST entre comandos.
+  // Lightweight ping so the REST connection is not allowed to close between commands.
   function keepWarm() {
     if (warmTimer) clearInterval(warmTimer);
     warmTimer = setInterval(() => {

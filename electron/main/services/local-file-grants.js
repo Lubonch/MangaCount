@@ -1,9 +1,9 @@
 import path from 'node:path';
 
-// Permisos efímeros y de un solo uso para archivos elegidos por el diálogo nativo.
-// El renderer no puede hacer leer al main una ruta arbitraria vía `cover:local`:
-// el handler solo acepta rutas que `dialog:pick-file` haya devuelto antes en esta
-// sesión, y cada permiso se consume con el primer uso.
+// Ephemeral, single-use permissions for files chosen via the native dialog.
+// The renderer cannot make the main process read an arbitrary path via `cover:local`:
+// the handler only accepts paths that `dialog:pick-file` returned earlier in this
+// session, and each permission is consumed on first use.
 export function createLocalFileGrants() {
   const granted = new Set();
 

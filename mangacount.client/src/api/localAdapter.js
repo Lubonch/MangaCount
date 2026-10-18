@@ -1,13 +1,13 @@
-// Adaptador de transporte para el renderer.
+// Transport adapter for the renderer.
 //
-// Dos superficies:
-// 1. Funciones tipadas (`profileList`, `entryImport`, …) que delegan en
-//    `window.mangaCount.invoke(canal, ...args)` dentro de Electron y conservan
-//    `fetch` como fallback en navegador (dev web).
-// 2. `installApiFetchShim()`: reemplaza `window.fetch` para las rutas `/api/*`
-//    y las enruta a IPC devolviendo un objeto tipo `Response` (`ok`, `status`,
-//    `json()`). Así los componentes existentes (`response.ok` / `response.json()`)
-//    no necesitan reescribirse. Canales según parity-matrix.md.
+// Two surfaces:
+// 1. Typed functions (`profileList`, `entryImport`, …) that delegate to
+//    `window.mangaCount.invoke(channel, ...args)` inside Electron and keep
+//    `fetch` as a browser fallback (web dev).
+// 2. `installApiFetchShim()`: replaces `window.fetch` for `/api/*` routes
+//    and routes them to IPC returning a `Response`-like object (`ok`, `status`,
+//    `json()`). This way existing components (`response.ok` / `response.json()`)
+//    don't need to be rewritten. Channels per parity-matrix.md.
 
 const isElectron = () =>
   typeof window !== 'undefined' && typeof window.mangaCount?.invoke === 'function';
@@ -29,7 +29,6 @@ const json = (body) => ({
   body: JSON.stringify(body),
 });
 
-// Perfiles (matriz filas 1-4)
 export const profileList = () => apiCall('profile:list', '/api/profile');
 export const profileGet = (id) => apiCall('profile:get', `/api/profile/${id}`, undefined, id);
 export const profileUpsert = (profile) =>
@@ -44,7 +43,6 @@ export const profileUploadPicture = (profileId, originalName, bytes) =>
     { profileId, originalName, buffer: Array.from(bytes) }
   );
 
-// Entries (filas 5-9)
 export const entryList = (profileId) =>
   apiCall('entry:list', `/api/entry?profileId=${profileId}`, undefined, profileId);
 export const entryGet = (id) => apiCall('entry:get-by-id', `/api/entry/${id}`, undefined, id);
@@ -58,7 +56,6 @@ export const entryUsedFormats = (profileId) =>
 export const entryUsedPublishers = (profileId) =>
   apiCall('entry:used-publishers', `/api/entry/filters/publishers?profileId=${profileId}`, undefined, profileId);
 
-// Mangas + catálogos (filas 10-13)
 export const mangaList = () => apiCall('manga:list', '/api/manga');
 export const mangaGet = (id) => apiCall('manga:get', `/api/manga/${id}`, undefined, id);
 export const mangaUpsert = (manga) => apiCall('manga:upsert', '/api/manga', json(manga), manga);
@@ -70,7 +67,6 @@ export const publisherList = () => apiCall('publisher:list', '/api/publisher');
 export const publisherCreate = (name) =>
   apiCall('publisher:create', '/api/publisher', json({ name }), { name });
 
-// Recomendaciones (fila 14)
 export const recommendationGet = (profileId, limit = 10) =>
   apiCall(
     'recommendation:get',
@@ -91,7 +87,6 @@ export const recommendationConfigGet = () =>
 export const recommendationConfigSet = (config) =>
   apiCall('recommendation:config-set', '/api/recommendation/config', json(config), config);
 
-// Portadas + vínculo externo (AniList)
 export const coverSearch = (query) =>
   apiCall('cover:search', `/api/cover/search?query=${encodeURIComponent(query ?? '')}`, undefined, {
     query,
@@ -110,11 +105,9 @@ export const coverAll = () => apiCall('cover:all', '/api/cover');
 export const coverAuto = (mangaId) =>
   apiCall('cover:auto', `/api/cover/auto/${mangaId}`, undefined, mangaId);
 
-// Base local (fila 15)
 export const databaseStatistics = () => apiCall('database:statistics', '/api/database/statistics');
 export const databaseNukeLocal = () => apiCall('database:nuke-local', '/api/database/nuke', json({}));
 
-// Backup y restore del sistema (Settings)
 export const backupConfigGet = () => apiCall('backup:config-get', '/api/backup/config');
 export const backupConfigSet = (config) =>
   apiCall('backup:config-set', '/api/backup/config', json(config), config);
@@ -124,7 +117,6 @@ export const backupCreate = (destinationDir) =>
 export const backupRestore = (zipPath) =>
   apiCall('backup:restore', '/api/backup/restore', json({ zipPath }), zipPath);
 
-// Bot de Discord (Settings)
 export const botConfigGet = () => apiCall('bot:config-get', '/api/bot/config');
 export const botConfigSet = (config) =>
   apiCall('bot:config-set', '/api/bot/config', json(config), config);
@@ -135,19 +127,17 @@ export const botAutostartGet = () => apiCall('bot:autostart-get', '/api/bot/auto
 export const botAutostartSet = (enabled) =>
   apiCall('bot:autostart-set', '/api/bot/autostart', json({ enabled }), enabled);
 
-// Config general de la app
 export const appConfigGet = () => apiCall('app:config-get', '/api/app/config');
 export const appConfigSet = (config) =>
   apiCall('app:config-set', '/api/app/config', json(config), config);
 
-// Info de la app y actualizaciones
 export const appInfo = () => apiCall('app:info', '/api/app/info');
 export const updateCheck = () => apiCall('update:check', '/api/update/check');
 export const updateState = () => apiCall('update:get-state', '/api/update/state');
 export const updateDownload = () => apiCall('update:download', '/api/update/download');
 export const updateInstall = () => apiCall('update:install', '/api/update/install');
 
-// Estado de update en vivo (push del main). Devuelve un `off`.
+// Live update state (pushed from main). Returns an `off` unsubscriber.
 export const onUpdateState = (cb) => {
   if (isElectron() && typeof window.mangaCount?.onUpdateState === 'function') {
     return window.mangaCount.onUpdateState(cb);
@@ -155,22 +145,15 @@ export const onUpdateState = (cb) => {
   return () => {};
 };
 
-// Diagnóstico (errores del renderer → main)
 export const logError = (payload) =>
   apiCall('log:error', '/api/log/error', json(payload), payload);
 
-// Diagnóstico (copiar estado+log / abrir logs)
 export const diagnosticsCopy = () => apiCall('diagnostics:copy', '/api/diagnostics/copy');
 export const openLogs = () => apiCall('diagnostics:open-logs', '/api/diagnostics/open-logs');
 
-// Diálogos nativos de archivo
 export const pickDirectory = () => apiCall('dialog:pick-directory', '/api/dialog/directory');
 export const pickFile = (filters) =>
   apiCall('dialog:pick-file', '/api/dialog/file', json(filters ?? {}), filters);
-
-// ---------------------------------------------------------------------------
-// Shim de `window.fetch` para rutas /api/* (Electron)
-// ---------------------------------------------------------------------------
 
 const toIntOrNull = (value) => (value == null || value === '' ? null : Number(value));
 
@@ -197,7 +180,7 @@ async function importArgs(profileId, options) {
   return { profileId, tsv: await file.text() };
 }
 
-// Orden: las rutas más específicas antes que las genéricas.
+// Order matters: more specific routes must come before generic ones.
 const routes = [
   { method: 'GET', pattern: /^\/api\/profile$/, build: () => ['profile:list'] },
   { method: 'POST', pattern: /^\/api\/profile$/, build: (_m, o) => ['profile:upsert', jsonBody(o)] },
@@ -228,8 +211,8 @@ function responseLike(data, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => data };
 }
 
-// Reemplaza `fetch` en el renderer de Electron: `/api/*` → IPC (Response-like),
-// el resto delega en el fetch real. No-op fuera de Electron o si ya se instaló.
+// Replaces `fetch` in the Electron renderer: `/api/*` → IPC (Response-like),
+// everything else delegates to the real fetch. No-op outside Electron or if already installed.
 export function installApiFetchShim(target = typeof window !== 'undefined' ? window : undefined) {
   if (!target || !isElectron() || target.__mangaCountFetchShim) return;
   const realFetch =

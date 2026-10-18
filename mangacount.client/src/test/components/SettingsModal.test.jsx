@@ -404,20 +404,17 @@ describe('SettingsModal', () => {
   it('bulk de portadas: recorre sólo los mangas sin portada', async () => {
     const user = userEvent.setup()
     api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
-    api.coverAll.mockResolvedValue({ 1: { url: 'mangacount://covers/1.jpg', isAdult: false } }) // el 1 ya tiene
+    api.coverAll.mockResolvedValue({ 1: { url: 'mangacount://covers/1.jpg', isAdult: false } }) // 1 already has one
     api.coverAuto.mockResolvedValue('mangacount://covers/2.jpg')
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={vi.fn()} />)
 
     await user.click(await screen.findByRole('button', { name: /Traer portadas faltantes/ }))
 
     await waitFor(() => expect(api.coverAuto).toHaveBeenCalledWith(2))
-    expect(api.coverAuto).toHaveBeenCalledTimes(1) // no toca el que ya tiene
+    expect(api.coverAuto).toHaveBeenCalledTimes(1) // does not touch the one it already has
     expect(await screen.findByText(/1 portadas nuevas/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // General
-  // ---------------------------------------------------------------------------
   it('muestra error si no se puede guardar un toggle general', async () => {
     const user = userEvent.setup()
     api.appConfigSet.mockRejectedValue(new Error('boom'))
@@ -451,9 +448,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/No se pudo guardar: nope/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Inicialización
-  // ---------------------------------------------------------------------------
   it('tolera metadatos y config incompletos', async () => {
     api.appInfo.mockResolvedValue(null)
     api.backupConfigGet.mockResolvedValue(undefined)
@@ -484,9 +478,6 @@ describe('SettingsModal', () => {
     })
   })
 
-  // ---------------------------------------------------------------------------
-  // Actualizaciones
-  // ---------------------------------------------------------------------------
   it('muestra Reiniciar cuando hay una actualización descargada', async () => {
     const user = userEvent.setup()
     api.updateInstall.mockResolvedValue({})
@@ -565,9 +556,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/No se pudo verificar: net/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Backup
-  // ---------------------------------------------------------------------------
   it('no cambia el destino si no se elige carpeta', async () => {
     const user = userEvent.setup()
     api.pickDirectory.mockResolvedValue(null)
@@ -702,9 +690,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/Restore falló: rst fail/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Importar / Exportar (TSV)
-  // ---------------------------------------------------------------------------
   it('rechaza archivos que no son TSV', async () => {
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
@@ -822,9 +807,6 @@ describe('SettingsModal', () => {
     expect(screen.getByRole('button', { name: 'Exportar TSV' })).toBeDisabled()
   })
 
-  // ---------------------------------------------------------------------------
-  // Bot
-  // ---------------------------------------------------------------------------
   it('muestra error si falla guardar el token del bot', async () => {
     const user = userEvent.setup()
     api.botSetToken.mockRejectedValue(new Error('tok'))
@@ -881,9 +863,6 @@ describe('SettingsModal', () => {
     expect(screen.getByLabelText('Habilitar bot')).not.toBeChecked()
   })
 
-  // ---------------------------------------------------------------------------
-  // Diagnóstico
-  // ---------------------------------------------------------------------------
   it('muestra error si falla copiar el diagnóstico', async () => {
     const user = userEvent.setup()
     api.diagnosticsCopy.mockRejectedValue(new Error('cp'))
@@ -917,9 +896,6 @@ describe('SettingsModal', () => {
     expect(await screen.findByText(/No se pudo abrir: ol/)).toBeInTheDocument()
   })
 
-  // ---------------------------------------------------------------------------
-  // Danger Zone
-  // ---------------------------------------------------------------------------
   it('la Nuclear Option cae a onImportSuccess si no hay onDataReset', async () => {
     const user = userEvent.setup()
     const onImportSuccess = vi.fn()
@@ -945,9 +921,6 @@ describe('SettingsModal', () => {
     expect(onDataReset).not.toHaveBeenCalled()
   })
 
-  // ---------------------------------------------------------------------------
-  // Portadas: casos de borde
-  // ---------------------------------------------------------------------------
   it('bulk de portadas: informa cuando todas ya están vinculadas', async () => {
     const user = userEvent.setup()
     api.mangaList.mockResolvedValue([{ id: 1, name: 'A' }])
@@ -1078,9 +1051,6 @@ describe('SettingsModal', () => {
     await waitFor(() => expect(api.appConfigSet).toHaveBeenCalledWith({ showAdultCovers: true }))
   })
 
-  // ---------------------------------------------------------------------------
-  // Recomendaciones (AniList)
-  // ---------------------------------------------------------------------------
   it('guarda la config de recomendaciones', async () => {
     const user = userEvent.setup()
     api.recommendationConfigSet.mockResolvedValue({ enabled: true, limit: 5, seenTtlDays: 60 })

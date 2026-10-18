@@ -25,7 +25,6 @@ const AddMangaModal = ({
     const [newFormatName, setNewFormatName] = useState('');
     const [newPublisherName, setNewPublisherName] = useState('');
 
-    // Load formats and publishers when modal opens
     useEffect(() => {
         if (isOpen) {
             loadFormats();
@@ -33,7 +32,6 @@ const AddMangaModal = ({
         }
     }, [isOpen]);
 
-    // Populate form when editing
     useEffect(() => {
         if (editManga) {
             setFormData({

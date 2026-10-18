@@ -23,12 +23,12 @@ const RecommendationModal = ({
     const [exhausted, setExhausted] = useState(recommendations?.exhausted === true);
     const [busy, setBusy] = useState(false);
     const [actionError, setActionError] = useState('');
-    // Tarjeta en la que se está eligiendo "ya lo tengo" + colección del perfil.
+    // Card for which "I already own it" is being chosen + profile collection.
     const [pickerItem, setPickerItem] = useState(null);
     const [pickerQuery, setPickerQuery] = useState('');
     const [mangas, setMangas] = useState([]);
-    // Sincroniza la lista con cada respuesta nueva del padre (patrón de React para
-    // "ajustar estado cuando cambia una prop", sin efecto).
+    // Syncs the list with every new response from the parent (the React pattern
+    // for "adjust state when a prop changes", without an effect).
     const [syncedFrom, setSyncedFrom] = useState(recommendations);
     if (recommendations !== syncedFrom) {
         setSyncedFrom(recommendations);
@@ -52,7 +52,7 @@ const RecommendationModal = ({
         return null;
     }
 
-    // Reemplaza la tarjeta accionada por la siguiente candidata (lista a `limit`).
+    // Replaces the acted-on card with the next candidate (list up to `limit`).
     const fillOne = async () => {
         const res = await recommendationGet(profileId, 1);
         const extra = res?.items ?? [];

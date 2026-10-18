@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '../test-utils'
 import userEvent from '@testing-library/user-event'
 
-// setup.js mockea AddProfileModal globalmente; acá usamos el componente real.
+// setup.js mocks AddProfileModal globally; here we use the real component.
 vi.unmock('../../components/AddProfileModal')
 
 import AddProfileModal from '../../components/AddProfileModal'
@@ -26,7 +26,7 @@ const deferred = () => {
   return { promise, resolve }
 }
 
-// Enrutador determinista de fetch para el modal de perfiles.
+// Deterministic fetch router for the profile modal.
 const routeFetch = (handlers = {}) => {
   global.fetch.mockImplementation((url, options = {}) => {
     const u = String(url)
@@ -46,7 +46,7 @@ const routeFetch = (handlers = {}) => {
 }
 
 const uploadPicture = async (user) => {
-  // La etiqueta cambia entre "Upload Picture" y "Change Picture".
+  // The label changes between "Upload Picture" and "Change Picture".
   const input = screen.getByLabelText(/Picture/)
   const file = new File(['avatar'], 'avatar.png', { type: 'image/png' })
   await user.upload(input, file)

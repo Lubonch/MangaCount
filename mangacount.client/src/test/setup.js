@@ -1,13 +1,11 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
 
-// Los tests fijan el idioma en español (los asserts existentes están en ES).
+// Tests pin the language to Spanish (the existing asserts are in ES).
 globalThis.__MANGACOUNT_LANG__ = 'es'
 
-// Mock fetch globally
 global.fetch = vi.fn()
 
-// Mock localStorage
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
@@ -20,7 +18,6 @@ Object.defineProperty(global, 'localStorage', {
   configurable: true,
 })
 
-// Mock window.location
 Object.defineProperty(window, 'location', {
   value: {
     origin: 'http://localhost:5173',
@@ -43,27 +40,22 @@ vi.mock('../components/CollectionView', () => ({
   default: () => 'Collection View Component'
 }))
 
-// Mock ThemeToggle component 
 vi.mock('../components/ThemeToggle', () => ({
   default: () => null
 }))
 
-// Mock AddEntryModal component
 vi.mock('../components/AddEntryModal', () => ({
   default: ({ isOpen, onClose }) => isOpen ? 'Add Entry Modal' : null
 }))
 
-// Mock AddMangaModal component
 vi.mock('../components/AddMangaModal', () => ({
   default: ({ isOpen, onClose }) => isOpen ? 'Add Manga Modal' : null
 }))
 
-// Mock AddProfileModal component
 vi.mock('../components/AddProfileModal', () => ({
   default: ({ isOpen, onClose }) => isOpen ? 'Add Profile Modal' : null
 }))
 
-// Reset all mocks before each test
 beforeEach(() => {
   vi.clearAllMocks()
 })

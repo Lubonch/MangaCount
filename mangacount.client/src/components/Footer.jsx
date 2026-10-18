@@ -1,9 +1,9 @@
 import './Footer.css';
 import { useT } from '../contexts/I18nContext';
 
-// Footer con la versión actual y el estado de actualización:
-// - link: `vX → vY (click)` al release.
-// - auto: Descargar → Descargando… X% → Reiniciar para actualizar.
+// Footer with the current version and update state:
+// - link: `vX → vY (click)` to the release.
+// - auto: Download → Downloading… X% → Restart to update.
 const Footer = ({ version, update, onDownload = () => {}, onInstall = () => {} }) => {
   const t = useT();
   let extra = null;

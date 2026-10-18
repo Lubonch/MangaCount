@@ -1,5 +1,5 @@
-// Lógica pura del ciclo de vida residente en bandeja: arranque oculto, no salir
-// al cerrar todas las ventanas y la plantilla del menú del tray.
+// Pure tray-resident lifecycle logic: hidden start, not quitting when all
+// windows close, and the tray menu template.
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';

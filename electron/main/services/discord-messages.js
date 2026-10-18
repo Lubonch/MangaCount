@@ -1,7 +1,7 @@
-// División de respuestas del bot para el límite de mensajes de Discord.
+// Splitting of bot replies for Discord's message limit.
 //
-// Un mensaje de Discord admite 2000 caracteres; dejamos margen para el
-// indicador de continuación y cortamos por líneas (nunca por la mitad).
+// A Discord message allows 2000 characters; we leave margin for the
+// continuation indicator and cut by lines (never in the middle).
 
 export const DISCORD_MESSAGE_LIMIT = 2000;
 export const CHUNK_LIMIT = 1900;
@@ -20,7 +20,7 @@ export function splitMessage(text, { limit = CHUNK_LIMIT } = {}) {
   };
 
   for (const line of raw.split('\n')) {
-    // Línea indivisible: se parte como último recurso.
+    // Indivisible line: split as a last resort.
     if (line.length > limit) {
       flush();
       for (let i = 0; i < line.length; i += limit) chunks.push(line.slice(i, i + limit));

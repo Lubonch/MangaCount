@@ -1,10 +1,10 @@
-// Lógica de consulta de la colección (buscar/pendientes), separada de la
-// presentación como funciones que devuelven datos, sin formato de transporte.
-// La consumen el bot de Discord y cualquier otro consumidor; el formateo vive
-// en la capa de presentación.
+// Collection query logic (search/pending), separated from
+// presentation as functions that return data, without transport formatting.
+// Consumed by the Discord bot and any other consumer; formatting lives
+// in the presentation layer.
 //
-// DTO de entrada: `{ id, quantity, priority, manga: { name, volumes, format, publisher } }`
-// (`listEntries` en db/repositories/entries.js).
+// Input DTO: `{ id, quantity, priority, manga: { name, volumes, format, publisher } }`
+// (`listEntries` in db/repositories/entries.js).
 
 export function findEntries(entries, query) {
   const q = String(query ?? '').trim().toLowerCase();
@@ -12,7 +12,7 @@ export function findEntries(entries, query) {
   return entries.filter((e) => (e.manga?.name ?? '').toLowerCase().includes(q));
 }
 
-// Títulos que comparten alguna palabra (>2) con el query, para sugerir.
+// Titles sharing some word (>2) with the query, to suggest.
 export function suggestTitles(entries, query, limit = 4) {
   const words = String(query ?? '')
     .toLowerCase()
@@ -25,7 +25,7 @@ export function suggestTitles(entries, query, limit = 4) {
     .map((e) => e.manga.name);
 }
 
-// Estado derivado de una entry: completo cuando hay total y se alcanzó.
+// State derived from an entry: complete when there is a total and it was reached.
 export function entryStatus(entry) {
   const total = entry?.manga?.volumes ?? 0;
   const quantity = entry?.quantity ?? 0;
@@ -35,7 +35,7 @@ export function entryStatus(entry) {
   return { quantity, total: 0, pending: null, complete: false };
 }
 
-// Series en curso (con total) ordenadas: primero prioridad, luego mayor pendiente.
+// Ongoing series (with a total) sorted: priority first, then larger pending.
 export function pendingEntries(entries) {
   return entries
     .filter((e) => (e?.manga?.volumes ?? 0) > 0 && e.quantity < e.manga.volumes)
@@ -45,14 +45,14 @@ export function pendingEntries(entries) {
     });
 }
 
-// Series con huecos: tienen una nota de tomos no consecutivos.
+// Series with gaps: they have a note of non-consecutive volumes.
 export function huecosEntries(entries) {
   return (entries ?? []).filter(
     (e) => typeof e?.pending === 'string' && e.pending.trim() !== ''
   );
 }
 
-// Series a punto de completarse: total conocido y faltan 1 o 2 tomos.
+// Series about to complete: known total and 1 or 2 volumes missing.
 export function almostCompleteEntries(entries) {
   return (entries ?? [])
     .filter((e) => {
@@ -71,7 +71,7 @@ export function pendingSummary(entries) {
   };
 }
 
-// Resultado de búsqueda: coincidencias o sugerencias cuando no hay ninguna.
+// Search result: matches, or suggestions when there are none.
 export function searchResult(entries, query, suggestionLimit = 4) {
   const results = findEntries(entries, query);
   if (results.length > 0) return { results, suggestions: [] };

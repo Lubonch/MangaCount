@@ -12,7 +12,7 @@ vi.mock('../../api/localAdapter.js', () => ({
   coverStatus: vi.fn().mockResolvedValue(null),
 }))
 
-// Modales controlables para disparar onSuccess/onClose.
+// Controllable modals to fire onSuccess/onClose.
 vi.mock('../../components/AddEntryModal', () => ({
   default: ({ isOpen, onSuccess, onClose }) =>
     isOpen ? (
@@ -130,7 +130,7 @@ describe('Sidebar Component', () => {
     render(<Sidebar {...defaultProps} selectedProfile={createMockProfile()} />)
     expect(screen.queryByText('Import Collection')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Choose TSV File')).not.toBeInTheDocument()
-    // La Nuclear Option se movió a Settings; el sidebar ahora expone el acceso a Settings.
+    // The Nuclear Option moved to Settings; the sidebar now exposes access to Settings.
     expect(screen.queryByText('Nuclear Option')).not.toBeInTheDocument()
     expect(screen.queryByText('Danger Zone')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
@@ -288,8 +288,8 @@ describe('Sidebar Component', () => {
       <Sidebar {...defaultProps} mangas={[createMockManga({ id: 1, name: longName })]} />
     )
 
-    // jsdom no calcula layout: verificación estructural de que el nombre se
-    // renderiza completo (sin truncado por elipsis) dentro de su contenedor.
+    // jsdom does not compute layout: structural check that the name
+    // renders in full (not truncated by ellipsis) inside its container.
     const info = container.querySelector('.manga-info')
     expect(info).toBeTruthy()
     const name = within(info).getByText(longName)
@@ -297,8 +297,8 @@ describe('Sidebar Component', () => {
     expect(name.textContent).toBe(longName)
     expect(name.textContent).not.toContain('…')
 
-    // Los tres botones de acción del ítem coexisten (buscar portada / editar /
-    // eliminar) con sus aria-label/title.
+    // The item's three action buttons coexist (search cover / edit /
+    // delete) with their aria-label/title.
     const actions = container.querySelector('.manga-actions')
     expect(actions.querySelectorAll('button')).toHaveLength(3)
 

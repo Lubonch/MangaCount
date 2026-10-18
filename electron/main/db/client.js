@@ -5,20 +5,20 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// v3 = quita los seeds (sólo afecta instalaciones nuevas; no toca datos
-// existentes, así que no hay paso de migración). No retroceder la versión: los
-// usuarios que corrieron 2.0.1 ya están en 3.
-// v4 = primer paso NO aditivo del proyecto: agrega `MangaExternalRef.IsAdult`.
-// Es seguro porque `ensureColumn` verifica `PRAGMA table_info` antes del ALTER
-// (idempotente, aunque `user_version` se haya quedado atrás) y la columna nace
-// con DEFAULT 0 NOT NULL, así que las filas existentes quedan en "no adulto" sin
-// pérdida de datos ni backfill de AniList.
-// v5 = mueve el flag +18 a la entidad manga: agrega `Manga.IsAdult` (fuente de verdad
-// para la UI) con el mismo `ensureColumn` idempotente y un backfill desde el
-// vínculo de portada +18. Aditivo: no borra ni renombra nada.
-// v6 = feedback del recomendador: agrega `RecommendationDismissal` y
-// `RecommendationSeen` (CREATE TABLE IF NOT EXISTS en el esquema, así que correr
-// el esquema en una base v5 existente las crea sin tocar datos).
+// v3 = drops the seeds (only affects fresh installs; doesn't touch existing
+// data, so there is no migration step). Never lower the version: users who ran
+// 2.0.1 are already on 3.
+// v4 = first NON-additive step of the project: adds `MangaExternalRef.IsAdult`.
+// Safe because `ensureColumn` checks `PRAGMA table_info` before the ALTER
+// (idempotent, even if `user_version` fell behind) and the column is born with
+// DEFAULT 0 NOT NULL, so existing rows stay "not adult" with no data loss and no
+// AniList backfill.
+// v5 = moves the +18 flag to the manga entity: adds `Manga.IsAdult` (source of
+// truth for the UI) with the same idempotent `ensureColumn` and a backfill from
+// the +18 cover link. Additive: deletes or renames nothing.
+// v6 = recommender feedback: adds `RecommendationDismissal` and
+// `RecommendationSeen` (CREATE TABLE IF NOT EXISTS in the schema, so running the
+// schema on an existing v5 DB creates them without touching data).
 export const SCHEMA_VERSION = 6;
 const SCHEMA_FILE = path.join(__dirname, 'schema.sqlite.sql');
 
@@ -27,17 +27,17 @@ function applyPragmas(db) {
   db.pragma('foreign_keys = ON');
 }
 
-// Agrega una columna sólo si falta. SQLite no soporta `ADD COLUMN IF NOT
-// EXISTS`, así que se consulta `PRAGMA table_info` primero: la migración es
-// idempotente y segura de re-ejecutar.
+// Adds a column only if missing. SQLite does not support `ADD COLUMN IF NOT
+// EXISTS`, so `PRAGMA table_info` is queried first: the migration is idempotent
+// and safe to re-run.
 function ensureColumn(db, table, column, ddl) {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all();
   if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
 }
 
-// Abre (o crea) la BD en la carpeta de datos del usuario, aplica migraciones
-// versionadas vía `PRAGMA user_version` y el seed incluido en el esquema.
-// `dataDir` en producción es `app.getPath('userData')`; en tests, un tmp.
+// Opens (or creates) the DB in the user data folder, applies versioned
+// migrations via `PRAGMA user_version` and the seed included in the schema.
+// `dataDir` in production is `app.getPath('userData')`; in tests, a tmp dir.
 export function openDb(dataDir) {
   fs.mkdirSync(dataDir, { recursive: true });
   const db = new Database(path.join(dataDir, 'mangacount.db'));
@@ -49,8 +49,8 @@ export function openDb(dataDir) {
       db.exec(schema);
       ensureColumn(db, 'MangaExternalRef', 'IsAdult', 'IsAdult INTEGER NOT NULL DEFAULT 0');
       ensureColumn(db, 'Manga', 'IsAdult', 'IsAdult INTEGER NOT NULL DEFAULT 0');
-      // Backfill: los mangas cuyo vínculo de portada activo es +18 pasan a estar
-      // marcados. Idempotente (re-ejecutarlo no cambia nada).
+      // Backfill: mangas whose active cover link is +18 become flagged.
+      // Idempotent (re-running changes nothing).
       db.exec(
         'UPDATE Manga SET IsAdult = 1 WHERE Id IN (SELECT MangaId FROM MangaExternalRef WHERE IsAdult = 1)'
       );

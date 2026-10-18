@@ -1,14 +1,14 @@
-// Traspaso único PostgreSQL -> SQLite (uso único, luego se archiva).
+// One-time PostgreSQL -> SQLite transfer (single use, then archived).
 //
-// Uso:
+// Usage:
 //   PG_CONNECTION_STRING="Host=...;..." node electron/main/db/migrate-from-postgres.js [DATA_DIR]
-//   (DATA_DIR por defecto: carpeta de datos indicada por la app; NUNCA sobre la BD en uso:
-//   correr con la app cerrada y la BD PG en solo-lectura si es posible.)
+//   (DATA_DIR defaults to the data folder indicated by the app; NEVER over the DB in use:
+//   run with the app closed and the PG DB read-only if possible.)
 //
-// Orden FK-seguro: Format, Publisher, Profile, Manga, Entry.
-// Verificación: conteos por tabla PG vs SQLite, UNIQUE(ProfileId,MangaId) sin
-// colisiones y spot-check de 20 entries (quantity/pending/priority).
-// Falla con exit 1 ante cualquier diferencia.
+// FK-safe order: Format, Publisher, Profile, Manga, Entry.
+// Verification: per-table counts PG vs SQLite, UNIQUE(ProfileId,MangaId) without
+// collisions, and a spot-check of 20 entries (quantity/pending/priority).
+// Fails with exit 1 on any difference.
 
 import pg from 'pg';
 import { openDb, getCounts } from './client.js';
@@ -24,7 +24,7 @@ function mustEnv(name) {
   return value;
 }
 
-// Convierte "Host=h;Database=d;Username=u;Password=p;Port=n" a config pg.
+// Converts "Host=h;Database=d;Username=u;Password=p;Port=n" to a pg config.
 function parseDotnetConnString(raw) {
   const parts = Object.fromEntries(
     raw.split(';').filter(Boolean).map((kv) => {
@@ -65,7 +65,7 @@ async function main() {
         return { read: rows.length, inserted };
       };
 
-      // lower(): las tablas reales en PG están en minúsculas.
+      // lower(): the real PG tables are lowercase.
       const moved = {};
       moved.Format = await copy('format', ['id', 'name'], (r) => [r.id, r.name]);
       moved.Publisher = await copy('publisher', ['id', 'name'], (r) => [r.id, r.name]);
@@ -81,9 +81,9 @@ async function main() {
         (r) => [r.id, r.profileid, r.mangaid, r.purchasedvolumes, r.pendingvolumes, r.ispriority]
       );
 
-      // Verificación 0: sin filas descartadas por INSERT OR IGNORE en las tablas
-      // sin seed (Manga no tiene UNIQUE aparte del PK; Entry tiene UNIQUE(ProfileId,MangaId)).
-      // Filete: si PG tuviera violaciones de UNIQUE, se pierden en silencio -> fallar.
+      // Verification 0: no rows dropped by INSERT OR IGNORE in the tables
+      // without a seed (Manga has no UNIQUE apart from the PK; Entry has UNIQUE(ProfileId,MangaId)).
+      // Safety net: if PG had UNIQUE violations, they are silently lost -> fail.
       for (const table of ['Manga', 'Entry']) {
         const { read, inserted } = moved[table];
         if (inserted !== read) {
@@ -93,7 +93,6 @@ async function main() {
         }
       }
 
-      // Verificación 1: conteos por tabla.
       const counts = getCounts(db);
       const expected = {
         profiles: moved.Profile.read,
@@ -102,18 +101,16 @@ async function main() {
         formats: moved.Format.read,
         publishers: moved.Publisher.read,
       };
-      // El seed (perfil/formatos/editoriales por defecto) puede sumar filas base.
+      // The seed (default profile/formats/publishers) can add base rows.
       for (const [k, v] of Object.entries(expected)) {
         if (counts[k] < v) throw new Error(`Conteo ${k}: SQLite=${counts[k]} < PG=${v}`);
       }
 
-      // Verificación 2: UNIQUE sin colisiones.
       const dupes = db
         .prepare('SELECT ProfileId, MangaId, COUNT(*) c FROM Entry GROUP BY 1, 2 HAVING c > 1')
         .all();
       if (dupes.length > 0) throw new Error(`Colisiones UNIQUE: ${JSON.stringify(dupes)}`);
 
-      // Verificación 3: spot-check de 20 entries.
       const sample = db
         .prepare('SELECT Id, PurchasedVolumes, PendingVolumes, IsPriority FROM Entry ORDER BY Id LIMIT 20')
         .all();

@@ -30,8 +30,8 @@ function graphNode(id, rating, { title = `T${id}`, genres = [], tags = [], volum
   };
 }
 
-// `fetchImpl` falso: nunca toca la red. Responde el grafo por id de semilla y
-// vacío para las búsquedas de título (semillas sin vínculo).
+// Fake `fetchImpl`: never touches the network. Responds the graph by seed id and
+// empty for title searches (seeds without a link).
 function makeFetch(graphs, { failIds = [], searchResults = [] } = {}) {
   return async (_url, opts = {}) => {
     const body = JSON.parse(opts.body ?? '{}');
@@ -104,7 +104,7 @@ describe('services/anilist-recommendations', () => {
     assert.deepEqual(res.items.map((i) => i.externalId), ['1', '2']);
     assert.equal(res.items[0].coverUrl, 'https://img/1.jpg');
     assert.equal(res.items[0].reason, 'Alfa');
-    assert.equal(res.exhausted, true); // solo hay 2 candidatas para el default 10
+    assert.equal(res.exhausted, true); // there are only 2 candidates for the default 10
   });
 
   it('el mismo mediaRecommendation en dos semillas suma rating y sube de posición', async () => {
@@ -118,14 +118,14 @@ describe('services/anilist-recommendations', () => {
     });
     const res = await getAnilistRecommendations(db, profile.id, deps(fetchImpl));
     assert.equal(res.items[0].externalId, '9');
-    // `reason` = la semilla con mayor rating que la trajo (Beta, rating 5).
+    // `reason` = the highest-rated seed that brought it (Beta, rating 5).
     assert.equal(res.items[0].reason, 'Beta');
   });
 
   it('filtra descartados, ya poseídos, vistos dentro del TTL y +18', async () => {
     seedManga('Alfa', 100);
     seedManga('Beta', 200);
-    // "Ya la tengo": un manga del perfil vinculado a la candidata 5.
+    // "already have it": a profile manga linked to candidate 5.
     const owned = createManga(db, { name: 'Poseída' });
     upsertEntry(db, { mangaId: owned.id, profileId: profile.id, quantity: 1 });
     upsertRef(db, { mangaId: owned.id, provider: 'anilist', externalId: 5 });
@@ -147,7 +147,7 @@ describe('services/anilist-recommendations', () => {
 
   it('excluye por título normalizado aunque no haya vínculo', async () => {
     seedManga('Alfa', 100);
-    seedManga('Monster', null); // owned local, sin ref
+    seedManga('Monster', null); // owned local, no ref
     const fetchImpl = makeFetch({
       100: [graphNode(7, 9, { title: 'Monster' }), graphNode(8, 4, { title: 'Otra' })],
     });
@@ -157,7 +157,7 @@ describe('services/anilist-recommendations', () => {
 
   it('una vista fuera del TTL vuelve a aparecer', async () => {
     seedManga('Alfa', 100);
-    markSeen(db, profile.id, 'anilist', 9, iso(40)); // 40 días > TTL 30
+    markSeen(db, profile.id, 'anilist', 9, iso(40)); // 40 days > TTL 30
     const fetchImpl = makeFetch({ 100: [graphNode(9, 9, { title: 'Vuelve' })] });
     const res = await getAnilistRecommendations(db, profile.id, deps(fetchImpl));
     assert.deepEqual(res.items.map((i) => i.externalId), ['9']);
