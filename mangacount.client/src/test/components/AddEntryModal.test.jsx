@@ -205,6 +205,21 @@ describe('AddEntryModal: edición', () => {
     expect(plus).toBeDisabled()
   })
 
+  it('deshabilita prioridad y la envía en false al completar la serie', async () => {
+    const user = userEvent.setup()
+    const { props, container } = setup({
+      editEntry: { id: 1, mangaId: 1, quantity: 10, pending: '', priority: true, manga: { volumes: 10 } },
+    })
+    const priority = screen.getByLabelText(/Priority item/)
+    expect(priority).toBeDisabled()
+    expect(priority).not.toBeChecked()
+    expect(screen.getByText('Serie completa: la prioridad no aplica.')).toBeInTheDocument()
+
+    submit(container)
+    await waitFor(() => expect(props.onSuccess).toHaveBeenCalled())
+    expect(bodyOf('/api/entry')).toMatchObject({ id: 1, quantity: 10, priority: false })
+  });
+
   it('no muestra acciones rápidas ni progreso si el manga no tiene volúmenes', () => {
     const { container } = setup({
       editEntry: { id: 1, mangaId: 1, quantity: 3, pending: '', priority: false, manga: { volumes: 0 } },

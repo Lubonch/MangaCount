@@ -81,7 +81,7 @@ const sortEntries = () => [
   mkEntry({
     id: 1,
     quantity: 5,
-    priority: 2,
+    priority: true,
     manga: mkManga({
       id: 1,
       name: 'Alpha',
@@ -93,7 +93,7 @@ const sortEntries = () => [
   mkEntry({
     id: 2,
     quantity: 8,
-    priority: 1,
+    priority: false,
     manga: mkManga({
       id: 2,
       name: 'Beta',
@@ -105,7 +105,7 @@ const sortEntries = () => [
   mkEntry({
     id: 3,
     quantity: 3,
-    priority: 3,
+    priority: true,
     manga: mkManga({
       id: 3,
       name: 'Gamma',
@@ -117,7 +117,7 @@ const sortEntries = () => [
 ]
 
 const filterEntries = () => [
-  mkEntry({ id: 1, quantity: 10, manga: mkManga({ id: 1, name: 'Complete', volumes: 10 }) }),
+  mkEntry({ id: 1, quantity: 10, priority: true, manga: mkManga({ id: 1, name: 'Complete', volumes: 10 }) }),
   mkEntry({ id: 2, quantity: 2, priority: true, manga: mkManga({ id: 2, name: 'PrioInc', volumes: 10 }) }),
   mkEntry({ id: 3, quantity: 2, manga: mkManga({ id: 3, name: 'Incomplete', volumes: 10 }) }),
   mkEntry({ id: 4, quantity: 3, manga: mkManga({ id: 4, name: 'NoVol', volumes: 0 }) }),
@@ -175,8 +175,8 @@ describe('CollectionView: cabecera y estados', () => {
     render(<CollectionView entries={sortEntries()} mangas={[]} selectedProfile={null} />)
     expect(screen.getByText(/3 total entries/)).toBeInTheDocument()
     expect(screen.getByText(/Complete: 0/)).toBeInTheDocument()
-    expect(screen.getByText(/Priority: 3/)).toBeInTheDocument()
-    expect(screen.getByText(/Incomplete: 0/)).toBeInTheDocument()
+    expect(screen.getByText(/Priority: 2/)).toBeInTheDocument()
+    expect(screen.getByText(/Incomplete: 1/)).toBeInTheDocument()
   })
 
   it('sin onRefresh no hay botón refresh y muestra empty state sin filtros', () => {
@@ -254,6 +254,28 @@ describe('CollectionView: vistas table/compact/cards', () => {
     await user.click(screen.getByTitle('Edit entry'))
     expect(screen.getByText('edit-entry-open')).toBeInTheDocument()
   })
+
+  it('una serie completa con prioridad no muestra indicadores de prioridad', async () => {
+    const user = userEvent.setup()
+    const complete = mkEntry({
+      id: 1,
+      quantity: 10,
+      priority: true,
+      manga: mkManga({ id: 1, name: 'Complete', volumes: 10 }),
+    })
+    const { container } = render(
+      <CollectionView entries={[complete]} mangas={[]} selectedProfile={null} />
+    )
+
+    expect(container.querySelector('.card-cover-priority')).toBeNull()
+    expect(container.querySelector('.priority-badge')).toBeNull()
+
+    await user.selectOptions(viewSelect(), 'table')
+    expect(container.querySelector('.priority-indicator')).toBeNull()
+
+    await user.selectOptions(viewSelect(), 'compact')
+    expect(container.querySelector('.compact-priority')).toBeNull()
+  });
 
   it('tabla: serie completa no muestra +1 ni series sin total barra', async () => {
     const user = userEvent.setup()
@@ -393,7 +415,7 @@ describe('CollectionView: orden', () => {
     ['name', ['Alpha', 'Beta', 'Gamma']],
     ['quantity', ['Beta', 'Alpha', 'Gamma']],
     ['completion', ['Beta', 'Alpha', 'Gamma']],
-    ['priority', ['Gamma', 'Alpha', 'Beta']],
+    ['priority', ['Alpha', 'Gamma', 'Beta']],
     ['publisher', ['Beta', 'Gamma', 'Alpha']],
     ['format', ['Beta', 'Gamma', 'Alpha']],
   ])('ordena por %s', async (value, expected) => {
@@ -412,6 +434,27 @@ describe('CollectionView: orden', () => {
     await user.selectOptions(sortSelect(), 'completion')
     expect(cardTitles(container)).toEqual(['Top', 'Mid', 'NoVol'])
   })
+
+  it('ordena por prioridad sin contar series completas', async () => {
+    const user = userEvent.setup()
+    const completa = mkEntry({
+      id: 1,
+      quantity: 10,
+      priority: true,
+      manga: mkManga({ id: 1, name: 'Complete', volumes: 10 }),
+    })
+    const incompleta = mkEntry({
+      id: 2,
+      quantity: 1,
+      priority: true,
+      manga: mkManga({ id: 2, name: 'Prio', volumes: 10 }),
+    })
+    const { container } = render(
+      <CollectionView entries={[completa, incompleta]} mangas={[]} selectedProfile={null} />
+    )
+    await user.selectOptions(sortSelect(), 'priority')
+    expect(cardTitles(container)).toEqual(['Prio', 'Complete'])
+  });
 
   it('ordena por publisher/format tolerando campos ausentes', async () => {
     const user = userEvent.setup()

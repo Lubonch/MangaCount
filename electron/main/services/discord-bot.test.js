@@ -442,6 +442,19 @@ describe('discord-bot: applyWrite', () => {
     assert.equal(reload(entry.id).priority, true);
   });
 
+  it('togglePriority no aplica a una serie completa', () => {
+    const manga = createManga(db, { name: 'Completa', volumes: 5 });
+    const completa = upsertEntry(db, {
+      mangaId: manga.id,
+      profileId: profile.id,
+      quantity: 5,
+      priority: true,
+    });
+    const result = applyWrite(db, { type: 'togglePriority', entry: completa });
+    assert.match(result.summary, /no aplica/i);
+    assert.equal(reload(completa.id).priority, false);
+  });
+
   it('setPending setea el campo', () => {
     applyWrite(db, { type: 'setPending', entry, pending: '5,7' });
     assert.equal(reload(entry.id).pending, '5,7');
@@ -605,6 +618,14 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     assert.match(off.summary, /activar prioridad/);
   });
 
+  it('/prioridad no propone escritura para una serie completa', async () => {
+    const manga = createManga(db, { name: 'Completa', volumes: 3 });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 3, priority: true });
+    const out = await commands.prioridad({ session, titulo: 'Completa' });
+    assert.equal(typeof out, 'string');
+    assert.match(out, /no aplica/i);
+  });
+
   it('/nuevo exige título', async () => {
     assert.equal(await commands.nuevo({ session, titulo: '   ' }), 'Falta el título.');
     assert.equal(await commands.nuevo({ session }), 'Falta el título.');
@@ -634,6 +655,8 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     upsertEntry(db, { mangaId: enCurso.id, profileId: profile.id, quantity: 3 });
     const completo = createManga(db, { name: 'Serie B', volumes: 5 });
     upsertEntry(db, { mangaId: completo.id, profileId: profile.id, quantity: 5, priority: true });
+    const prioridad = createManga(db, { name: 'Serie D', volumes: 5 });
+    upsertEntry(db, { mangaId: prioridad.id, profileId: profile.id, quantity: 1, priority: true });
     const conMeta = createManga(db, {
       name: 'Serie C',
       volumes: 10,
@@ -644,8 +667,10 @@ describe('discord-bot: comandos de escritura y bordes', () => {
     const out = await commands.buscar({ session, query: 'serie' });
     assert.match(out, /en curso/);
     assert.match(out, /✅ Completo/);
-    assert.match(out, /⭐/);
     assert.match(out, /Tankoubon · Ivrea/);
+    const lines = out.split('\n');
+    assert.ok(lines.find((line) => line.includes('Serie B')).indexOf('⭐') === -1);
+    assert.ok(lines.find((line) => line.includes('Serie D')).includes('⭐'));
   });
 
   it('/buscar sin sugerencias omite la pista', async () => {

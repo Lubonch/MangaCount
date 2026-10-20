@@ -144,7 +144,7 @@ function formatEntryLine(entry, t = fallbackTranslator()) {
         : t('bot.formatProgress', { quantity: status.quantity, total: status.total, pending: status.pending })
       : t('bot.formatOngoing', { quantity: status.quantity });
   const meta = [entry.manga?.format?.name, entry.manga?.publisher?.name].filter(Boolean).join(' · ');
-  const priority = entry.priority ? '⭐ ' : '';
+  const priority = entry.priority && !status.complete ? '⭐ ' : '';
   return `${priority}*${entry.manga.name}*\n  ${meta}\n  ${describe}`;
 }
 
@@ -191,6 +191,12 @@ export function applyWrite(db, action) {
     };
   }
   if (action.type === 'togglePriority') {
+    if (entryStatus(action.entry).complete) {
+      return {
+        summary: fallbackTranslator()('bot.priorityComplete', { name: action.entry.manga.name }),
+        entry: action.entry,
+      };
+    }
     const priority = !action.entry.priority;
     const updated = handlers['entry:upsert'](ctx, { ...action.entry, priority });
     return {
@@ -478,6 +484,7 @@ export function createCommands({
       const r = resolveEntry(entriesFor(profile.id), titulo, t());
       if (r.error) return r.error;
       const e = r.entry;
+      if (entryStatus(e).complete) return t('bot.priorityComplete', { name: e.manga.name });
       return writeProposal(t('bot.proposalPriority', { name: e.manga.name, action: e.priority ? t('bot.removePriority') : t('bot.addPriority') }), {
         type: 'togglePriority',
         entry: e,

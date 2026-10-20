@@ -1,3 +1,5 @@
+import { clearCompletedPriority } from './entries.js';
+
 // Direct port of MangaRepository.cs. DTO: {id, name, volumes, formatId, publisherId, isAdult}.
 
 const SELECT =
@@ -31,9 +33,11 @@ export function createManga(db, { name, volumes, formatId = null, publisherId = 
 }
 
 export function updateManga(db, { id, name, volumes, formatId, publisherId, isAdult = false }) {
+  const total = safeVolumes(volumes);
   db.prepare(
     'UPDATE Manga SET Title = ?, TotalVolumes = ?, FormatId = ?, PublisherId = ?, IsAdult = ? WHERE Id = ?'
-  ).run(name, safeVolumes(volumes), formatId, publisherId, isAdult ? 1 : 0, id);
+  ).run(name, total, formatId, publisherId, isAdult ? 1 : 0, id);
+  clearCompletedPriority(db, id, total);
   return getMangaById(db, id);
 }
 

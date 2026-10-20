@@ -8,8 +8,9 @@
 // - No AutoMapper: the repositories already return camelCase DTOs.
 
 import { listEntries, upsertEntry, updateEntry } from '../db/repositories/entries.js';
-import { listMangas, createManga, updateManga } from '../db/repositories/mangas.js';
+import { listMangas, getMangaById, createManga, updateManga } from '../db/repositories/mangas.js';
 import { formats, publishers } from '../db/repositories/catalogs.js';
+import { detectDuplicateCandidates } from './duplicate-detection.js';
 
 export const TSV_HEADER = 'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial';
 
@@ -52,26 +53,119 @@ function findMangaByName(db, name) {
   return listMangas(db).find((m) => m.name.toLowerCase() === lower) ?? null;
 }
 
-export function importTsv(db, text, profileId) {
+function mangasWithCatalogs(db) {
+  const formatNames = new Map(formats.list(db).map((format) => [format.id, format.name]));
+  const publisherNames = new Map(
+    publishers.list(db).map((publisher) => [publisher.id, publisher.name])
+  );
+  return listMangas(db).map((manga) => ({
+    ...manga,
+    format: manga.formatId
+      ? { id: manga.formatId, name: formatNames.get(manga.formatId) ?? 'Unknown' }
+      : null,
+    publisher: manga.publisherId
+      ? { id: manga.publisherId, name: publisherNames.get(manga.publisherId) ?? 'Unknown' }
+      : null,
+  }));
+}
+
+function buildPreview(db, rows, profileId) {
+  const entriesByManga = new Map(
+    listEntries(db, profileId).map((entry) => [entry.mangaId, entry])
+  );
+  return {
+    totalRows: rows.length,
+    duplicates: detectDuplicateCandidates(rows, mangasWithCatalogs(db), entriesByManga),
+  };
+}
+
+export function previewTsvImport(db, text, profileId) {
+  return buildPreview(db, parseTsv(text, profileId), profileId);
+}
+
+const importError = (code) => Object.assign(new Error(code), { code });
+
+function decisionsByRow(decisions) {
+  const map = new Map();
+  for (const decision of decisions) {
+    if (!Number.isInteger(decision?.rowIndex) || typeof decision?.same !== 'boolean') {
+      throw importError('err.importDecisionInvalid');
+    }
+    map.set(decision.rowIndex, decision);
+  }
+  return map;
+}
+
+export function importTsv(db, text, profileId, decisions = null) {
   const rows = parseTsv(text, profileId);
+  const reviewMode = Array.isArray(decisions);
+  const preview = reviewMode ? buildPreview(db, rows, profileId) : null;
+  const duplicateByRow = new Map(
+    (preview?.duplicates ?? []).map((duplicate) => [duplicate.rowIndex, duplicate])
+  );
+  const decisionByRow = reviewMode ? decisionsByRow(decisions) : new Map();
+
+  if (reviewMode) {
+    for (const decision of decisionByRow.values()) {
+      if (!duplicateByRow.has(decision.rowIndex)) throw importError('err.importDecisionInvalid');
+    }
+    for (const rowIndex of duplicateByRow.keys()) {
+      if (!decisionByRow.has(rowIndex)) throw importError('err.importDecisionsMissing');
+    }
+  }
+
   const tx = db.transaction(() => {
     let imported = 0;
-    for (const row of rows) {
+    let merged = 0;
+    let created = 0;
+    const targets = new Map();
+
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
       const formatId = getOrCreate(formats, db, row.formatName);
       const publisherId = getOrCreate(publishers, db, row.publisherName);
-      let manga = findMangaByName(db, row.mangaName);
-      if (manga) {
+      const decision = decisionByRow.get(rowIndex);
+      let manga = null;
+
+      if (decision?.same) {
+        const duplicate = duplicateByRow.get(rowIndex);
+        const targetId =
+          duplicate.source === 'existing'
+            ? duplicate.candidate.mangaId
+            : targets.get(duplicate.candidate.rowIndex);
+        manga = getMangaById(db, targetId);
+        if (!manga) throw importError('err.importDecisionInvalid');
         if (manga.formatId !== formatId || manga.publisherId !== publisherId) {
           manga = updateManga(db, { ...manga, formatId, publisherId });
         }
-      } else {
+        merged += 1;
+      } else if (decision && decision.same === false) {
         manga = createManga(db, {
           name: row.mangaName,
           volumes: row.totalVolumes ?? 0,
           formatId,
           publisherId,
         });
+        created += 1;
+      } else {
+        manga = findMangaByName(db, row.mangaName);
+        if (manga) {
+          if (manga.formatId !== formatId || manga.publisherId !== publisherId) {
+            manga = updateManga(db, { ...manga, formatId, publisherId });
+          }
+          merged += 1;
+        } else {
+          manga = createManga(db, {
+            name: row.mangaName,
+            volumes: row.totalVolumes ?? 0,
+            formatId,
+            publisherId,
+          });
+          created += 1;
+        }
       }
+
+      targets.set(rowIndex, manga.id);
       upsertEntry(db, {
         mangaId: manga.id,
         profileId: row.profileId,
@@ -81,9 +175,11 @@ export function importTsv(db, text, profileId) {
       });
       imported += 1;
     }
-    return imported;
+
+    return { imported, merged, created };
   });
-  return { imported: tx() };
+
+  return tx();
 }
 
 export function exportTsv(db, profileId) {

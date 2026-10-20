@@ -164,6 +164,62 @@ describe('repositories', () => {
     assert.equal(listEntriesByProfiles(db, a.id, b.id).length, 2);
   });
 
+  it('priority: se limpia al completar y al subir el total de tomos', () => {
+    const profile = createProfile(db, 'p1');
+    const other = createProfile(db, 'p2');
+    const manga = createManga(db, { name: 'serie', volumes: 10 });
+
+    const incomplete = upsertEntry(db, {
+      mangaId: manga.id,
+      profileId: profile.id,
+      quantity: 5,
+      priority: true,
+    });
+    assert.equal(incomplete.priority, true);
+
+    const completed = upsertEntry(db, {
+      mangaId: manga.id,
+      profileId: profile.id,
+      quantity: 10,
+      priority: true,
+    });
+    assert.equal(completed.priority, false);
+    assert.equal(
+      db.prepare('SELECT IsPriority FROM Entry WHERE Id = ?').get(completed.id).IsPriority,
+      0
+    );
+
+    const ongoingManga = createManga(db, { name: 'ongoing' });
+    const ongoing = upsertEntry(db, {
+      mangaId: ongoingManga.id,
+      profileId: profile.id,
+      quantity: 99,
+      priority: true,
+    });
+    assert.equal(ongoing.priority, true);
+
+    const reopened = createManga(db, { name: 'reopened' });
+    upsertEntry(db, { mangaId: reopened.id, profileId: profile.id, quantity: 4, priority: true });
+    upsertEntry(db, { mangaId: reopened.id, profileId: other.id, quantity: 10, priority: true });
+    updateManga(db, { ...reopened, volumes: 10 });
+    const rows = db
+      .prepare('SELECT ProfileId, IsPriority FROM Entry WHERE MangaId = ? ORDER BY ProfileId')
+      .all(reopened.id);
+    assert.deepEqual(rows, [
+      { ProfileId: profile.id, IsPriority: 1 },
+      { ProfileId: other.id, IsPriority: 0 },
+    ]);
+    assert.equal(listEntries(db, other.id)[0].priority, false);
+  });
+
+  it('priority: no se restaura al volver a quedar incompleta', () => {
+    const profile = createProfile(db, 'p');
+    const manga = createManga(db, { name: 'serie', volumes: 10 });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 10, priority: true });
+    updateManga(db, { ...manga, volumes: 20 });
+    assert.equal(listEntries(db, profile.id)[0].priority, false);
+  });
+
   it('manga-external-refs: upsert, cover y remove por (manga, provider)', () => {
     const manga = createManga(db, { name: 'berserk', volumes: 41 });
     assert.equal(getRef(db, manga.id, 'anilist'), null);

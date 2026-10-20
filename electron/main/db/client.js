@@ -19,7 +19,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // v6 = recommender feedback: adds `RecommendationDismissal` and
 // `RecommendationSeen` (CREATE TABLE IF NOT EXISTS in the schema, so running the
 // schema on an existing v5 DB creates them without touching data).
-export const SCHEMA_VERSION = 6;
+// v7 = priority is only valid for incomplete series: clears `IsPriority` on
+// entries that are already complete (TotalVolumes > 0 and purchased >= total).
+// Idempotent and additive for the rest of the data.
+export const SCHEMA_VERSION = 7;
 const SCHEMA_FILE = path.join(__dirname, 'schema.sqlite.sql');
 
 function applyPragmas(db) {
@@ -53,6 +56,16 @@ export function openDb(dataDir) {
       // Idempotent (re-running changes nothing).
       db.exec(
         'UPDATE Manga SET IsAdult = 1 WHERE Id IN (SELECT MangaId FROM MangaExternalRef WHERE IsAdult = 1)'
+      );
+      db.exec(
+        `UPDATE Entry SET IsPriority = 0
+         WHERE IsPriority = 1
+           AND EXISTS (
+             SELECT 1 FROM Manga m
+             WHERE m.Id = Entry.MangaId
+               AND m.TotalVolumes > 0
+               AND Entry.PurchasedVolumes >= m.TotalVolumes
+           )`
       );
       db.pragma(`user_version = ${SCHEMA_VERSION}`);
     }

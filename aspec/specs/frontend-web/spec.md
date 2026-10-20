@@ -420,3 +420,114 @@ conservar su espaciado actual.
 
 - **WHEN** el usuario abre el alta/edición de entry, manga o perfil
 - **THEN** el espaciado de esos modales no cambia respecto del actual
+
+### Requirement: Pantalla de revisión de duplicados en la importación TSV
+
+The system SHALL mostrar, al final de la selección de un archivo TSV en Settings, una pantalla de
+revisión cuando la previsualización detecte posibles duplicados. La pantalla SHALL mostrar cada par como
+un card con la fila del archivo (título, comprados/total, pendiente, formato y editorial) y el candidato
+(manga existente con sus tomos, formato, editorial y la entry del perfil si existe, o la fila anterior del
+archivo). Cada card SHALL ofrecer las opciones mutuamente excluyentes **“Son lo mismo”** y
+**“No son lo mismo”**, SHALL indicar el progreso de resolución y NO SHALL permitir confirmar la
+importación hasta que todos los candidatos estén resueltos. Cancelar SHALL cerrar la revisión sin
+escribir. Al confirmar, la pantalla SHALL aplicar el import y mostrar un resumen con la cantidad de
+series importadas, fusionadas y creadas. Todos los textos SHALL estar localizados en ES/EN con paridad.
+
+#### Scenario: Abrir la revisión después de elegir el archivo
+
+- **WHEN** el usuario elige un TSV y la previsualización encuentra posibles duplicados
+- **THEN** Settings muestra la pantalla de revisión con los pares detectados y no aplica el import todavía
+
+#### Scenario: Confirmar deshabilitado hasta resolver todo
+
+- **WHEN** el usuario resolvió solo algunos de los candidatos
+- **THEN** el botón de importar permanece deshabilitado y se muestra cuántos faltan
+
+#### Scenario: Confirmar la importación
+
+- **WHEN** el usuario resolvió todos los candidatos y confirma
+- **THEN** el sistema aplica el import con las decisiones y muestra el resumen de importadas, fusionadas y creadas
+
+#### Scenario: Cancelar la revisión
+
+- **WHEN** el usuario cancela la pantalla de revisión
+- **THEN** la pantalla se cierra, se informa que no se guardó nada y la colección no cambia
+
+#### Scenario: Import sin duplicados
+
+- **WHEN** el usuario elige un TSV y la previsualización no encuentra candidatos
+- **THEN** el sistema importa directamente y muestra el resumen de éxito
+
+### Requirement: Prioridad visible solo en series incompletas
+
+The system SHALL tratar como **sin prioridad** a toda entry cuya serie esté completa
+(`manga.volumes > 0 && quantity >= volumes`), aun si el objeto de la entry trae `priority: true` por datos
+viejos. En la colección, los indicadores ⚡/⭐, el badge de prioridad, el filtro **Priority Only**, el
+conteo de prioridad y el orden por prioridad NO SHALL incluir series completas. En el modal de alta o
+edición de entry, el control de prioridad SHALL deshabilitarse cuando la cantidad seleccionada complete
+la serie, SHALL mostrarse sin marcar en ese caso y SHALL enviar `priority: false`; el modal SHALL explicar
+la regla con un texto localizado.
+
+#### Scenario: Serie completa con prioridad heredada
+
+- **WHEN** la colección recibe una entry completa con `priority: true`
+- **THEN** no muestra el indicador ni el badge de prioridad para esa entry
+
+#### Scenario: Filtrar por prioridad
+
+- **WHEN** el usuario elige el filtro **Priority Only**
+- **THEN** el resultado incluye solo series incompletas marcadas como prioridad, nunca series completas
+
+#### Scenario: Ordenar por prioridad
+
+- **WHEN** el usuario ordena la colección por prioridad
+- **THEN** las series completas no se tratan como prioritarias
+
+#### Scenario: Editar una entry que completa la serie
+
+- **WHEN** el usuario ingresa en el modal una cantidad mayor o igual al total de tomos
+- **THEN** el checkbox de prioridad queda deshabilitado y el envío usa `priority: false`
+
+### Requirement: Búsqueda de títulos en el modal de alta de manga
+
+The system SHALL ofrecer en el renderer, dentro del modal de alta de manga y **sólo en modo creación**,
+un buscador de títulos que consuma el canal `cover:search` a través de `localAdapter.js`, muestre los
+candidatos con portada, título, fuente y metadatos, y permita seleccionar uno. Al seleccionarlo el
+modal SHALL prefijar el nombre (editable), los volúmenes y el indicador +18 desde el candidato, y al
+confirmar SHALL crear el manga y su portada con un único llamado a `manga:create-from-candidate`. Sin
+candidato seleccionado, el modal SHALL conservar el alta manual por `manga:upsert`. El modal de edición
+NO SHALL mostrar el buscador. Todas las cadenas nuevas SHALL existir en ES y EN con paridad de claves.
+El modal SHALL mostrar estados de búsqueda (buscando, sin resultados, error) y SHALL avisar, de forma
+no bloqueante, cuando el título ya existe en la colección.
+
+#### Scenario: Buscar y elegir un candidato en el modal
+
+- **WHEN** el usuario busca un título en el modal de alta y elige un candidato
+- **THEN** el modal prefija nombre, volúmenes y +18 del candidato y muestra la portada elegida
+
+#### Scenario: Confirmar el alta desde un candidato
+
+- **WHEN** el usuario confirma el alta con un candidato seleccionado
+- **THEN** el renderer invoca `manga:create-from-candidate` una sola vez con el candidato y los datos
+  del formulario, y refresca la colección
+
+#### Scenario: Alta manual sin candidato
+
+- **WHEN** el usuario no selecciona ningún candidato
+- **THEN** el modal crea el manga por `manga:upsert` como hoy, sin cambios de comportamiento
+
+#### Scenario: Estados de búsqueda
+
+- **WHEN** la búsqueda no devuelve candidatos o falla por red
+- **THEN** el modal muestra el estado correspondiente (sin resultados / error) con su texto i18n y el
+  alta manual sigue disponible
+
+#### Scenario: Aviso de duplicado
+
+- **WHEN** el nombre del formulario coincide con un manga existente de la colección
+- **THEN** el modal muestra un aviso no bloqueante antes de crear
+
+#### Scenario: Sin buscador en edición
+
+- **WHEN** el modal se abre para editar un manga existente
+- **THEN** el buscador de AniList no se muestra y el formulario se comporta como hoy

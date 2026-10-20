@@ -132,17 +132,20 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
         setFilter('all');
     }, [selectedProfile]);
 
+    const isCompleteEntry = (entry) =>
+        !!entry.manga?.volumes && entry.quantity >= entry.manga.volumes;
+
+    const isPriorityEntry = (entry) => !!entry.priority && !isCompleteEntry(entry);
+
     const getCompletionPercentage = (entry) => {
         if (!entry.manga.volumes || entry.manga.volumes === 0) return null;
         return Math.round((entry.quantity / entry.manga.volumes) * 100);
     };
 
     const getEntryStatus = (entry) => {
-        const isComplete = entry.manga.volumes && entry.quantity >= entry.manga.volumes;
-        
-        if (isComplete) {
+        if (isCompleteEntry(entry)) {
             return 'complete';
-        } else if (entry.priority) {
+        } else if (isPriorityEntry(entry)) {
             return 'priority-incomplete';
         } else {
             return 'incomplete';
@@ -213,7 +216,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 case 'priority-incomplete':
                     return status === 'priority-incomplete';
                 case 'priority':
-                    return entry.priority;
+                    return isPriorityEntry(entry);
                 case 'pending':
                     return entry.pending && entry.pending.trim() !== '';
                 default:
@@ -278,7 +281,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                 const bPercent = getCompletionPercentage(b) || 0;
                 return bPercent - aPercent;
             case 'priority':
-                return b.priority - a.priority;
+                return Number(isPriorityEntry(b)) - Number(isPriorityEntry(a));
             case 'publisher':
                 return (a.manga?.publisher?.name || '').localeCompare(b.manga?.publisher?.name || '');
             case 'format':
@@ -369,7 +372,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                                     )}
                                 </td>
                                 <td className="priority-cell">
-                                    {entry.priority && (
+                                    {isPriorityEntry(entry) && (
                                         <span className="priority-indicator">⚡</span>
                                     )}
                                 </td>
@@ -412,7 +415,7 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                         <div className="compact-header">
                             <span className="compact-title">{entry.manga.name}</span>
                             <div className="compact-badges">
-                                {entry.priority && <span className="compact-priority">⚡</span>}
+                                {isPriorityEntry(entry) && <span className="compact-priority">⚡</span>}
                                 <span className={`compact-status ${status}`}>
                                     {status === 'complete' ? '✅' : 
                                      status === 'priority-incomplete' ? '⚡' : '❌'}
@@ -512,12 +515,12 @@ const CollectionView = ({ entries, loading = false, onRefresh, mangas = [], sele
                             {completionPercent !== null && (
                                 <span className={`card-cover-badge ${status}`}>{completionPercent}%</span>
                             )}
-                            {entry.priority && <span className="card-cover-priority">⭐</span>}
+                            {isPriorityEntry(entry) && <span className="card-cover-priority">⭐</span>}
                         </div>
                         <div className="entry-header">
                             <h3 className="manga-title">{entry.manga.name}</h3>
                             <div className="entry-badges">
-                                {entry.priority && <span className="priority-badge">{t('collection.priorityBadge')}</span>}
+                                {isPriorityEntry(entry) && <span className="priority-badge">{t('collection.priorityBadge')}</span>}
                                 <span className={`status-badge ${status}`}>
                                     {status === 'complete' ? '✅' : 
                                      status === 'priority-incomplete' ? '⚡' : '❌'}
