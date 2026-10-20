@@ -437,3 +437,176 @@ describe('AddMangaModal: estado de envío y cierre', () => {
     expect(props.onClose).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('AddMangaModal: búsqueda en AniList', () => {
+  const candidate = {
+    id: 105778,
+    title: 'Chainsaw Man',
+    coverUrl: 'https://img/c.png',
+    format: 'MANGA',
+    volumes: 24,
+    year: 2018,
+    isAdult: false,
+    source: 'anilist',
+    provider: 'anilist',
+    altTitles: [],
+  }
+
+  const withSearch = (results, { searchError = false, createResponse } = {}) => {
+    global.fetch.mockImplementation((url, options = {}) => {
+      const u = String(url)
+      const method = (options.method || 'GET').toUpperCase()
+      if (u === '/api/format' && method === 'GET') {
+        return Promise.resolve({ ok: true, json: async () => formats })
+      }
+      if (u === '/api/publisher' && method === 'GET') {
+        return Promise.resolve({ ok: true, json: async () => publishers })
+      }
+      if (u.startsWith('/api/cover/search')) {
+        return searchError
+          ? Promise.reject(new Error('net'))
+          : Promise.resolve({ ok: true, json: async () => results })
+      }
+      if (u === '/api/manga/from-candidate' && method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          json: async () =>
+            createResponse ?? { manga: { id: 1 }, coverUrl: 'x', coverError: false },
+        })
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) })
+    })
+  }
+
+  const search = async (user, query = 'Chainsaw Man') => {
+    await user.type(screen.getByLabelText('Buscar en AniList'), query)
+    await user.click(screen.getByRole('button', { name: 'Buscar' }))
+  }
+
+  const selectCandidate = async (user, title = 'Chainsaw Man') => {
+    await user.click(await screen.findByTitle(`Elegir ${title}`))
+  }
+
+  it('busca y muestra candidatos con metadatos', async () => {
+    const user = userEvent.setup()
+    withSearch([candidate])
+    setup()
+    await waitCatalog()
+    await search(user)
+    expect(await screen.findByTitle('Elegir Chainsaw Man')).toBeInTheDocument()
+    expect(screen.getByText('AniList')).toBeInTheDocument()
+    expect(screen.getByText(/24 tomos/)).toBeInTheDocument()
+  })
+
+  it('muestra sin resultados y error de búsqueda', async () => {
+    const user = userEvent.setup()
+    withSearch([])
+    setup()
+    await waitCatalog()
+    await search(user)
+    expect(await screen.findByText('No se encontraron resultados.')).toBeInTheDocument()
+  })
+
+  it('muestra el error cuando la búsqueda falla', async () => {
+    const user = userEvent.setup()
+    withSearch([], { searchError: true })
+    setup()
+    await waitCatalog()
+    await search(user)
+    expect(
+      await screen.findByText('No se pudo buscar. Probá de nuevo o creá el manga manualmente.')
+    ).toBeInTheDocument()
+  })
+
+  it('prefija nombre, volúmenes y +18 al elegir un candidato', async () => {
+    const user = userEvent.setup()
+    withSearch([{ ...candidate, isAdult: true }])
+    setup()
+    await waitCatalog()
+    await search(user)
+    await selectCandidate(user)
+    await selectCandidate(user)
+    expect(screen.getByLabelText(/Manga Name/)).toHaveValue('Chainsaw Man')
+    expect(screen.getByLabelText(/Total Volumes/)).toHaveValue(24)
+    expect(screen.getByLabelText(/Contenido \+18/)).toBeChecked()
+    expect(screen.getByText('Candidato seleccionado')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Quitar' }))
+    expect(screen.queryByText('Candidato seleccionado')).not.toBeInTheDocument()
+  })
+
+  it('crea desde el candidato con un solo canal y cierra', async () => {
+    const user = userEvent.setup()
+    withSearch([candidate])
+    const { props, container } = setup()
+    await waitCatalog()
+    await search(user)
+    await selectCandidate(user)
+    await user.selectOptions(screen.getByLabelText(/Format/), '1')
+    await user.selectOptions(screen.getByLabelText(/Publisher/), '1')
+    submit(container)
+
+    await waitFor(() => expect(props.onSuccess).toHaveBeenCalled())
+    expect(props.onClose).toHaveBeenCalled()
+    const body = lastPostBody('/api/manga/from-candidate')
+    expect(body).toMatchObject({
+      candidate: { id: 105778 },
+      name: 'Chainsaw Man',
+      volumes: 24,
+      formatId: 1,
+      publisherId: 1,
+      isAdult: false,
+    })
+  })
+
+  it('avisa si la portada no se pudo descargar y no cierra', async () => {
+    const user = userEvent.setup()
+    withSearch([candidate], { createResponse: { manga: { id: 1 }, coverUrl: null, coverError: true } })
+    const { props, container } = setup()
+    await waitCatalog()
+    await search(user)
+    await selectCandidate(user)
+    await user.selectOptions(screen.getByLabelText(/Format/), '1')
+    await user.selectOptions(screen.getByLabelText(/Publisher/), '1')
+    submit(container)
+
+    expect(
+      await screen.findByText(
+        'El manga se creó, pero no se pudo descargar la portada. Podés vincularla después.'
+      )
+    ).toBeInTheDocument()
+    expect(props.onSuccess).toHaveBeenCalled()
+    expect(props.onClose).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Create Manga' })).toBeDisabled()
+  })
+
+  it('oculta el buscador en edición', async () => {
+    catalogFetch()
+    setup({ editManga: { id: 3, name: 'Old', volumes: 7, formatId: 2, publisherId: 1 } })
+    await waitCatalog()
+    expect(screen.queryByLabelText('Buscar en AniList')).not.toBeInTheDocument()
+  })
+
+  it('avisa de un título duplicado sin bloquear el alta', async () => {
+    const user = userEvent.setup()
+    catalogFetch()
+    setup({ mangas: [{ id: 9, name: 'Naruto' }] })
+    await waitCatalog()
+    await user.type(screen.getByLabelText(/Manga Name/), 'naruto')
+    expect(
+      screen.getByText('Ya existe un manga con ese título. Podés crearlo igual.')
+    ).toBeInTheDocument()
+  })
+
+  it('revela un candidato +18 antes de seleccionarlo', async () => {
+    const user = userEvent.setup()
+    withSearch([{ ...candidate, isAdult: true }])
+    setup({ showAdultCovers: false })
+    await waitCatalog()
+    await search(user)
+    const button = await screen.findByTitle('Elegir Chainsaw Man')
+    await user.click(button)
+    expect(screen.getByLabelText(/Manga Name/)).toHaveValue('')
+    await user.click(button)
+    expect(screen.getByLabelText(/Manga Name/)).toHaveValue('Chainsaw Man')
+  })
+})

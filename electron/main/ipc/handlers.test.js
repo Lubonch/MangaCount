@@ -121,7 +121,45 @@ describe('ipc handlers (ctx puro)', () => {
     const tsv = 'Titulo\tComprados\tTotal\nNaruto\t1\t72';
     assert.deepEqual(handlers['entry:import'](ctx, { profileId: profile.id, tsv }), {
       imported: 1,
+      merged: 0,
+      created: 1,
     });
+  });
+
+  it('entry:import-preview detecta candidatos y entry:import aplica decisiones', () => {
+    const profile = handlers['profile:upsert'](ctx, { name: 'u' });
+    const manga = handlers['manga:upsert'](ctx, { name: 'Kamen Rider Kuuga', volumes: 10 });
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini';
+
+    assert.throws(
+      () => handlers['entry:import-preview'](ctx, { profileId: 0, tsv }),
+      /profileId inválido/
+    );
+    assert.throws(
+      () => handlers['entry:import-preview'](ctx, { profileId: profile.id, tsv: '' }),
+      /TSV vacío/
+    );
+
+    const preview = handlers['entry:import-preview'](ctx, { profileId: profile.id, tsv });
+    assert.equal(preview.totalRows, 1);
+    assert.equal(preview.duplicates[0].candidate.mangaId, manga.id);
+    assert.equal(handlers['entry:list'](ctx, profile.id).length, 0);
+
+    assert.throws(
+      () => handlers['entry:import'](ctx, { profileId: profile.id, tsv, decisions: [] }),
+      /Faltan decisiones/
+    );
+    assert.deepEqual(
+      handlers['entry:import'](ctx, {
+        profileId: profile.id,
+        tsv,
+        decisions: [{ rowIndex: 0, same: true }],
+      }),
+      { imported: 1, merged: 1, created: 0 }
+    );
+    assert.equal(handlers['entry:list'](ctx, profile.id)[0].mangaId, manga.id);
   });
 
   it('entry:used-formats/publishers omiten entradas sin catálogo, agrupan y ordenan', () => {
@@ -200,6 +238,95 @@ describe('ipc handlers (ctx puro)', () => {
     assert.equal(refreshed.coverUrl, linked.coverUrl);
     assert.deepEqual(await handlers['cover:unlink'](ctx, manga.id), { ok: true });
     assert.equal(await handlers['cover:status'](ctx, manga.id), null);
+  });
+
+  it('manga:create-from-candidate crea el manga con portada y vínculo', async () => {
+    const format = handlers['format:create'](ctx, { name: 'Tankoubon' });
+    const publisher = handlers['publisher:create'](ctx, { name: 'Ivrea' });
+    globalThis.fetch = async () => imageResponse();
+
+    const out = await handlers['manga:create-from-candidate'](ctx, {
+      candidate: {
+        id: 105778,
+        title: 'Chainsaw Man',
+        coverUrl: 'https://img/c.png',
+        isAdult: false,
+        provider: 'anilist',
+      },
+      name: 'Chainsaw Man',
+      volumes: 24,
+      formatId: format.id,
+      publisherId: publisher.id,
+      isAdult: false,
+    });
+
+    assert.equal(out.coverError, false);
+    assert.equal(out.manga.name, 'Chainsaw Man');
+    assert.equal(out.manga.volumes, 24);
+    assert.match(out.coverUrl, /covers/);
+    assert.equal(handlers['cover:status'](ctx, out.manga.id).externalId, '105778');
+  });
+
+  it('manga:create-from-candidate promueve +18 y tolera el fallo de portada', async () => {
+    const format = handlers['format:create'](ctx, { name: 'Tankoubon' });
+    const publisher = handlers['publisher:create'](ctx, { name: 'Ivrea' });
+    globalThis.fetch = async () => imageResponse();
+
+    const adult = await handlers['manga:create-from-candidate'](ctx, {
+      candidate: {
+        id: 42,
+        title: 'Adult',
+        coverUrl: 'https://img/a.png',
+        isAdult: true,
+      },
+      name: 'Adult',
+      formatId: format.id,
+      publisherId: publisher.id,
+      isAdult: true,
+    });
+    assert.equal(adult.manga.isAdult, true);
+
+    globalThis.fetch = async () => ({ ok: false, status: 500, headers: { get: () => null } });
+    const failed = await handlers['manga:create-from-candidate'](ctx, {
+      candidate: {
+        id: 43,
+        title: 'Sin portada',
+        coverUrl: 'https://img/fail.png',
+        isAdult: false,
+      },
+      name: 'Sin portada',
+      formatId: format.id,
+      publisherId: publisher.id,
+    });
+    assert.equal(failed.coverError, true);
+    assert.equal(failed.coverUrl, null);
+    assert.equal(failed.manga.name, 'Sin portada');
+    assert.equal(handlers['cover:status'](ctx, failed.manga.id), null);
+  });
+
+  it('manga:create-from-candidate valida candidato, nombre y catálogos', async () => {
+    const format = handlers['format:create'](ctx, { name: 'Tankoubon' });
+    const publisher = handlers['publisher:create'](ctx, { name: 'Ivrea' });
+    await assert.rejects(
+      handlers['manga:create-from-candidate'](ctx, { name: 'X' }),
+      /Candidato inválido/
+    );
+    await assert.rejects(
+      handlers['manga:create-from-candidate'](ctx, {
+        candidate: { id: 1 },
+        name: '   ',
+      }),
+      /nombre para el manga/
+    );
+    await assert.rejects(
+      handlers['manga:create-from-candidate'](ctx, {
+        candidate: { id: 1, title: 'X' },
+        name: 'X',
+      }),
+      /formato y una editorial/
+    );
+    assert.ok(format.id);
+    assert.ok(publisher.id);
   });
 
   it('cover:auto hace match único y descarga la portada', async () => {

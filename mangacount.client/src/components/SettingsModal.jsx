@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './SettingsModal.css';
 import NukeDataModal from './NukeDataModal';
+import ImportDuplicatesModal from './ImportDuplicatesModal';
 import { useI18n } from '../contexts/I18nContext';
 import {
   backupConfigGet,
@@ -25,6 +26,8 @@ import {
   pickDirectory,
   pickFile,
   entryExport,
+  entryImportPreview,
+  entryImportCommit,
   mangaList,
   coverAll,
   coverAuto,
@@ -71,6 +74,9 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   const [backupError, setBackupError] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState('');
+  const [importReview, setImportReview] = useState(null);
+  const [importReviewError, setImportReviewError] = useState('');
+  const [isCommittingImport, setIsCommittingImport] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showNuke, setShowNuke] = useState(false);
   const [version, setVersion] = useState(null);
@@ -344,31 +350,71 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
   };
 
   const handleImport = async (event) => {
-    const file = event.target.files[0];
+    const input = event.target;
+    const file = input.files[0];
     if (!file) return;
     if (!file.name.endsWith('.tsv')) {
       setImportMessage(t('settings.importNoFile'));
       return;
     }
     setIsImporting(true);
+    setImportReviewError('');
     setImportMessage(t('settings.importRunning'));
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await fetch(`/api/entry/import/${selectedProfile.id}`, { method: 'POST', body: formData });
-      if (response.ok) {
-        setImportMessage(t('settings.importOk'));
-        onImportSuccess?.();
-        event.target.value = '';
+      const tsv = await file.text();
+      const preview = await entryImportPreview(selectedProfile.id, tsv);
+      if (preview?.duplicates?.length) {
+        setImportReview({ tsv, duplicates: preview.duplicates });
+        setImportMessage('');
       } else {
-        const error = await response.json();
-        setImportMessage(`Falló la importación: ${error.message || 'error desconocido'}`);
+        const result = await entryImportCommit(selectedProfile.id, tsv, []);
+        setImportMessage(
+          t('settings.importOkSummary', {
+            imported: result?.imported ?? 0,
+            merged: result?.merged ?? 0,
+            created: result?.created ?? 0,
+          })
+        );
+        onImportSuccess?.();
       }
+      input.value = '';
     } catch (error) {
-      setImportMessage('Falló la importación: ' + error.message);
+      setImportMessage(
+        t('settings.importFailed', { error: error.message || t('settings.unknownError') })
+      );
     } finally {
       setIsImporting(false);
     }
+  };
+
+  const handleConfirmImportReview = async (decisions) => {
+    if (!importReview || !selectedProfile) return;
+    setIsCommittingImport(true);
+    setImportReviewError('');
+    try {
+      const result = await entryImportCommit(selectedProfile.id, importReview.tsv, decisions);
+      setImportReview(null);
+      setImportMessage(
+        t('settings.importOkSummary', {
+          imported: result?.imported ?? 0,
+          merged: result?.merged ?? 0,
+          created: result?.created ?? 0,
+        })
+      );
+      onImportSuccess?.();
+    } catch (error) {
+      setImportReviewError(
+        t('settings.importFailed', { error: error.message || t('settings.unknownError') })
+      );
+    } finally {
+      setIsCommittingImport(false);
+    }
+  };
+
+  const handleCancelImportReview = () => {
+    setImportReview(null);
+    setImportReviewError('');
+    setImportMessage(t('settings.importCancelled'));
   };
 
   const handleExport = async () => {
@@ -619,7 +665,7 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
                 type="file"
                 accept=".tsv"
                 onChange={handleImport}
-                disabled={isImporting || !selectedProfile}
+                disabled={isImporting || !selectedProfile || !!importReview}
                 className="settings-file-input"
                 id="settings-tsv-import"
               />
@@ -910,6 +956,17 @@ const SettingsModal = ({ isOpen, onClose, selectedProfile, onImportSuccess, onDa
           (onDataReset ?? onImportSuccess)?.();
         }}
       />
+
+      {importReview && (
+        <ImportDuplicatesModal
+          isOpen
+          duplicates={importReview.duplicates}
+          isCommitting={isCommittingImport}
+          error={importReviewError}
+          onConfirm={handleConfirmImportReview}
+          onCancel={handleCancelImportReview}
+        />
+      )}
     </div>
   );
 };

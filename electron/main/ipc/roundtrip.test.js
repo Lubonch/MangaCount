@@ -50,7 +50,7 @@ describe('ipc roundtrip por canal', () => {
   it('filas 5-9: entries + import/export + filtros', async () => {
     const profile = await api.profileUpsert({ name: 'yo' });
     const tsv = 'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\nberserk\t3\t41\t\tFalse\tFalse\tTankoubon\tPanini';
-    assert.deepEqual(await api.entryImport(profile.id, tsv), { imported: 1 });
+    assert.deepEqual(await api.entryImport(profile.id, tsv), { imported: 1, merged: 0, created: 1 });
     const list = await api.entryList(profile.id);
     assert.equal(list.length, 1);
     assert.equal((await api.entryGet(list[0].id)).quantity, 3);

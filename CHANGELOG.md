@@ -3,6 +3,29 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.5.0] - 2026-10-19
+
+### Added
+
+- **Revisión de duplicados al importar TSV**: antes de escribir, el import muestra los posibles
+  duplicados (contra la colección y contra el mismo archivo) y permite resolver cada par con “Son lo
+  mismo” o “No son lo mismo”. El commit es atómico y no escribe nada hasta confirmar.
+- **Alta de manga buscando en AniList**: el modal de alta permite buscar el título, elegir un candidato
+  y crear el manga con su portada y referencia externa en un solo paso, prefijando título, volúmenes y
+  +18. El alta manual sigue disponible cuando no hay coincidencia.
+
+### Changed
+
+- **La prioridad sólo aplica a series incompletas**: al completar una serie se limpia el flag de
+  prioridad de forma persistente. La regla se aplica en la capa de datos (lectura y escritura), al
+  cambiar el total de tomos y mediante la migración de esquema **v7** para datos existentes. La
+  colección, el bot y la exportación TSV respetan el mismo criterio.
+
+### Fixed
+
+- Series terminadas que seguían apareciendo como prioridad.
+- Mangas duplicados creados por variaciones de título al importar TSV.
+
 ## [2.2.6] - 2026-10-18
 
 ### Fixed

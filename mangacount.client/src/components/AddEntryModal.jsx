@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import './AddEntryModal.css';
 import { useT } from '../contexts/I18nContext';
 
+const completesSeries = (volumes, quantity) => volumes > 0 && Number.parseInt(quantity, 10) >= volumes;
+
 const AddEntryModal = ({ 
     isOpen, 
     onClose, 
@@ -67,15 +69,18 @@ const AddEntryModal = ({
         }
 
         try {
-            const selectedManga = mangas.find(m => m.id === parseInt(formData.mangaId));
+            const selectedManga = editEntry?.manga ?? mangas.find(m => m.id === parseInt(formData.mangaId));
+            const quantity = parseInt(formData.quantity);
             const entryData = {
                 id: editEntry ? editEntry.id : 0,
                 manga: selectedManga,
                 mangaId: parseInt(formData.mangaId),
                 profileId,
-                quantity: parseInt(formData.quantity),
+                quantity,
                 pending: formData.pending || null,
-                priority: formData.priority
+                priority: completesSeries(selectedManga?.volumes ?? 0, quantity)
+                    ? false
+                    : formData.priority
             };
 
             // Always use POST - the service determines create vs update based on ID
@@ -112,6 +117,10 @@ const AddEntryModal = ({
     if (!isOpen) return null;
 
     const isEditing = !!editEntry;
+    const selectedManga = isEditing
+        ? editEntry.manga
+        : mangas.find((manga) => manga.id === parseInt(formData.mangaId));
+    const priorityDisabled = completesSeries(selectedManga?.volumes ?? 0, formData.quantity);
 
     return (
         <div className="modal-overlay">
@@ -210,11 +219,15 @@ const AddEntryModal = ({
                                 type="checkbox"
                                 id="priority"
                                 name="priority"
-                                checked={formData.priority}
+                                checked={formData.priority && !priorityDisabled}
                                 onChange={handleInputChange}
+                                disabled={priorityDisabled}
                             />
                             {t('addEntry.priority')}
                         </label>
+                        {priorityDisabled && (
+                            <small>{t('addEntry.priorityComplete')}</small>
+                        )}
                     </div>
 
                     {error && <div className="error-message">{error}</div>}

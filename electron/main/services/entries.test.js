@@ -7,7 +7,7 @@ import { openDb } from '../db/client.js';
 import { createProfile } from '../db/repositories/profiles.js';
 import { createManga } from '../db/repositories/mangas.js';
 import { upsertEntry } from '../db/repositories/entries.js';
-import { parseTsv, importTsv, exportTsv } from './entries.js';
+import { parseTsv, previewTsvImport, importTsv, exportTsv } from './entries.js';
 import { handlers } from '../ipc/handlers.js';
 
 const SAMPLE = [
@@ -50,11 +50,102 @@ describe('services/entries', () => {
   });
 
   it('importa creando mangas y reimportar actualiza sin duplicar', () => {
-    assert.deepEqual(importTsv(db, SAMPLE, 1), { imported: 2 });
-    assert.deepEqual(importTsv(db, SAMPLE, 1), { imported: 2 });
+    assert.deepEqual(importTsv(db, SAMPLE, 1), { imported: 2, merged: 0, created: 2 });
+    assert.deepEqual(importTsv(db, SAMPLE, 1), { imported: 2, merged: 2, created: 0 });
     const viaIpc = handlers['entry:list'](ctx(), 1);
     assert.equal(viaIpc.length, 2);
     assert.equal(viaIpc.find((e) => e.manga.name === 'berserk').quantity, 10);
+  });
+
+  it('previsualiza duplicados sin escribir en la base', () => {
+    const manga = createManga(db, { name: 'Kamen Rider Kuuga', volumes: 10 });
+    upsertEntry(db, { mangaId: manga.id, profileId: profile.id, quantity: 4 });
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini';
+
+    const preview = previewTsvImport(db, tsv, profile.id);
+    assert.equal(preview.totalRows, 1);
+    assert.equal(preview.duplicates.length, 1);
+    assert.equal(preview.duplicates[0].source, 'existing');
+    assert.equal(preview.duplicates[0].candidate.mangaId, manga.id);
+    assert.equal(preview.duplicates[0].candidate.entry.quantity, 4);
+    assert.equal(handlers['manga:list']({ db }).length, 1);
+    assert.equal(handlers['entry:list'](ctx(), profile.id).length, 1);
+  });
+
+  it('commit “son lo mismo” reutiliza el manga existente', () => {
+    const manga = createManga(db, { name: 'Kamen Rider Kuuga', volumes: 10 });
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini';
+
+    const result = importTsv(db, tsv, profile.id, [{ rowIndex: 0, same: true }]);
+    assert.deepEqual(result, { imported: 1, merged: 1, created: 0 });
+    const mangas = handlers['manga:list']({ db });
+    assert.equal(mangas.length, 1);
+    assert.equal(mangas[0].id, manga.id);
+    assert.equal(handlers['entry:list'](ctx(), profile.id)[0].quantity, 5);
+  });
+
+  it('commit “no son lo mismo” crea un manga nuevo', () => {
+    createManga(db, { name: 'Kamen Rider Kuuga', volumes: 10 });
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini';
+
+    const result = importTsv(db, tsv, profile.id, [{ rowIndex: 0, same: false }]);
+    assert.deepEqual(result, { imported: 1, merged: 0, created: 1 });
+    const names = handlers['manga:list']({ db }).map((m) => m.name).sort();
+    assert.deepEqual(names, ['Kamen Rider Kuuga', 'Kuuga']);
+  });
+
+  it('commit “son lo mismo” resuelve un duplicado interno del lote', () => {
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini\n' +
+      'Kamen Rider Kuuga\t2\t10\t\tFalse\tFalse\tB6\tPanini';
+    const preview = previewTsvImport(db, tsv, profile.id);
+    assert.equal(preview.duplicates.length, 1);
+    assert.equal(preview.duplicates[0].rowIndex, 1);
+    assert.equal(preview.duplicates[0].source, 'batch');
+
+    const result = importTsv(db, tsv, profile.id, [{ rowIndex: 1, same: true }]);
+    assert.deepEqual(result, { imported: 2, merged: 1, created: 1 });
+    assert.equal(handlers['manga:list']({ db }).length, 1);
+    const entries = handlers['entry:list'](ctx(), profile.id);
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].quantity, 2);
+  });
+
+  it('rechaza el commit si falta una decisión y no escribe nada', () => {
+    createManga(db, { name: 'Kamen Rider Kuuga', volumes: 10 });
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini';
+
+    assert.throws(
+      () => importTsv(db, tsv, profile.id, []),
+      (error) => error.code === 'err.importDecisionsMissing'
+    );
+    assert.equal(handlers['entry:list'](ctx(), profile.id).length, 0);
+  });
+
+  it('rechaza decisiones inválidas', () => {
+    createManga(db, { name: 'Kamen Rider Kuuga', volumes: 10 });
+    const tsv =
+      'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
+      'Kuuga\t5\t10\t\tFalse\tFalse\tB6\tPanini';
+
+    assert.throws(
+      () => importTsv(db, tsv, profile.id, [{ rowIndex: 0, same: 'yes' }]),
+      (error) => error.code === 'err.importDecisionInvalid'
+    );
+    assert.throws(
+      () => importTsv(db, tsv, profile.id, [{ rowIndex: 99, same: true }]),
+      (error) => error.code === 'err.importDecisionInvalid'
+    );
+    assert.equal(handlers['entry:list'](ctx(), profile.id).length, 0);
   });
 
   it('exporta las 8 columnas con round-trip', () => {
@@ -120,7 +211,7 @@ describe('services/entries', () => {
     const tsv =
       'Titulo\tComprados\tTotal\tPendiente\tCompleta\tPrioridad\tFormato\tEditorial\n' +
       'sin-total\t1\t\t\tFalse\tTrue\t   \t';
-    assert.deepEqual(importTsv(db, tsv, profile.id), { imported: 1 });
+    assert.deepEqual(importTsv(db, tsv, profile.id), { imported: 1, merged: 0, created: 1 });
     const manga = handlers['manga:list']({ db })[0];
     assert.equal(manga.volumes, 0); // totalVolumes null -> 0
     assert.equal(manga.name, 'sin-total');

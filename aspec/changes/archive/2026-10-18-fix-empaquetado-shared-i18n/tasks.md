@@ -25,7 +25,7 @@
 
 ## Fase 5 — Release 2.2.6
 
-- [ ] 5.1 Bump a `2.2.6` (`package.json`, lock y `PKGBUILD`) y entrada `CHANGELOG`.
-- [ ] 5.2 Gates: `npm test`, `npm run test:coverage`, `npm run test:renderer:coverage`, `npm run lint:renderer`, `npm run build:renderer`, `npm run smoke:package`.
-- [ ] 5.3 Merge a `develop`, PR `develop → main`, merge, tag `v2.2.6` y publicar el release.
-- [ ] 5.4 Verificación manual: descargar el AppImage de la 2.2.6 y abrir la app.
+- [x] 5.1 Bump a `2.2.6` (`package.json`, lock y `PKGBUILD`) y entrada `CHANGELOG`.
+- [x] 5.2 Gates: `npm test`, `npm run test:coverage`, `npm run test:renderer:coverage`, `npm run lint:renderer`, `npm run build:renderer`, `npm run smoke:package`.
+- [x] 5.3 Merge a `develop`, PR `develop → main`, merge, tag `v2.2.6` y publicar el release.
+- [x] 5.4 Verificación manual: descargar el AppImage de la 2.2.6 y abrir la app.
