@@ -2,6 +2,14 @@
 // and the upsert ON CONFLICT(ProfileId, MangaId) (SQLite supports the same syntax).
 // DTO: {id, mangaId, profileId, quantity, pending, priority, manga: {...}}.
 
+const isComplete = (quantity, volumes) => volumes > 0 && quantity >= volumes;
+
+function effectivePriority(db, { mangaId, quantity, priority }) {
+  if (!priority) return false;
+  const manga = db.prepare('SELECT TotalVolumes AS volumes FROM Manga WHERE Id = ?').get(mangaId);
+  return !isComplete(quantity, manga?.volumes ?? 0);
+}
+
 function mapRow(r) {
   if (!r) return null;
   return {
@@ -10,7 +18,7 @@ function mapRow(r) {
     profileId: r.profileId,
     quantity: r.quantity,
     pending: r.pending,
-    priority: !!r.priority,
+    priority: !!r.priority && !isComplete(r.quantity, r.manga_volumes),
     manga: r.manga_id
       ? {
           id: r.manga_id,
@@ -54,6 +62,7 @@ export function getEntryById(db, id) {
 }
 
 export function upsertEntry(db, { mangaId, profileId, quantity = 0, pending = null, priority = false }) {
+  const storedPriority = effectivePriority(db, { mangaId, quantity, priority });
   const info = db
     .prepare(
       `INSERT INTO Entry (MangaId, ProfileId, PurchasedVolumes, PendingVolumes, IsPriority)
@@ -64,16 +73,25 @@ export function upsertEntry(db, { mangaId, profileId, quantity = 0, pending = nu
          IsPriority = excluded.IsPriority
        RETURNING Id AS id`
     )
-    .get(mangaId, profileId, quantity, pending, priority ? 1 : 0);
+    .get(mangaId, profileId, quantity, pending, storedPriority ? 1 : 0);
   return getEntryById(db, info.id);
 }
 
 export function updateEntry(db, { id, mangaId, profileId, quantity, pending, priority }) {
+  const storedPriority = effectivePriority(db, { mangaId, quantity, priority });
   db.prepare(
     `UPDATE Entry SET MangaId = ?, ProfileId = ?, IsPriority = ?,
        PendingVolumes = ?, PurchasedVolumes = ? WHERE Id = ?`
-  ).run(mangaId, profileId, priority ? 1 : 0, pending, quantity, id);
+  ).run(mangaId, profileId, storedPriority ? 1 : 0, pending, quantity, id);
   return getEntryById(db, id);
+}
+
+export function clearCompletedPriority(db, mangaId, volumes) {
+  if (!(volumes > 0)) return;
+  db.prepare(
+    `UPDATE Entry SET IsPriority = 0
+     WHERE MangaId = ? AND IsPriority = 1 AND PurchasedVolumes >= ?`
+  ).run(mangaId, volumes);
 }
 
 export function listEntriesByProfiles(db, profileId1, profileId2) {

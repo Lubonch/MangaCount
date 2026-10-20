@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import './AddMangaModal.css';
 import { useT } from '../contexts/I18nContext';
+import { coverSearch, mangaCreateFromCandidate } from '../api/localAdapter';
 
 const AddMangaModal = ({ 
     isOpen, 
     onClose, 
     onSuccess,
-    editManga = null
+    editManga = null,
+    mangas = [],
+    showAdultCovers = false
 }) => {
     const t = useT();
     const [formData, setFormData] = useState({
@@ -24,6 +27,13 @@ const AddMangaModal = ({
     const [showAddPublisher, setShowAddPublisher] = useState(false);
     const [newFormatName, setNewFormatName] = useState('');
     const [newPublisherName, setNewPublisherName] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchError, setSearchError] = useState('');
+    const [selectedCandidate, setSelectedCandidate] = useState(null);
+    const [revealedCandidates, setRevealedCandidates] = useState({});
+    const [coverWarning, setCoverWarning] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -49,8 +59,15 @@ const AddMangaModal = ({
                 publisherId: '',
                 isAdult: false
             });
+            setSearchQuery('');
+            setSearchResults([]);
+            setSearchError('');
+            setIsSearching(false);
+            setSelectedCandidate(null);
+            setRevealedCandidates({});
         }
         setError('');
+        setCoverWarning('');
     }, [editManga, isOpen]);
 
     const loadFormats = async () => {
@@ -133,6 +150,57 @@ const AddMangaModal = ({
         }
     };
 
+    const runSearch = async () => {
+        const query = searchQuery.trim();
+        if (!query) return;
+        setIsSearching(true);
+        setSearchError('');
+        try {
+            const found = await coverSearch(query);
+            const list = Array.isArray(found) ? found : [];
+            setSearchResults(list);
+            if (list.length === 0) setSearchError(t('addManga.noResults'));
+        } catch {
+            setSearchResults([]);
+            setSearchError(t('addManga.searchError'));
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const selectCandidate = (candidate) => {
+        setSelectedCandidate(candidate);
+        setFormData((prev) => ({
+            ...prev,
+            name: candidate.title || prev.name,
+            volumes: candidate.volumes ? String(candidate.volumes) : '',
+            isAdult: candidate.isAdult === true,
+        }));
+        setSearchError('');
+    };
+
+    const isRevealed = (candidate) =>
+        candidate.isAdult === true && !showAdultCovers && revealedCandidates[candidate.id] === true;
+
+    const handleCandidateClick = (candidate) => {
+        if (candidate.isAdult === true && !showAdultCovers && !revealedCandidates[candidate.id]) {
+            setRevealedCandidates((prev) => ({ ...prev, [candidate.id]: true }));
+            return;
+        }
+        selectCandidate(candidate);
+    };
+
+    const candidateClassName = (candidate) =>
+        [
+            'manga-candidate',
+            candidate.isAdult ? 'manga-candidate--adult' : '',
+            candidate.isAdult && showAdultCovers ? 'manga-candidate--reveal-hover' : '',
+            isRevealed(candidate) ? 'manga-candidate--revealed' : '',
+            selectedCandidate?.id === candidate.id ? 'manga-candidate--selected' : '',
+        ]
+            .filter(Boolean)
+            .join(' ');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -166,6 +234,34 @@ const AddMangaModal = ({
                 isAdult: formData.isAdult === true
             };
 
+            if (!editManga && selectedCandidate) {
+                const result = await mangaCreateFromCandidate({
+                    candidate: selectedCandidate,
+                    name: mangaData.name,
+                    volumes: mangaData.volumes,
+                    formatId: mangaData.formatId,
+                    publisherId: mangaData.publisherId,
+                    isAdult: mangaData.isAdult,
+                });
+                onSuccess();
+                if (result?.coverError) {
+                    setCoverWarning(t('addManga.coverUnavailable'));
+                    return;
+                }
+                onClose();
+                setFormData({
+                    name: '',
+                    volumes: '',
+                    formatId: '',
+                    publisherId: '',
+                    isAdult: false
+                });
+                setSearchQuery('');
+                setSearchResults([]);
+                setSelectedCandidate(null);
+                return;
+            }
+
             const method = editManga ? 'PUT' : 'POST';
             const url = editManga ? `/api/manga/${editManga.id}` : '/api/manga';
 
@@ -188,6 +284,9 @@ const AddMangaModal = ({
                         publisherId: '',
                         isAdult: false
                     });
+                    setSearchQuery('');
+                    setSearchResults([]);
+                    setSelectedCandidate(null);
                 }
             } else {
                 const error = await response.json();
@@ -203,6 +302,20 @@ const AddMangaModal = ({
     if (!isOpen) return null;
 
     const isEditing = !!editManga;
+    const normalizedName = formData.name.trim().toLowerCase();
+    const duplicateName =
+        !isEditing &&
+        normalizedName &&
+        mangas.some((manga) => String(manga.name ?? '').trim().toLowerCase() === normalizedName);
+
+    const candidateMeta = (candidate) =>
+        [
+            candidate.format,
+            candidate.year,
+            candidate.volumes ? t('addManga.volShort', { count: candidate.volumes }) : null,
+        ]
+            .filter(Boolean)
+            .join(' · ');
 
     return (
         <div className="modal-overlay">
@@ -213,6 +326,102 @@ const AddMangaModal = ({
                 </div>
                 
                 <form onSubmit={handleSubmit} className="manga-form">
+                    {!isEditing && (
+                        <div className="form-group manga-search">
+                            <label htmlFor="mangaSearch">{t('addManga.searchLabel')}</label>
+                            <div className="manga-search-row">
+                                <input
+                                    type="search"
+                                    id="mangaSearch"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            runSearch();
+                                        }
+                                    }}
+                                    placeholder={t('addManga.searchPlaceholder')}
+                                />
+                                <button
+                                    type="button"
+                                    className="manga-search-btn"
+                                    onClick={runSearch}
+                                    disabled={isSearching || !searchQuery.trim()}
+                                >
+                                    {t(isSearching ? 'addManga.searching' : 'addManga.search')}
+                                </button>
+                            </div>
+                            {searchError && <div className="manga-search-message">{searchError}</div>}
+                            {searchResults.length > 0 && (
+                                <div className="manga-search-results">
+                                    {searchResults.map((candidate) => (
+                                        <button
+                                            key={candidate.id}
+                                            type="button"
+                                            className={candidateClassName(candidate)}
+                                            onClick={() => handleCandidateClick(candidate)}
+                                            title={t('addManga.selectCandidateTitle', {
+                                                title: candidate.title,
+                                            })}
+                                        >
+                                            {candidate.coverUrl ? (
+                                                <img src={candidate.coverUrl} alt="" loading="lazy" />
+                                            ) : (
+                                                <span className="manga-candidate-placeholder">
+                                                    {t('lcm.noCover')}
+                                                </span>
+                                            )}
+                                            {candidate.isAdult && (
+                                                <span className="manga-candidate-adult">+18</span>
+                                            )}
+                                            {candidate.source && (
+                                                <span className="manga-candidate-source">
+                                                    {candidate.source === 'mangadex'
+                                                        ? 'MangaDex'
+                                                        : 'AniList'}
+                                                </span>
+                                            )}
+                                            <span className="manga-candidate-title">
+                                                {candidate.title}
+                                            </span>
+                                            <span className="manga-candidate-meta">
+                                                {candidateMeta(candidate)}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {selectedCandidate && (
+                                <div className="manga-selected">
+                                    {selectedCandidate.coverUrl && (
+                                        <img
+                                            className="manga-selected-cover"
+                                            src={selectedCandidate.coverUrl}
+                                            alt=""
+                                        />
+                                    )}
+                                    <div className="manga-selected-info">
+                                        <span className="manga-selected-label">
+                                            {t('addManga.selectedCandidate')}
+                                        </span>
+                                        <strong>{selectedCandidate.title}</strong>
+                                        <span className="manga-candidate-meta">
+                                            {candidateMeta(selectedCandidate)}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="manga-selected-clear"
+                                        onClick={() => setSelectedCandidate(null)}
+                                    >
+                                        {t('addManga.clearCandidate')}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="form-group">
                         <label htmlFor="name">{t('addManga.nameLabel')}</label>
                         <input
@@ -224,6 +433,11 @@ const AddMangaModal = ({
                             placeholder={t('addManga.namePlaceholder')}
                             required
                         />
+                        {duplicateName && (
+                            <div className="manga-duplicate-warning">
+                                {t('addManga.duplicateWarning')}
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-group">
@@ -337,13 +551,17 @@ const AddMangaModal = ({
                         </label>
                     </div>
 
+                    {coverWarning && (
+                        <div className="manga-cover-warning">{coverWarning}</div>
+                    )}
+
                     {error && <div className="error-message">{error}</div>}
 
                     <div className="modal-actions">
                         <button type="button" onClick={onClose} className="cancel-button">
                             Cancel
                         </button>
-                        <button type="submit" disabled={isSubmitting} className="submit-button">
+                        <button type="submit" disabled={isSubmitting || !!coverWarning} className="submit-button">
                             {isSubmitting ? 
                                 t(isEditing ? 'addManga.submittingUpdate' : 'addManga.submittingCreate') :
                                 t(isEditing ? 'addManga.submitUpdate' : 'addManga.submitCreate')

@@ -49,6 +49,10 @@ export const entryGet = (id) => apiCall('entry:get-by-id', `/api/entry/${id}`, u
 export const entryUpsert = (entry) => apiCall('entry:upsert', '/api/entry', json(entry), entry);
 export const entryImport = (profileId, tsv) =>
   apiCall('entry:import', `/api/entry/import/${profileId}`, undefined, { profileId, tsv });
+export const entryImportPreview = (profileId, tsv) =>
+  apiCall('entry:import-preview', `/api/entry/import/preview/${profileId}`, json({ profileId, tsv }), { profileId, tsv });
+export const entryImportCommit = (profileId, tsv, decisions) =>
+  apiCall('entry:import', `/api/entry/import/commit/${profileId}`, json({ profileId, tsv, decisions }), { profileId, tsv, decisions });
 export const entryExport = (profileId) =>
   apiCall('entry:export', `/api/entry/export/${profileId}`, undefined, profileId);
 export const entryUsedFormats = (profileId) =>
@@ -59,6 +63,8 @@ export const entryUsedPublishers = (profileId) =>
 export const mangaList = () => apiCall('manga:list', '/api/manga');
 export const mangaGet = (id) => apiCall('manga:get', `/api/manga/${id}`, undefined, id);
 export const mangaUpsert = (manga) => apiCall('manga:upsert', '/api/manga', json(manga), manga);
+export const mangaCreateFromCandidate = (payload) =>
+  apiCall('manga:create-from-candidate', '/api/manga/from-candidate', json(payload), payload);
 export const mangaDelete = (id) =>
   apiCall('manga:delete', `/api/manga/${id}`, { method: 'DELETE' }, id);
 export const formatList = () => apiCall('format:list', '/api/format');
@@ -189,9 +195,12 @@ const routes = [
   { method: 'GET', pattern: /^\/api\/entry\/filters\/formats$/, build: (_m, _o, u) => ['entry:used-formats', toIntOrNull(u.searchParams.get('profileId'))] },
   { method: 'GET', pattern: /^\/api\/entry\/filters\/publishers$/, build: (_m, _o, u) => ['entry:used-publishers', toIntOrNull(u.searchParams.get('profileId'))] },
   { method: 'GET', pattern: /^\/api\/entry$/, build: (_m, _o, u) => ['entry:list', toIntOrNull(u.searchParams.get('profileId'))] },
+  { method: 'POST', pattern: /^\/api\/entry\/import\/preview\/(\d+)$/, build: (m, o) => ['entry:import-preview', { ...jsonBody(o), profileId: Number(m[1]) }] },
+  { method: 'POST', pattern: /^\/api\/entry\/import\/commit\/(\d+)$/, build: (m, o) => ['entry:import', { ...jsonBody(o), profileId: Number(m[1]) }] },
   { method: 'POST', pattern: /^\/api\/entry\/import\/(\d+)$/, build: async (m, o) => ['entry:import', await importArgs(Number(m[1]), o)] },
   { method: 'POST', pattern: /^\/api\/entry$/, build: (_m, o) => ['entry:upsert', jsonBody(o)] },
   { method: 'GET', pattern: /^\/api\/manga$/, build: () => ['manga:list'] },
+  { method: 'POST', pattern: /^\/api\/manga\/from-candidate$/, build: (_m, o) => ['manga:create-from-candidate', jsonBody(o)] },
   { method: 'POST', pattern: /^\/api\/manga$/, build: (_m, o) => ['manga:upsert', jsonBody(o)] },
   { method: 'PUT', pattern: /^\/api\/manga\/(\d+)$/, build: (m, o) => ['manga:upsert', { ...jsonBody(o), id: Number(m[1]) }] },
   { method: 'GET', pattern: /^\/api\/format$/, build: () => ['format:list'] },

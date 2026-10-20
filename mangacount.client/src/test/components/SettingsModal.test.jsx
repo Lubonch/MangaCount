@@ -25,6 +25,8 @@ vi.mock('../../api/localAdapter.js', () => ({
   pickDirectory: vi.fn(),
   pickFile: vi.fn(),
   entryExport: vi.fn(),
+  entryImportPreview: vi.fn(),
+  entryImportCommit: vi.fn(),
   mangaList: vi.fn(),
   coverAll: vi.fn(),
   coverAuto: vi.fn(),
@@ -67,6 +69,8 @@ function setupDefaults() {
   api.botConfigGet.mockResolvedValue({ enabled: false, guildId: null, allowedUserIds: [], status: 'apagado', hasToken: false })
   api.botAutostartGet.mockResolvedValue({ enabled: false })
   api.recommendationConfigGet.mockResolvedValue({ enabled: true, limit: 10, seenTtlDays: 30 })
+  api.entryImportPreview.mockResolvedValue({ totalRows: 0, duplicates: [] })
+  api.entryImportCommit.mockResolvedValue({ imported: 1, merged: 0, created: 1 })
 }
 
 describe('SettingsModal', () => {
@@ -219,15 +223,18 @@ describe('SettingsModal', () => {
 
   it('importa TSV del perfil activo desde Settings', async () => {
     const user = userEvent.setup()
-    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
-    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={() => {}} />)
+    api.entryImportCommit.mockResolvedValue({ imported: 1, merged: 0, created: 1 })
+    const onImportSuccess = vi.fn()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={onImportSuccess} />)
     await waitFor(() => expect(screen.getByLabelText('Elegir archivo TSV')).toBeInTheDocument())
 
     const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
     await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
 
-    await waitFor(() => expect(screen.getByText('¡Importación exitosa!')).toBeInTheDocument())
-    expect(global.fetch).toHaveBeenCalledWith('/api/entry/import/1', expect.objectContaining({ method: 'POST' }))
+    await waitFor(() => expect(screen.getByText(/Importación exitosa: 1 series/)).toBeInTheDocument())
+    expect(api.entryImportPreview).toHaveBeenCalledWith(1, 'a\tb')
+    expect(api.entryImportCommit).toHaveBeenCalledWith(1, 'a\tb', [])
+    expect(onImportSuccess).toHaveBeenCalled()
   })
 
   it('guarda el token del bot', async () => {
@@ -698,7 +705,7 @@ describe('SettingsModal', () => {
     fireEvent.change(screen.getByLabelText('Elegir archivo TSV'), { target: { files: [file] } })
 
     expect(await screen.findByText('Seleccioná un archivo TSV')).toBeInTheDocument()
-    expect(global.fetch).not.toHaveBeenCalled()
+    expect(api.entryImportPreview).not.toHaveBeenCalled()
   })
 
   it('ignora el cambio de archivo sin archivo', async () => {
@@ -707,13 +714,13 @@ describe('SettingsModal', () => {
 
     fireEvent.change(screen.getByLabelText('Elegir archivo TSV'), { target: { files: [] } })
 
-    expect(global.fetch).not.toHaveBeenCalled()
+    expect(api.entryImportPreview).not.toHaveBeenCalled()
     expect(screen.queryByText(/Importando|Importación/)).not.toBeInTheDocument()
   })
 
   it('muestra el mensaje del servidor si falla el import', async () => {
     const user = userEvent.setup()
-    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({ message: 'bad format' }) })
+    api.entryImportPreview.mockRejectedValueOnce(new Error('bad format'))
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
@@ -725,7 +732,7 @@ describe('SettingsModal', () => {
 
   it('usa "error desconocido" cuando el servidor no informa detalle', async () => {
     const user = userEvent.setup()
-    global.fetch.mockResolvedValueOnce({ ok: false, json: async () => ({}) })
+    api.entryImportPreview.mockRejectedValueOnce(new Error(''))
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
@@ -737,7 +744,7 @@ describe('SettingsModal', () => {
 
   it('muestra error si el import lanza', async () => {
     const user = userEvent.setup()
-    global.fetch.mockRejectedValueOnce(new Error('net'))
+    api.entryImportPreview.mockRejectedValueOnce(new Error('net'))
     render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
     await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
 
@@ -745,6 +752,134 @@ describe('SettingsModal', () => {
     await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
 
     expect(await screen.findByText('Falló la importación: net')).toBeInTheDocument()
+  })
+
+  it('abre la revisión cuando el preview detecta duplicados', async () => {
+    const user = userEvent.setup()
+    api.entryImportPreview.mockResolvedValueOnce({
+      totalRows: 1,
+      duplicates: [
+        {
+          rowIndex: 0,
+          lineNumber: 2,
+          source: 'existing',
+          incoming: {
+            title: 'Kuuga',
+            quantity: 5,
+            totalVolumes: 10,
+            pending: null,
+            priority: false,
+            formatName: 'B6',
+            publisherName: 'Panini',
+          },
+          candidate: {
+            mangaId: 7,
+            title: 'Kamen Rider Kuuga',
+            volumes: 10,
+            formatName: 'B6',
+            publisherName: 'Panini',
+            entry: { quantity: 4, pending: null },
+          },
+        },
+      ],
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
+
+    const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
+
+    expect(await screen.findByText('Posibles duplicados')).toBeInTheDocument()
+    expect(screen.getByText('Kuuga')).toBeInTheDocument()
+    expect(screen.getByText('Kamen Rider Kuuga')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Importar' })).toBeDisabled()
+  })
+
+  it('confirma la revisión con las decisiones elegidas', async () => {
+    const user = userEvent.setup()
+    api.entryImportPreview.mockResolvedValueOnce({
+      totalRows: 1,
+      duplicates: [
+        {
+          rowIndex: 0,
+          lineNumber: 2,
+          source: 'existing',
+          incoming: {
+            title: 'Kuuga',
+            quantity: 5,
+            totalVolumes: 10,
+            pending: null,
+            priority: false,
+            formatName: 'B6',
+            publisherName: 'Panini',
+          },
+          candidate: {
+            mangaId: 7,
+            title: 'Kamen Rider Kuuga',
+            volumes: 10,
+            formatName: 'B6',
+            publisherName: 'Panini',
+            entry: { quantity: 4, pending: null },
+          },
+        },
+      ],
+    })
+    api.entryImportCommit.mockResolvedValueOnce({ imported: 1, merged: 1, created: 0 })
+    const onImportSuccess = vi.fn()
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} onImportSuccess={onImportSuccess} />)
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
+
+    const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
+    await user.click(await screen.findByRole('button', { name: 'Son lo mismo' }))
+    await user.click(screen.getByRole('button', { name: 'Importar' }))
+
+    await waitFor(() =>
+      expect(api.entryImportCommit).toHaveBeenCalledWith(1, 'a\tb', [{ rowIndex: 0, same: true }])
+    )
+    expect(await screen.findByText(/1 fusionadas/)).toBeInTheDocument()
+    expect(onImportSuccess).toHaveBeenCalled()
+    expect(screen.queryByText('Posibles duplicados')).not.toBeInTheDocument()
+  })
+
+  it('cancelar la revisión no escribe nada', async () => {
+    const user = userEvent.setup()
+    api.entryImportPreview.mockResolvedValueOnce({
+      totalRows: 1,
+      duplicates: [
+        {
+          rowIndex: 0,
+          lineNumber: 2,
+          source: 'existing',
+          incoming: {
+            title: 'Kuuga',
+            quantity: 5,
+            totalVolumes: 10,
+            pending: null,
+            priority: false,
+            formatName: 'B6',
+            publisherName: 'Panini',
+          },
+          candidate: {
+            mangaId: 7,
+            title: 'Kamen Rider Kuuga',
+            volumes: 10,
+            formatName: 'B6',
+            publisherName: 'Panini',
+            entry: null,
+          },
+        },
+      ],
+    })
+    render(<SettingsModal isOpen onClose={() => {}} selectedProfile={profile} />)
+    await waitFor(() => expect(screen.getByText('Importar / Exportar (TSV)')).toBeInTheDocument())
+
+    const file = new File(['a\tb'], 'test.tsv', { type: 'text/tab-separated-values' })
+    await user.upload(screen.getByLabelText('Elegir archivo TSV'), file)
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+
+    expect(api.entryImportCommit).not.toHaveBeenCalled()
+    expect(await screen.findByText('Importación cancelada; no se guardó nada.')).toBeInTheDocument()
   })
 
   it('muestra error si falla la exportación', async () => {

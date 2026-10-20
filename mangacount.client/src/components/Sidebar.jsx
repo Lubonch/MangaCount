@@ -243,6 +243,8 @@ const Sidebar = ({
                 isOpen={showAddManga}
                 onClose={() => setShowAddManga(false)}
                 onSuccess={handleAddSuccess}
+                mangas={mangas}
+                showAdultCovers={showAdultCovers}
             />
 
             <AddMangaModal

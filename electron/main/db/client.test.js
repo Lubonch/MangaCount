@@ -164,4 +164,42 @@ describe('db/client', () => {
     assert.equal(row(adult), 1);
     assert.equal(row(plain), 0);
   });
+
+  it('migra v6 → v7: limpia la prioridad de series completas', () => {
+    const file = path.join(dir, 'mangacount.db');
+    const legacy = new Database(file);
+    legacy.exec(fs.readFileSync(new URL('./schema.sqlite.sql', import.meta.url), 'utf8'));
+    const profileId = legacy.prepare('INSERT INTO Profile (Name) VALUES (?) RETURNING Id').get('p').Id;
+    const complete = legacy
+      .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
+      .get('complete', 5).Id;
+    const incomplete = legacy
+      .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
+      .get('incomplete', 10).Id;
+    const ongoing = legacy
+      .prepare('INSERT INTO Manga (Title, TotalVolumes) VALUES (?, ?) RETURNING Id')
+      .get('ongoing', 0).Id;
+    const addEntry = legacy.prepare(
+      'INSERT INTO Entry (ProfileId, MangaId, PurchasedVolumes, IsPriority) VALUES (?, ?, ?, 1)'
+    );
+    addEntry.run(profileId, complete, 5);
+    addEntry.run(profileId, incomplete, 3);
+    addEntry.run(profileId, ongoing, 99);
+    legacy.pragma('user_version = 6');
+    legacy.close();
+
+    db = openDb(dir);
+    assert.equal(db.pragma('user_version', { simple: true }), 7);
+    const priority = (mangaId) =>
+      db.prepare('SELECT IsPriority FROM Entry WHERE MangaId = ?').get(mangaId).IsPriority;
+    assert.equal(priority(complete), 0);
+    assert.equal(priority(incomplete), 1);
+    assert.equal(priority(ongoing), 1);
+
+    // Reopening is idempotent.
+    db.close();
+    db = openDb(dir);
+    assert.equal(priority(complete), 0);
+    assert.equal(priority(incomplete), 1);
+  });
 });

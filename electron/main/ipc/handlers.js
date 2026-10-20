@@ -5,7 +5,7 @@
 
 import { listEntries, getEntryById, upsertEntry, updateEntry } from '../db/repositories/entries.js';
 import { deleteManga } from '../db/repositories/mangas.js';
-import { importTsv, exportTsv } from '../services/entries.js';
+import { importTsv, previewTsvImport, exportTsv } from '../services/entries.js';
 import {
   saveOrUpdateProfile,
   saveOrUpdateManga,
@@ -103,6 +103,31 @@ export const handlers = {
   'manga:list': ({ db }) => listMangas(db),
   'manga:get': ({ db }, id) => getMangaById(db, id),
   'manga:upsert': ({ db }, manga) => saveOrUpdateManga(db, manga),
+  'manga:create-from-candidate': async ({ db, dataDir }, payload = {}) => {
+    const t = getTranslator(dataDir);
+    const { candidate, name, volumes, formatId, publisherId, isAdult } = payload ?? {};
+    if (!candidate?.id) throw new Error(t('err.candidateInvalid'));
+    const title = String(name ?? candidate.title ?? '').trim();
+    if (!title) throw new Error(t('err.mangaTitleRequired'));
+    if (!formatId || !publisherId) throw new Error(t('err.mangaCatalogRequired'));
+    const manga = saveOrUpdateManga(db, {
+      id: 0,
+      name: title,
+      volumes,
+      formatId,
+      publisherId,
+      isAdult,
+    });
+    let coverUrl = null;
+    let coverError = false;
+    try {
+      const linked = await linkCover(db, dataDir, { mangaId: manga.id, candidate });
+      coverUrl = linked?.coverUrl ?? null;
+    } catch {
+      coverError = true;
+    }
+    return { manga: getMangaById(db, manga.id) ?? manga, coverUrl, coverError };
+  },
   'manga:delete': ({ db, dataDir }, id) => {
     const t = getTranslator(dataDir);
     if (!Number.isInteger(id) || id <= 0) throw new Error(t('err.mangaIdInvalid'));
@@ -193,12 +218,26 @@ export const handlers = {
     requireProfileExists(db, entry.profileId, t);
     return entry?.id ? updateEntry(db, entry) : upsertEntry(db, entry);
   },
-  'entry:import': ({ db, dataDir }, { profileId, tsv }) => {
+  'entry:import-preview': ({ db, dataDir }, { profileId, tsv } = {}) => {
     const t = getTranslator(dataDir);
     requireProfileId(profileId, t);
     requireProfileExists(db, profileId, t);
     if (typeof tsv !== 'string' || tsv.length === 0) throw new Error(t('err.tsvEmpty'));
-    return importTsv(db, tsv, profileId);
+    return previewTsvImport(db, tsv, profileId);
+  },
+  'entry:import': ({ db, dataDir }, { profileId, tsv, decisions } = {}) => {
+    const t = getTranslator(dataDir);
+    requireProfileId(profileId, t);
+    requireProfileExists(db, profileId, t);
+    if (typeof tsv !== 'string' || tsv.length === 0) throw new Error(t('err.tsvEmpty'));
+    try {
+      return importTsv(db, tsv, profileId, Array.isArray(decisions) ? decisions : null);
+    } catch (err) {
+      if (typeof err?.code === 'string' && err.code.startsWith('err.')) {
+        throw new Error(t(err.code));
+      }
+      throw err;
+    }
   },
   'entry:export': ({ db, dataDir }, profileId) => {
     const t = getTranslator(dataDir);
