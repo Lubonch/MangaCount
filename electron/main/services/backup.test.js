@@ -52,12 +52,14 @@ describe('services/backup', () => {
     assert.equal(isBackupFileName('otra-cosa.zip'), false);
   });
 
-  it('crea un backup con manifest, db y profiles', async () => {
+  it('crea un backup con manifest, db, profiles y covers', async () => {
     const profile = createProfile(db, 'yo');
     const { fileName } = saveProfilePicture(db, dataDir, profile.id, {
       originalName: 'foto.png',
       buffer: Buffer.from([1, 2, 3]),
     });
+    fs.mkdirSync(path.join(dataDir, 'covers'), { recursive: true });
+    fs.writeFileSync(path.join(dataDir, 'covers', '7.jpg'), Buffer.from([4, 5, 6]));
 
     const result = await createBackup(db, dataDir, destDir, { now: at(0) });
     assert.equal(result.fileName, 'mangacount-backup-2026-01-02-0300.zip');
@@ -67,6 +69,7 @@ describe('services/backup', () => {
     assert.ok(entries['manifest.json']);
     assert.ok(entries['mangacount.db']);
     assert.ok(entries[`profiles/${fileName}`]);
+    assert.ok(entries['covers/7.jpg']);
     const manifest = JSON.parse(Buffer.from(entries['manifest.json']).toString());
     assert.equal(manifest.app, 'MangaCount');
     assert.equal(typeof manifest.schemaVersion, 'number');
@@ -111,9 +114,13 @@ describe('services/backup', () => {
       originalName: 'foto.png',
       buffer: Buffer.from([9, 9, 9]),
     });
+    const coversPath = path.join(dataDir, 'covers');
+    fs.mkdirSync(coversPath, { recursive: true });
+    fs.writeFileSync(path.join(coversPath, '1.jpg'), Buffer.from([7, 7, 7]));
     const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
 
     createProfile(db, 'dos');
+    fs.writeFileSync(path.join(coversPath, '999.jpg'), Buffer.from([8, 8, 8]));
 
     const result = await restoreBackup(db, dataDir, backup.path, { now: at(60), logger: { warn() {} } });
     db = result.db;
@@ -124,18 +131,41 @@ describe('services/backup', () => {
     assert.ok(names.includes('uno'));
     assert.ok(!names.includes('dos'));
     assert.ok(fs.existsSync(path.join(dataDir, 'profiles', fileName)));
+    assert.ok(fs.existsSync(path.join(coversPath, '1.jpg')));
+    assert.equal(fs.existsSync(path.join(coversPath, '999.jpg')), false);
   });
 
   it('restore rechaza entradas con path traversal (zip-slip)', async () => {
     const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
     const entries = unzipSync(new Uint8Array(fs.readFileSync(backup.path)));
     entries['profiles/../evil.txt'] = strToU8('pwned');
+    entries['covers/../evil-cover.txt'] = strToU8('pwned');
     const evil = path.join(destDir, 'evil.zip');
     fs.writeFileSync(evil, zipSync(entries));
 
     const result = await restoreBackup(db, dataDir, evil, { now: at(60), logger: { warn() {} } });
     db = result.db;
     assert.equal(fs.existsSync(path.join(dataDir, 'evil.txt')), false);
+    assert.equal(fs.existsSync(path.join(dataDir, 'evil-cover.txt')), false);
+  });
+
+  it('restore de un backup sin covers deja el cache vacío', async () => {
+    const backup = await createBackup(db, dataDir, destDir, { now: at(0) });
+    const entries = unzipSync(new Uint8Array(fs.readFileSync(backup.path)));
+    for (const name of Object.keys(entries)) {
+      if (name.startsWith('covers/')) delete entries[name];
+    }
+    const old = path.join(destDir, 'viejo.zip');
+    fs.writeFileSync(old, zipSync(entries));
+
+    const coversPath = path.join(dataDir, 'covers');
+    fs.mkdirSync(coversPath, { recursive: true });
+    fs.writeFileSync(path.join(coversPath, '5.jpg'), Buffer.from([1]));
+
+    const result = await restoreBackup(db, dataDir, old, { now: at(60), logger: { warn() {} } });
+    db = result.db;
+    assert.equal(result.restored, true);
+    assert.deepEqual(fs.readdirSync(coversPath), []);
   });
 
   it('nombre por defecto y backup con reloj por defecto', async () => {

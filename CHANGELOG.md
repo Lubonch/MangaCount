@@ -3,6 +3,15 @@
 Todos los cambios relevantes de MangaCount. Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/)
 y versionado semántico.
 
+## [2.5.1] - 2026-10-21
+
+### Fixed
+
+- **El backup integrado incluye las portadas**: el `.zip` ahora guarda también el cache
+  `covers/`, y el restore lo reemplaza junto con la base y las fotos de perfil. Restaurar en otra
+  PC conserva las imágenes sin volver a vincularlas. Los backups creados antes de esta versión no
+  traen portadas, así que al restaurarlos el cache queda vacío.
+
 ## [2.5.0] - 2026-10-19
 
 ### Added
