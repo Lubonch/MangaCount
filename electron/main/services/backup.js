@@ -1,9 +1,9 @@
 // Full-system backup and restore.
 //
-// The state lives in <dataDir>: `mangacount.db` (WAL), `profiles/`. The backup is
-// a `.zip` with a consistent snapshot of the DB (better-sqlite3's db.backup(),
-// online and WAL-safe), the photos folder and a `manifest.json`. `preferences.json`
-// and `logs/` stay OUT: the config belongs to the machine, not to the data.
+// The state lives in <dataDir>: `mangacount.db` (WAL), `profiles/` and `covers/`. The
+// backup is a `.zip` with a consistent snapshot of the DB (better-sqlite3's db.backup(),
+// online and WAL-safe), the profile photos, the cover cache and a `manifest.json`.
+// `preferences.json` and `logs/` stay OUT: the config belongs to the machine, not to the data.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -18,6 +18,8 @@ export const BACKUP_PREFIX = 'mangacount-backup-';
 export const DEFAULT_KEEP = 5;
 const DB_FILE = 'mangacount.db';
 const PROFILES_DIR = 'profiles';
+const COVERS_DIR = 'covers';
+const RESOURCE_DIRS = [PROFILES_DIR, COVERS_DIR];
 const MANIFEST = 'manifest.json';
 
 // Flagged error so the handler can tell apart "destination not responding".
@@ -102,8 +104,10 @@ export async function createBackup(
       [MANIFEST]: strToU8(JSON.stringify({ app: APP_NAME, schemaVersion: SCHEMA_VERSION, createdAt })),
       [DB_FILE]: new Uint8Array(fs.readFileSync(tmpDb)),
     };
-    for (const file of walkFiles(path.join(dataDir, PROFILES_DIR))) {
-      files[`${PROFILES_DIR}/${file.rel}`] = new Uint8Array(fs.readFileSync(file.full));
+    for (const dirName of RESOURCE_DIRS) {
+      for (const file of walkFiles(path.join(dataDir, dirName))) {
+        files[`${dirName}/${file.rel}`] = new Uint8Array(fs.readFileSync(file.full));
+      }
     }
 
     const zipped = zipSync(files, { level: 6 });
@@ -210,16 +214,20 @@ export async function restoreBackup(
   }
   fs.writeFileSync(path.join(dataDir, DB_FILE), entries[DB_FILE]);
 
-  const profilesPath = path.join(dataDir, PROFILES_DIR);
-  fs.rmSync(profilesPath, { recursive: true, force: true });
-  fs.mkdirSync(profilesPath, { recursive: true });
+  for (const dirName of RESOURCE_DIRS) {
+    const base = path.join(dataDir, dirName);
+    fs.rmSync(base, { recursive: true, force: true });
+    fs.mkdirSync(base, { recursive: true });
+  }
   for (const [name, bytes] of Object.entries(entries)) {
-    if (!name.startsWith(`${PROFILES_DIR}/`)) continue;
-    const rel = name.slice(PROFILES_DIR.length + 1);
+    const dirName = RESOURCE_DIRS.find((dir) => name.startsWith(`${dir}/`));
+    if (!dirName) continue;
+    const rel = name.slice(dirName.length + 1);
     // Anti zip-slip: discard paths with `..` or empty (absolute) segments.
     if (!rel || rel.split('/').some((seg) => seg === '..' || seg === '')) continue;
-    const target = path.resolve(profilesPath, rel);
-    if (target !== profilesPath && !target.startsWith(profilesPath + path.sep)) continue;
+    const base = path.join(dataDir, dirName);
+    const target = path.resolve(base, rel);
+    if (target !== base && !target.startsWith(base + path.sep)) continue;
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, bytes);
   }

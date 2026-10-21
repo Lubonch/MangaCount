@@ -3,7 +3,7 @@
 # Empaqueta el AppImage publicado en GitHub Releases. Al subir una release nueva,
 # actualizá pkgver y recalculá sha256sums (`updpkgsums`).
 pkgname=mangacount
-pkgver=2.5.0
+pkgver=2.5.1
 pkgrel=1
 pkgdesc="Gestor de coleccion de manga local-first (Electron + SQLite)"
 arch=('x86_64')
