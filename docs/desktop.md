@@ -101,9 +101,10 @@ El mismo esquema sirve el host **`covers`** para las portadas cacheadas: el main
 La app trae backup/restore del **sistema completo** desde **Settings → Backup**:
 
 - **Formato**: un `.zip` (`mangacount-backup-<YYYY-MM-DD-HHmm>.zip`) con `manifest.json`,
-  `mangacount.db` (snapshot consistente con `db.backup()`, nunca copiando el `.db` vivo con WAL)
-  y `profiles/`. **No** incluye `preferences.json` ni `logs/`: la config es de la máquina, no del
-  dato.
+  `mangacount.db` (snapshot consistente con `db.backup()`, nunca copiando el `.db` vivo con WAL),
+  `profiles/` (fotos de perfil) y `covers/` (portadas cacheadas). **No** incluye
+  `preferences.json` ni `logs/`: la config es de la máquina, no del dato. Los backups creados antes
+  de la 2.5.1 no traen `covers/`, así que al restaurarlos el cache de portadas queda vacío.
 - **Retención**: se conservan los últimos **5** backups (se podan solo archivos con el patrón
   propio).
 - **Automático (opcional, apagado por defecto)**: al habilitarlo exige un **destino** y al menos un
@@ -111,8 +112,8 @@ La app trae backup/restore del **sistema completo** desde **Settings → Backup*
   app corre* (cada X minutos). El destino debería estar en **otro disco** o carpeta sincronizada.
 - **Restore**: valida el `.zip` (`manifest.json` + `PRAGMA integrity_check`), genera un backup de
   seguridad del estado actual en `backups-restore/`, cierra la base, limpia `-wal`/`-shm` y
-  reemplaza `mangacount.db` + `profiles/`. Un backup con `app`/`schemaVersion` incompatible se
-  rechaza sin tocar datos.
+  reemplaza `mangacount.db`, `profiles/` y `covers/`. Un backup con `app`/`schemaVersion`
+  incompatible se rechaza sin tocar datos.
 - **Indicador**: Settings muestra la fecha del último OK y, si falló, el error (que también queda
   en `logs/`).
 
@@ -222,9 +223,10 @@ Copy-Item -Recurse "$env:APPDATA\mangacount" "$env:APPDATA\mangacount.bak-$(Get-
 ```
 
 Alcanza con `mangacount.db` si querés sólo la colección, pero incluí `profiles/` para conservar
-las fotos. Si copiás con la app abierta, pueden faltar cambios recientes que estén en `-wal`.
+las fotos y `covers/` para conservar las portadas. Si copiás con la app abierta, pueden faltar
+cambios recientes que estén en `-wal`.
 
-Restaurar = reemplazar `mangacount.db` (+ `profiles/` si aplica) con la app cerrada.
+Restaurar = reemplazar `mangacount.db` (+ `profiles/` y `covers/` si aplica) con la app cerrada.
 
 ## Troubleshooting por plataforma
 
